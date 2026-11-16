@@ -1,0 +1,192 @@
+"""Growth IA — declarative schema DSL.
+
+Single source of truth for the relational model. `generate.py` turns these
+declarations into:
+  * versioned SQL migrations (tables, constraints, indexes, triggers, RLS);
+  * Django models (managed=False, the schema is applied through Django
+    migrations that execute the generated SQL — see docs/database/MIGRATIONS.md);
+  * the data dictionary / ERD documentation.
+
+Column line syntax (one column per line)::
+
+    name type[!] [uniq] [secret] [=DEFAULT] [-> table [cascade|setnull]] [in(a,b,c)] [# comment]
+
+  type     uuid text int bigint num num(p,s) bool ts date json inet text[] uuid[] vec
+  !        NOT NULL
+  uniq     unique (scoped to tenant_id for tenant tables, partial on deleted_at)
+  secret   never copied into history / audit snapshots, masked in APIs
+  =X       raw SQL default
+  -> T     foreign key (auth.users allowed). Tenant→tenant FKs are composite
+           (tenant_id, col) so a row can never point into another tenant.
+  in(...)  CHECK constraint on allowed values
+
+Table kinds
+  biz    tenant business data: tenant_id + created/updated(_by) + deleted_at
+         + version_number + correlation_id; versioned into entity_history.
+  conf   tenant configuration: same as biz.
+  log    append-only events: tenant_id, created_at, correlation_id;
+         UPDATE/DELETE blocked by trigger (controlled correction only).
+  ref    global reference data (plans, modules, providers): created/updated.
+  gbiz   global business data (no tenant) versioned (e.g. prompt templates).
+  glog   global append-only log (tenant_id nullable).
+
+RLS access profiles (`read=`)
+  member   tenant members may SELECT
+  admin    tenant owners/admins may SELECT
+  self     the row's user_id may SELECT
+  global   any authenticated user may SELECT
+  pilot    only platform admins (PILOTE)
+  none     backend only (secrets, tokens, credentials)
+Writes are always performed by the Django backend (role app_backend).
+"""
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+
+TYPES = {
+    "uuid": "uuid", "text": "text", "int": "integer", "bigint": "bigint",
+    "num": "numeric", "bool": "boolean", "ts": "timestamptz", "date": "date",
+    "json": "jsonb", "inet": "inet", "text[]": "text[]", "uuid[]": "uuid[]",
+    "vec": "extensions.vector(1536)",
+}
+
+
+@dataclass
+class Column:
+    name: str
+    sqltype: str
+    dsl_type: str
+    not_null: bool = False
+    unique: bool = False
+    secret: bool = False
+    default: str | None = None
+    fk: str | None = None
+    on_delete: str = "restrict"
+    check_in: list[str] | None = None
+    comment: str = ""
+    auto: bool = False  # generated mixin column
+
+
+@dataclass
+class Table:
+    name: str
+    domain: str
+    app: str
+    kind: str
+    read: str
+    comment: str
+    columns: list[Column] = field(default_factory=list)
+    uniques: list[tuple[str, ...]] = field(default_factory=list)
+    indexes: list[tuple[str, ...]] = field(default_factory=list)
+    partition: bool = False
+    tenant_nullable: bool = False
+    pk_ref: str | None = None
+
+    @property
+    def tenant(self) -> bool:
+        return any(c.name == "tenant_id" for c in self.columns)
+
+    @property
+    def versioned(self) -> bool:
+        return self.kind in ("biz", "conf", "gbiz") and any(
+            c.name == "version_number" and c.auto for c in self.columns)
+
+    @property
+    def append_only(self) -> bool:
+        return self.kind in ("log", "glog")
+
+    @property
+    def soft_delete(self) -> bool:
+        return any(c.name == "deleted_at" for c in self.columns)
+
+    def col(self, name: str) -> Column | None:
+        return next((c for c in self.columns if c.name == name), None)
+
+
+REGISTRY: list[Table] = []
+_LINE = re.compile(r"^(?P<name>\w+)\s+(?P<type>[a-z\[\]]+(?:\(\d+,\d+\))?)(?P<nn>!)?(?P<rest>.*)$")
+
+
+def parse_col(line: str) -> Column:
+    comment = ""
+    if "#" in line:
+        line, comment = line.split("#", 1)
+        comment = comment.strip()
+    m = _LINE.match(line.strip())
+    if not m:
+        raise ValueError(f"bad column line: {line!r}")
+    t = m["type"]
+    base = t.split("(")[0]
+    if base not in TYPES:
+        raise ValueError(f"unknown type {t} in {line!r}")
+    sqltype = TYPES[base] + (t[len(base):] if "(" in t else "")
+    c = Column(m["name"], sqltype, base, not_null=bool(m["nn"]), comment=comment)
+    rest = m["rest"]
+    if (mi := re.search(r"in\(([^)]*)\)", rest)):
+        c.check_in = [v.strip() for v in mi[1].split(",")]
+        rest = rest.replace(mi[0], "")
+    if (mf := re.search(r"->\s*([\w.]+)(?:\s+(cascade|setnull))?", rest)):
+        c.fk = mf[1]
+        c.on_delete = {"cascade": "cascade", "setnull": "setnull"}.get(mf[2] or "", "restrict")
+        rest = rest.replace(mf[0], "")
+    if (md := re.search(r"=(\S+(?:\(\))?)", rest)):
+        c.default = md[1]
+        rest = rest.replace(md[0], "")
+    toks = rest.split()
+    c.unique = "uniq" in toks
+    c.secret = "secret" in toks
+    unknown = set(toks) - {"uniq", "secret"}
+    if unknown:
+        raise ValueError(f"unknown tokens {unknown} in {line!r}")
+    return c
+
+
+def _mixins(kind: str, tenant_nullable: bool) -> tuple[list[str], list[str]]:
+    head: list[str] = []
+    tail: list[str] = []
+    if kind in ("biz", "conf", "log"):
+        head.append("tenant_id uuid! -> tenants")
+    if kind == "glog" or tenant_nullable:
+        head = ["tenant_id uuid -> tenants"]
+    if kind in ("biz", "conf", "gbiz"):
+        tail += ["created_at ts! =now()", "updated_at ts! =now()",
+                 "created_by uuid -> auth.users setnull", "updated_by uuid -> auth.users setnull",
+                 "deleted_at ts", "version_number int! =1", "correlation_id uuid"]
+    elif kind == "ref":
+        tail += ["created_at ts! =now()", "updated_at ts! =now()"]
+    elif kind in ("log", "glog"):
+        tail += ["correlation_id uuid", "created_at ts! =now()"]
+    return head, tail
+
+
+def table(name: str, cols: str = "", *, domain: str, app: str, kind: str = "biz",
+          read: str | None = None, comment: str = "", unique: list | None = None,
+          index: list | None = None, partition: bool = False,
+          tenant_nullable: bool = False, pk_ref: str | None = None) -> Table:
+    if read is None:
+        read = {"biz": "member", "conf": "member", "log": "member", "ref": "global",
+                "gbiz": "global", "glog": "pilot"}[kind]
+    t = Table(name, domain, app, kind, read, comment, partition=partition,
+              tenant_nullable=tenant_nullable, pk_ref=pk_ref)
+    head, tail = _mixins(kind, tenant_nullable)
+    for ln in head:
+        c = parse_col(ln); c.auto = True; t.columns.append(c)
+    explicit = [parse_col(ln) for ln in cols.strip().splitlines() if ln.strip()]
+    names = {c.name for c in explicit}
+    t.columns += explicit
+    for ln in tail:
+        c = parse_col(ln); c.auto = True
+        if c.name not in names:
+            t.columns.append(c)
+    t.uniques = [tuple(u) for u in (unique or [])]
+    t.indexes = [tuple(i) for i in (index or [])]
+    REGISTRY.append(t)
+    return t
+
+
+def domain(name: str, app: str):
+    """Return a `table` partial bound to a domain/app."""
+    def _t(tname: str, cols: str = "", **kw):
+        return table(tname, cols, domain=name, app=app, **kw)
+    return _t
