@@ -25,9 +25,12 @@ END $$;
 
 GRANT USAGE ON SCHEMA public, app, extensions TO app_backend;
 GRANT USAGE ON SCHEMA app TO authenticated;
-GRANT USAGE ON SCHEMA auth TO app_backend;
-GRANT EXECUTE ON FUNCTION auth.uid() TO app_backend;
 REVOKE ALL ON SCHEMA app FROM anon;
+
+-- JWT subject of the current request (Supabase). SECURITY DEFINER so backend roles without
+-- privileges on the auth schema can still evaluate it; GUCs are session-level, not owner-level.
+CREATE OR REPLACE FUNCTION app.jwt_uid() RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$ SELECT auth.uid() $$;
 
 -- ── Request context (set by Django per transaction with SET LOCAL semantics) ──
 CREATE OR REPLACE FUNCTION app._guc_uuid(p_name text) RETURNS uuid
@@ -38,7 +41,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION app.current_user_id() RETURNS uuid
 LANGUAGE sql STABLE SET search_path = '' AS $$
-  SELECT coalesce(app._guc_uuid('app.user_id'), auth.uid())
+  SELECT coalesce(app._guc_uuid('app.user_id'), app.jwt_uid())
 $$;
 
 CREATE OR REPLACE FUNCTION app.current_tenant_id() RETURNS uuid
@@ -60,7 +63,7 @@ $$;
 CREATE OR REPLACE FUNCTION app.current_actor_type() RETURNS text
 LANGUAGE sql STABLE SET search_path = '' AS $$
   SELECT coalesce(nullif(current_setting('app.actor_type', true), ''),
-                  CASE WHEN auth.uid() IS NOT NULL THEN 'user' ELSE 'system' END)
+                  CASE WHEN app.jwt_uid() IS NOT NULL THEN 'user' ELSE 'system' END)
 $$;
 
 CREATE OR REPLACE FUNCTION app.change_reason() RETURNS text
