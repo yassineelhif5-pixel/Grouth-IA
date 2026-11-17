@@ -104,7 +104,7 @@ def change_plan(tenant_id: str, plan_code: str, reason: str) -> TenantSubscripti
                      SELECT %s, feature_id, enabled, 'plan' FROM public.subscription_plan_features WHERE plan_id = %s RETURNING 1""",
                   [tenant_id, plan.id])
         fetch_one("""INSERT INTO public.tenant_module_authorizations (tenant_id, module_id, status, reason, granted_by)
-                     SELECT DISTINCT %s, pf.module_id, 'enabled', %s, %s FROM public.subscription_plan_features f
+                     SELECT DISTINCT %s::uuid, pf.module_id, 'enabled', %s, %s::uuid FROM public.subscription_plan_features f
                        JOIN public.platform_module_features pf ON pf.id = f.feature_id WHERE f.plan_id = %s
                      ON CONFLICT DO NOTHING RETURNING 1""", [tenant_id, f"plan {plan.code}", ctx.user_id, plan.id])
         record_audit("license.plan_changed", "licensing", entity_type="tenant_subscriptions", entity_id=sub.id,

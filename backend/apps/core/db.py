@@ -1,6 +1,8 @@
 """Propagate the execution context into the PostgreSQL session (transaction-local GUCs)."""
 from __future__ import annotations
 
+import json
+
 from django.db import connection, connections, transaction
 
 from .context import ExecutionContext
@@ -25,17 +27,35 @@ def apply_db_context(ctx: ExecutionContext, using: str = "default", session: boo
         )
 
 
-def fetch_one(sql: str, params: list | None = None):
+JSON_OIDS = {114, 3802}  # json, jsonb — Django's psycopg3 setup returns them as text on raw cursors
+
+
+def _decoder(cur):
+    idx = [i for i, c in enumerate(cur.description or []) if getattr(c, "type_code", None) in JSON_OIDS]
+
+    def decode(row):
+        if not idx or row is None:
+            return row
+        row = list(row)
+        for i in idx:
+            if isinstance(row[i], str):
+                row[i] = json.loads(row[i])
+        return tuple(row)
+    return decode
+
+
+def fetch_one(sql: str, params: list | dict | None = None):
     with connection.cursor() as cur:
         cur.execute(sql, params or [])
-        return cur.fetchone()
+        return _decoder(cur)(cur.fetchone()) if cur.description else None
 
 
-def fetch_all_dict(sql: str, params: list | None = None) -> list[dict]:
+def fetch_all_dict(sql: str, params: list | dict | None = None) -> list[dict]:
     with connection.cursor() as cur:
         cur.execute(sql, params or [])
         cols = [c[0] for c in cur.description]
-        return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
+        dec = _decoder(cur)
+        return [dict(zip(cols, dec(row), strict=True)) for row in cur.fetchall()]
 
 
 def write_out_of_band(fn, ctx: ExecutionContext):
