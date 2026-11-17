@@ -36,7 +36,7 @@ class SeoProject(models.Model):
 
 
 class SeoAudit(models.Model):
-    """seo_audits [log]"""
+    """seo_audits [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -50,12 +50,19 @@ class SeoAudit(models.Model):
     requested_by = models.UUIDField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    website = models.ForeignKey('websites.Website', on_delete=models.DO_NOTHING, db_column='website_id', related_name='+', null=True, blank=True, db_constraint=False)
+    audit_type = models.TextField(default='full', choices=[('full', 'full'), ('technical', 'technical'), ('onpage', 'onpage'), ('keywords', 'keywords'), ('competitors', 'competitors'), ('backlinks', 'backlinks'), ('content_gap', 'content_gap')])
+    pages_limit = models.IntegerField(default=50)
+    issues_count = models.IntegerField(default=0)
+    summary = models.JSONField(default=dict)
+    error_message = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'seo_audits'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
@@ -71,6 +78,8 @@ class SeoAuditPage(models.Model):
     data = models.JSONField(default=dict)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    status_code = models.IntegerField(null=True, blank=True)
+    load_ms = models.IntegerField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -98,6 +107,10 @@ class SeoIssue(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    category = models.TextField(null=True, blank=True)
+    page_url = models.TextField(null=True, blank=True)
+    details = models.JSONField(default=dict)
+    impact = models.TextField(null=True, blank=True, choices=[('low', 'low'), ('medium', 'medium'), ('high', 'high')])
 
     class Meta:
         managed = False
@@ -126,6 +139,11 @@ class SeoRecommendation(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    audit = models.ForeignKey('seo.SeoAudit', on_delete=models.DO_NOTHING, db_column='audit_id', related_name='+', null=True, blank=True, db_constraint=False)
+    category = models.TextField(null=True, blank=True)
+    difficulty = models.TextField(null=True, blank=True, choices=[('low', 'low'), ('medium', 'medium'), ('high', 'high')])
+    estimated_impact = models.TextField(null=True, blank=True)
+    details = models.JSONField(default=dict)
 
     class Meta:
         managed = False

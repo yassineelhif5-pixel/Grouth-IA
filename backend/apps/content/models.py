@@ -112,7 +112,7 @@ class GeneratedContent(models.Model):
     category = models.ForeignKey('content.ContentCategory', on_delete=models.DO_NOTHING, db_column='category_id', related_name='+', null=True, blank=True, db_constraint=False)
     template = models.ForeignKey('content.ContentTemplate', on_delete=models.DO_NOTHING, db_column='template_id', related_name='+', null=True, blank=True, db_constraint=False)
     title = models.TextField()
-    content_type = models.TextField(choices=[('article', 'article'), ('page', 'page'), ('email', 'email'), ('social_post', 'social_post'), ('ad', 'ad'), ('video_script', 'video_script'), ('other', 'other')])
+    content_type = models.TextField(choices=[('article', 'article'), ('guide', 'guide'), ('tutorial', 'tutorial'), ('comparison', 'comparison'), ('faq', 'faq'), ('case_study', 'case_study'), ('product_page', 'product_page'), ('feature_page', 'feature_page'), ('landing_page', 'landing_page'), ('industry_page', 'industry_page'), ('linkedin_post', 'linkedin_post'), ('facebook_post', 'facebook_post'), ('instagram_post', 'instagram_post'), ('x_post', 'x_post'), ('newsletter', 'newsletter'), ('video_script', 'video_script'), ('page', 'page'), ('email', 'email'), ('social_post', 'social_post'), ('ad', 'ad'), ('other', 'other')])
     body = models.TextField(null=True, blank=True)
     language = models.TextField(default='fr')
     status = models.TextField(default='draft', choices=[('draft', 'draft'), ('review', 'review'), ('approved', 'approved'), ('published', 'published'), ('archived', 'archived')])
@@ -124,6 +124,24 @@ class GeneratedContent(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    keyword = models.TextField(null=True, blank=True)
+    campaign = models.TextField(null=True, blank=True)
+    objective = models.TextField(null=True, blank=True)
+    channel = models.TextField(null=True, blank=True)
+    domain = models.TextField(null=True, blank=True)
+    author_id = models.UUIDField(null=True, blank=True)
+    agent_code = models.TextField(null=True, blank=True)
+    prompt_template_code = models.TextField(null=True, blank=True)
+    prompt_version = models.TextField(null=True, blank=True)
+    model_code = models.TextField(null=True, blank=True)
+    provider_code = models.TextField(null=True, blank=True)
+    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    seo_score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    geo_score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    sources = models.JSONField(default=list)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    published_url = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -145,6 +163,10 @@ class ContentVersion(models.Model):
     change_note = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    source = models.TextField(default='manual', choices=[('ai', 'ai'), ('manual', 'manual'), ('restore', 'restore'), ('translation', 'translation'), ('optimization', 'optimization')])
+    model_code = models.TextField(null=True, blank=True)
+    prompt_version = models.TextField(null=True, blank=True)
+    author_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -201,7 +223,7 @@ class ContentMedia(models.Model):
 
 
 class ContentGenerationJob(models.Model):
-    """content_generation_jobs [log]"""
+    """content_generation_jobs [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -212,12 +234,13 @@ class ContentGenerationJob(models.Model):
     error_message = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
         db_table = 'content_generation_jobs'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
@@ -238,6 +261,9 @@ class ContentPublication(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    connector_account = models.ForeignKey('integrations.TenantConnectorAccount', on_delete=models.DO_NOTHING, db_column='connector_account_id', related_name='+', null=True, blank=True, db_constraint=False)
+    external_id = models.TextField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -269,4 +295,83 @@ class PublicationSchedule(models.Model):
         db_table = 'publication_schedules'
 
     TRACE_KIND = 'biz'
+    SECRET_FIELDS = ()
+
+
+class BuilderTemplate(models.Model):
+    """builder_templates [gbiz]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', null=True, blank=True, db_constraint=False)
+    name = models.TextField()
+    page_type = models.TextField()
+    sections = models.JSONField(default=list)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'builder_templates'
+
+    TRACE_KIND = 'gbiz'
+    SECRET_FIELDS = ()
+
+
+class BuilderPage(models.Model):
+    """builder_pages [biz]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    website = models.ForeignKey('websites.Website', on_delete=models.DO_NOTHING, db_column='website_id', related_name='+', null=True, blank=True, db_constraint=False)
+    template = models.ForeignKey('content.BuilderTemplate', on_delete=models.DO_NOTHING, db_column='template_id', related_name='+', null=True, blank=True, db_constraint=False)
+    page_type = models.TextField(choices=[('landing', 'landing'), ('product', 'product'), ('feature', 'feature'), ('comparison', 'comparison'), ('industry', 'industry'), ('seo', 'seo'), ('conversion', 'conversion')])
+    title = models.TextField()
+    slug = models.TextField()
+    sections = models.JSONField(default=list, help_text='[{type,props}] rendered server-side to HTML')
+    seo = models.JSONField(default=dict)
+    status = models.TextField(default='draft', choices=[('draft', 'draft'), ('review', 'review'), ('approved', 'approved'), ('published', 'published'), ('archived', 'archived')])
+    connector_account = models.ForeignKey('integrations.TenantConnectorAccount', on_delete=models.DO_NOTHING, db_column='connector_account_id', related_name='+', null=True, blank=True, db_constraint=False)
+    external_id = models.TextField(null=True, blank=True)
+    published_url = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'builder_pages'
+
+    TRACE_KIND = 'biz'
+    SECRET_FIELDS = ()
+
+
+class BuilderPageVersion(models.Model):
+    """builder_page_versions [log]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    page = models.ForeignKey('content.BuilderPage', on_delete=models.DO_NOTHING, db_column='page_id', related_name='+', db_constraint=False)
+    version = models.IntegerField()
+    title = models.TextField(null=True, blank=True)
+    sections = models.JSONField()
+    seo = models.JSONField(null=True, blank=True)
+    author_id = models.UUIDField(null=True, blank=True)
+    correlation_id = models.UUIDField(null=True, blank=True)
+    created_at = models.DateTimeField(default=_tz.now)
+
+    class Meta:
+        managed = False
+        db_table = 'builder_page_versions'
+
+    TRACE_KIND = 'log'
     SECRET_FIELDS = ()

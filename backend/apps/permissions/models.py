@@ -415,3 +415,82 @@ class TenantAgentSuspension(models.Model):
 
     TRACE_KIND = 'biz'
     SECRET_FIELDS = ()
+
+
+class PlatformActionCapability(models.Model):
+    """platform_action_capabilities [ref]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    module_code = models.TextField()
+    action_code = models.TextField()
+    max_mode = models.TextField(default='approval', choices=[('automatic', 'automatic'), ('approval', 'approval'), ('analysis', 'analysis'), ('disabled', 'disabled')])
+    description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+
+    class Meta:
+        managed = False
+        db_table = 'platform_action_capabilities'
+
+    TRACE_KIND = 'ref'
+    SECRET_FIELDS = ()
+
+
+class TenantGrowthPolicy(models.Model):
+    """tenant_growth_policies [conf]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    module_code = models.TextField()
+    action_code = models.TextField()
+    mode = models.TextField(default='approval', choices=[('automatic', 'automatic'), ('approval', 'approval'), ('analysis', 'analysis'), ('disabled', 'disabled')])
+    growth_mode = models.TextField(default='assisted', choices=[('assisted', 'assisted'), ('autonomous', 'autonomous'), ('hybrid', 'hybrid')])
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'tenant_growth_policies'
+
+    TRACE_KIND = 'conf'
+    SECRET_FIELDS = ()
+
+
+class ApprovalRequest(models.Model):
+    """approval_requests [biz]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    module_code = models.TextField()
+    action_code = models.TextField()
+    entity_type = models.TextField(null=True, blank=True)
+    entity_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    payload = models.JSONField(default=dict)
+    status = models.TextField(default='pending', choices=[('pending', 'pending'), ('approved', 'approved'), ('rejected', 'rejected'), ('expired', 'expired'), ('executed', 'executed'), ('failed', 'failed')])
+    requested_by = models.UUIDField(null=True, blank=True)
+    requested_by_agent = models.TextField(null=True, blank=True)
+    decided_by = models.UUIDField(null=True, blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_reason = models.TextField(null=True, blank=True)
+    execution_id = models.UUIDField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'approval_requests'
+
+    TRACE_KIND = 'biz'
+    SECRET_FIELDS = ()

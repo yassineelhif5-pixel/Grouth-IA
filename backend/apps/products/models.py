@@ -27,6 +27,16 @@ class Product(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product_type = models.TextField(default='saas', choices=[('saas', 'saas'), ('website', 'website'), ('ecommerce', 'ecommerce'), ('marketplace', 'marketplace'), ('app', 'app'), ('service', 'service'), ('other', 'other')])
+    url = models.TextField(null=True, blank=True)
+    languages = ArrayField(models.TextField(), null=True, blank=True)
+    target_countries = ArrayField(models.TextField(), null=True, blank=True)
+    markets = ArrayField(models.TextField(), null=True, blank=True)
+    industries = ArrayField(models.TextField(), null=True, blank=True)
+    features = models.JSONField(default=list)
+    pricing = models.JSONField(default=dict)
+    icp = models.JSONField(default=dict)
+    sales_channels = ArrayField(models.TextField(), null=True, blank=True)
 
     class Meta:
         managed = False
@@ -232,6 +242,8 @@ class ProductBusinessContext(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    facts = models.JSONField(default=list, help_text='[{field,value,status: detected|confirmed|hypothesis|missing,source,evidence}]')
+    last_analysis_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False

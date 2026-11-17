@@ -45,6 +45,9 @@ class GrowthIntelligenceInsight(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    rule_code = models.TextField(null=True, blank=True)
+    sources = models.JSONField(default=list)
+    nature = models.TextField(default='fact', choices=[('fact', 'fact'), ('hypothesis', 'hypothesis')])
 
     class Meta:
         managed = False
@@ -298,6 +301,16 @@ class GrowthRecommendation(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    rule_code = models.TextField(null=True, blank=True)
+    dedup_key = models.TextField(null=True, blank=True)
+    sources = models.JSONField(default=list)
+    justification = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    impact = models.TextField(null=True, blank=True)
+    difficulty = models.TextField(null=True, blank=True)
+    risks = models.JSONField(default=list)
+    actions = models.JSONField(default=list)
+    nature = models.TextField(default='recommendation', choices=[('fact', 'fact'), ('hypothesis', 'hypothesis'), ('recommendation', 'recommendation')])
 
     class Meta:
         managed = False

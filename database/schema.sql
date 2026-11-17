@@ -117,6 +117,24 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid
 );
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS full_name text,
+  ADD COLUMN IF NOT EXISTS avatar_url text,
+  ADD COLUMN IF NOT EXISTS locale text DEFAULT 'fr' NOT NULL CHECK (locale IN ('fr', 'en')),
+  ADD COLUMN IF NOT EXISTS theme text DEFAULT 'system' NOT NULL CHECK (theme IN ('light', 'dark', 'system')),
+  ADD COLUMN IF NOT EXISTS timezone text DEFAULT 'Europe/Paris' NOT NULL,
+  ADD COLUMN IF NOT EXISTS platform_role_code text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'suspended', 'disabled')),
+  ADD COLUMN IF NOT EXISTS email_verified_at timestamptz,
+  ADD COLUMN IF NOT EXISTS mfa_enabled boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS last_login_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -138,6 +156,23 @@ CREATE TABLE IF NOT EXISTS public.tenants (
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid
 );
+ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS slug text,
+  ADD COLUMN IF NOT EXISTS legal_name text,
+  ADD COLUMN IF NOT EXISTS country_code text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('provisioning', 'active', 'suspended', 'archived')),
+  ADD COLUMN IF NOT EXISTS suspended_reason text,
+  ADD COLUMN IF NOT EXISTS suspended_at timestamptz,
+  ADD COLUMN IF NOT EXISTS owner_user_id uuid,
+  ADD COLUMN IF NOT EXISTS is_demo boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_domains (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -156,6 +191,19 @@ CREATE TABLE IF NOT EXISTS public.tenant_domains (
   correlation_id uuid,
   CONSTRAINT tenant_domains_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_domains ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS domain text,
+  ADD COLUMN IF NOT EXISTS is_primary boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS verification_status text DEFAULT 'pending' NOT NULL CHECK (verification_status IN ('pending', 'verified', 'failed')),
+  ADD COLUMN IF NOT EXISTS verification_token text,
+  ADD COLUMN IF NOT EXISTS verified_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -172,6 +220,17 @@ CREATE TABLE IF NOT EXISTS public.tenant_settings (
   correlation_id uuid,
   CONSTRAINT tenant_settings_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_settings ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS key text,
+  ADD COLUMN IF NOT EXISTS value jsonb,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_owner_registry (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -182,6 +241,11 @@ CREATE TABLE IF NOT EXISTS public.tenant_owner_registry (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tenant_owner_registry_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_owner_registry ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS source text CHECK (source IN ('demo_signup', 'pilot_created', 'transfer')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_members (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -202,6 +266,21 @@ CREATE TABLE IF NOT EXISTS public.tenant_members (
   correlation_id uuid,
   CONSTRAINT tenant_members_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_members ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS display_name text,
+  ADD COLUMN IF NOT EXISTS job_title text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('invited', 'active', 'suspended', 'removed')),
+  ADD COLUMN IF NOT EXISTS joined_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS removed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_active_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.platform_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -212,6 +291,12 @@ CREATE TABLE IF NOT EXISTS public.platform_roles (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.platform_roles ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS is_system boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -223,6 +308,13 @@ CREATE TABLE IF NOT EXISTS public.tenant_roles (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.tenant_roles ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS is_system boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_memberships (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -241,6 +333,19 @@ CREATE TABLE IF NOT EXISTS public.tenant_memberships (
   correlation_id uuid,
   CONSTRAINT tenant_memberships_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_memberships ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS member_id uuid,
+  ADD COLUMN IF NOT EXISTS role_id uuid,
+  ADD COLUMN IF NOT EXISTS valid_from timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS valid_until timestamptz,
+  ADD COLUMN IF NOT EXISTS granted_reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_member_activity_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -253,6 +358,13 @@ CREATE TABLE IF NOT EXISTS public.tenant_member_activity_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tenant_member_activity_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_member_activity_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS member_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS activity text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -264,6 +376,13 @@ CREATE TABLE IF NOT EXISTS public.permissions (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.permissions ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS module_code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS scope text DEFAULT 'tenant' NOT NULL CHECK (scope IN ('platform', 'tenant')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.role_permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -273,6 +392,11 @@ CREATE TABLE IF NOT EXISTS public.role_permissions (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.role_permissions ADD COLUMN IF NOT EXISTS role_id uuid,
+  ADD COLUMN IF NOT EXISTS permission_id uuid,
+  ADD COLUMN IF NOT EXISTS platform_role_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.user_permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -291,6 +415,19 @@ CREATE TABLE IF NOT EXISTS public.user_permissions (
   correlation_id uuid,
   CONSTRAINT user_permissions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.user_permissions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS member_id uuid,
+  ADD COLUMN IF NOT EXISTS permission_id uuid,
+  ADD COLUMN IF NOT EXISTS effect text DEFAULT 'allow' NOT NULL CHECK (effect IN ('allow', 'deny')),
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.user_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -306,6 +443,17 @@ CREATE TABLE IF NOT EXISTS public.user_sessions (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.user_sessions ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS supabase_session_id uuid,
+  ADD COLUMN IF NOT EXISTS ip_address inet,
+  ADD COLUMN IF NOT EXISTS user_agent text,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS last_seen_at timestamptz,
+  ADD COLUMN IF NOT EXISTS revoked_at timestamptz,
+  ADD COLUMN IF NOT EXISTS revoked_reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.identity_providers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -316,6 +464,12 @@ CREATE TABLE IF NOT EXISTS public.identity_providers (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.identity_providers ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS protocol text CHECK (protocol IN ('saml', 'oidc', 'oauth')),
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_sso_configurations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -337,6 +491,22 @@ CREATE TABLE IF NOT EXISTS public.tenant_sso_configurations (
   correlation_id uuid,
   CONSTRAINT tenant_sso_configurations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_sso_configurations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS identity_provider_id uuid,
+  ADD COLUMN IF NOT EXISTS supabase_sso_provider_id uuid,
+  ADD COLUMN IF NOT EXISTS metadata_url text,
+  ADD COLUMN IF NOT EXISTS entity_id text,
+  ADD COLUMN IF NOT EXISTS client_id text,
+  ADD COLUMN IF NOT EXISTS client_secret_ref text,
+  ADD COLUMN IF NOT EXISTS enforce_sso boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'active', 'disabled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_sso_group_mappings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -353,6 +523,17 @@ CREATE TABLE IF NOT EXISTS public.tenant_sso_group_mappings (
   correlation_id uuid,
   CONSTRAINT tenant_sso_group_mappings_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_sso_group_mappings ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS sso_configuration_id uuid,
+  ADD COLUMN IF NOT EXISTS external_group text,
+  ADD COLUMN IF NOT EXISTS role_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_invitations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -375,6 +556,23 @@ CREATE TABLE IF NOT EXISTS public.tenant_invitations (
   correlation_id uuid,
   CONSTRAINT tenant_invitations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_invitations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS role_id uuid,
+  ADD COLUMN IF NOT EXISTS invited_by uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'accepted', 'revoked', 'expired')),
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS accepted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS accepted_user_id uuid,
+  ADD COLUMN IF NOT EXISTS revoked_at timestamptz,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.invitation_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -385,6 +583,12 @@ CREATE TABLE IF NOT EXISTS public.invitation_tokens (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.invitation_tokens ADD COLUMN IF NOT EXISTS invitation_id uuid,
+  ADD COLUMN IF NOT EXISTS token_hash text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS used_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_invitation_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -397,6 +601,13 @@ CREATE TABLE IF NOT EXISTS public.tenant_invitation_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tenant_invitation_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_invitation_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS invitation_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text CHECK (event_type IN ('created', 'sent', 'resent', 'opened', 'accepted', 'revoked', 'expired', 'failed')),
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.subscription_plans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -413,6 +624,18 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.subscription_plans ADD COLUMN IF NOT EXISTS code text CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE')),
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS is_trial boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS trial_duration_hours integer,
+  ADD COLUMN IF NOT EXISTS price_monthly_cents integer,
+  ADD COLUMN IF NOT EXISTS price_yearly_cents integer,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR' NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.subscription_plan_features (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -422,6 +645,11 @@ CREATE TABLE IF NOT EXISTS public.subscription_plan_features (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.subscription_plan_features ADD COLUMN IF NOT EXISTS plan_id uuid,
+  ADD COLUMN IF NOT EXISTS feature_id uuid,
+  ADD COLUMN IF NOT EXISTS enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.subscription_plan_quotas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -432,6 +660,12 @@ CREATE TABLE IF NOT EXISTS public.subscription_plan_quotas (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.subscription_plan_quotas ADD COLUMN IF NOT EXISTS plan_id uuid,
+  ADD COLUMN IF NOT EXISTS quota_code text,
+  ADD COLUMN IF NOT EXISTS limit_value bigint,
+  ADD COLUMN IF NOT EXISTS period text DEFAULT 'none' NOT NULL CHECK (period IN ('none', 'day', 'month', 'year')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -454,6 +688,23 @@ CREATE TABLE IF NOT EXISTS public.tenant_subscriptions (
   correlation_id uuid,
   CONSTRAINT tenant_subscriptions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_subscriptions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS plan_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('trialing', 'active', 'past_due', 'suspended', 'cancelled', 'expired')),
+  ADD COLUMN IF NOT EXISTS started_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS current_period_start timestamptz,
+  ADD COLUMN IF NOT EXISTS current_period_end timestamptz,
+  ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz,
+  ADD COLUMN IF NOT EXISTS cancelled_at timestamptz,
+  ADD COLUMN IF NOT EXISTS external_customer_id text,
+  ADD COLUMN IF NOT EXISTS external_subscription_id text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_license_overrides (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -473,6 +724,20 @@ CREATE TABLE IF NOT EXISTS public.tenant_license_overrides (
   correlation_id uuid,
   CONSTRAINT tenant_license_overrides_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_license_overrides ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS subscription_id uuid,
+  ADD COLUMN IF NOT EXISTS override_type text CHECK (override_type IN ('feature', 'quota', 'module', 'agent')),
+  ADD COLUMN IF NOT EXISTS target_code text,
+  ADD COLUMN IF NOT EXISTS value jsonb,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_license_feature_access (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -489,6 +754,17 @@ CREATE TABLE IF NOT EXISTS public.tenant_license_feature_access (
   correlation_id uuid,
   CONSTRAINT tenant_license_feature_access_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_license_feature_access ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS feature_id uuid,
+  ADD COLUMN IF NOT EXISTS enabled boolean,
+  ADD COLUMN IF NOT EXISTS source text CHECK (source IN ('plan', 'override', 'trial')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_license_quotas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -508,6 +784,20 @@ CREATE TABLE IF NOT EXISTS public.tenant_license_quotas (
   correlation_id uuid,
   CONSTRAINT tenant_license_quotas_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_license_quotas ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS quota_code text,
+  ADD COLUMN IF NOT EXISTS limit_value bigint,
+  ADD COLUMN IF NOT EXISTS period text DEFAULT 'none' NOT NULL CHECK (period IN ('none', 'day', 'month', 'year')),
+  ADD COLUMN IF NOT EXISTS used_value bigint DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS period_start timestamptz,
+  ADD COLUMN IF NOT EXISTS source text CHECK (source IN ('plan', 'override', 'trial')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_subscription_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -522,6 +812,15 @@ CREATE TABLE IF NOT EXISTS public.tenant_subscription_history (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tenant_subscription_history_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_subscription_history ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS subscription_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text CHECK (event_type IN ('created', 'upgraded', 'downgraded', 'renewed', 'suspended', 'reactivated', 'cancelled', 'expired', 'trial_extended')),
+  ADD COLUMN IF NOT EXISTS from_plan_id uuid,
+  ADD COLUMN IF NOT EXISTS to_plan_id uuid,
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.subscription_invoices (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -545,6 +844,24 @@ CREATE TABLE IF NOT EXISTS public.subscription_invoices (
   correlation_id uuid,
   CONSTRAINT subscription_invoices_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.subscription_invoices ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS subscription_id uuid,
+  ADD COLUMN IF NOT EXISTS number text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'open', 'paid', 'void', 'uncollectible')),
+  ADD COLUMN IF NOT EXISTS amount_cents integer,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR' NOT NULL,
+  ADD COLUMN IF NOT EXISTS issued_at timestamptz,
+  ADD COLUMN IF NOT EXISTS due_at timestamptz,
+  ADD COLUMN IF NOT EXISTS paid_at timestamptz,
+  ADD COLUMN IF NOT EXISTS pdf_storage_path text,
+  ADD COLUMN IF NOT EXISTS external_invoice_id text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.subscription_payments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -565,6 +882,21 @@ CREATE TABLE IF NOT EXISTS public.subscription_payments (
   correlation_id uuid,
   CONSTRAINT subscription_payments_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.subscription_payments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS invoice_id uuid,
+  ADD COLUMN IF NOT EXISTS amount_cents integer,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded')),
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS external_payment_id text,
+  ADD COLUMN IF NOT EXISTS paid_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.subscription_payment_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -578,6 +910,14 @@ CREATE TABLE IF NOT EXISTS public.subscription_payment_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT subscription_payment_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.subscription_payment_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS payment_id uuid,
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS payload jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.subscription_usage (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -595,6 +935,18 @@ CREATE TABLE IF NOT EXISTS public.subscription_usage (
   correlation_id uuid,
   CONSTRAINT subscription_usage_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.subscription_usage ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS quota_code text,
+  ADD COLUMN IF NOT EXISTS period_start timestamptz,
+  ADD COLUMN IF NOT EXISTS period_end timestamptz,
+  ADD COLUMN IF NOT EXISTS used_value bigint DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.subscription_usage_alerts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -607,6 +959,13 @@ CREATE TABLE IF NOT EXISTS public.subscription_usage_alerts (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT subscription_usage_alerts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.subscription_usage_alerts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS quota_code text,
+  ADD COLUMN IF NOT EXISTS threshold_pct integer CHECK (threshold_pct IN (50, 80, 90, 100)),
+  ADD COLUMN IF NOT EXISTS triggered_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS notified boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.trial_activations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -625,6 +984,19 @@ CREATE TABLE IF NOT EXISTS public.trial_activations (
   correlation_id uuid,
   CONSTRAINT trial_activations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.trial_activations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS plan_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS activated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'converted', 'expired', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.trial_conversion_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -636,6 +1008,12 @@ CREATE TABLE IF NOT EXISTS public.trial_conversion_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT trial_conversion_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.trial_conversion_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS trial_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text CHECK (event_type IN ('converted', 'expired', 'cancelled', 'reminder_sent')),
+  ADD COLUMN IF NOT EXISTS to_plan_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.trial_notification_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -649,6 +1027,14 @@ CREATE TABLE IF NOT EXISTS public.trial_notification_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT trial_notification_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.trial_notification_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS trial_id uuid,
+  ADD COLUMN IF NOT EXISTS channel text CHECK (channel IN ('email', 'in_app')),
+  ADD COLUMN IF NOT EXISTS template_code text,
+  ADD COLUMN IF NOT EXISTS sent_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('sent', 'failed')),
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_trial_extensions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -663,6 +1049,15 @@ CREATE TABLE IF NOT EXISTS public.tenant_trial_extensions (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tenant_trial_extensions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_trial_extensions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS trial_id uuid,
+  ADD COLUMN IF NOT EXISTS extended_by_hours integer,
+  ADD COLUMN IF NOT EXISTS previous_expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS new_expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS granted_by uuid,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.platform_modules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -676,6 +1071,15 @@ CREATE TABLE IF NOT EXISTS public.platform_modules (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.platform_modules ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS is_core boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.platform_module_features (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -686,6 +1090,12 @@ CREATE TABLE IF NOT EXISTS public.platform_module_features (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.platform_module_features ADD COLUMN IF NOT EXISTS module_id uuid,
+  ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_module_authorizations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -704,6 +1114,19 @@ CREATE TABLE IF NOT EXISTS public.tenant_module_authorizations (
   correlation_id uuid,
   CONSTRAINT tenant_module_authorizations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_module_authorizations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS module_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'enabled' NOT NULL CHECK (status IN ('enabled', 'disabled', 'suspended')),
+  ADD COLUMN IF NOT EXISTS granted_by uuid,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_feature_authorizations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -721,6 +1144,18 @@ CREATE TABLE IF NOT EXISTS public.tenant_feature_authorizations (
   correlation_id uuid,
   CONSTRAINT tenant_feature_authorizations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_feature_authorizations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS feature_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'enabled' NOT NULL CHECK (status IN ('enabled', 'disabled')),
+  ADD COLUMN IF NOT EXISTS granted_by uuid,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.ai_agents_registry (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -738,6 +1173,19 @@ CREATE TABLE IF NOT EXISTS public.ai_agents_registry (
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid
 );
+ALTER TABLE public.ai_agents_registry ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS module_id uuid,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS default_model_code text,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_ai_agent_authorizations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -755,6 +1203,18 @@ CREATE TABLE IF NOT EXISTS public.tenant_ai_agent_authorizations (
   correlation_id uuid,
   CONSTRAINT tenant_ai_agent_authorizations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_ai_agent_authorizations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'enabled' NOT NULL CHECK (status IN ('enabled', 'disabled', 'suspended')),
+  ADD COLUMN IF NOT EXISTS granted_by uuid,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_agent_permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -772,6 +1232,18 @@ CREATE TABLE IF NOT EXISTS public.tenant_agent_permissions (
   correlation_id uuid,
   CONSTRAINT tenant_agent_permissions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_agent_permissions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_id uuid,
+  ADD COLUMN IF NOT EXISTS action_code text,
+  ADD COLUMN IF NOT EXISTS effect text DEFAULT 'allow' NOT NULL CHECK (effect IN ('allow', 'deny')),
+  ADD COLUMN IF NOT EXISTS requires_approval boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_agent_product_scopes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -787,6 +1259,16 @@ CREATE TABLE IF NOT EXISTS public.tenant_agent_product_scopes (
   correlation_id uuid,
   CONSTRAINT tenant_agent_product_scopes_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_agent_product_scopes ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_agent_quotas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -805,6 +1287,19 @@ CREATE TABLE IF NOT EXISTS public.tenant_agent_quotas (
   correlation_id uuid,
   CONSTRAINT tenant_agent_quotas_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_agent_quotas ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_id uuid,
+  ADD COLUMN IF NOT EXISTS quota_code text,
+  ADD COLUMN IF NOT EXISTS limit_value bigint,
+  ADD COLUMN IF NOT EXISTS period text DEFAULT 'month' NOT NULL CHECK (period IN ('none', 'day', 'month', 'year')),
+  ADD COLUMN IF NOT EXISTS used_value bigint DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_ai_budgets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -823,6 +1318,19 @@ CREATE TABLE IF NOT EXISTS public.tenant_ai_budgets (
   correlation_id uuid,
   CONSTRAINT tenant_ai_budgets_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_ai_budgets ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS period text DEFAULT 'month' NOT NULL CHECK (period IN ('day', 'month', 'year')),
+  ADD COLUMN IF NOT EXISTS budget_cents bigint,
+  ADD COLUMN IF NOT EXISTS spent_cents bigint DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS hard_limit boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS alert_threshold_pct integer DEFAULT 80 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_usage_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -838,6 +1346,16 @@ CREATE TABLE IF NOT EXISTS public.tenant_usage_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tenant_usage_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_usage_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS module_code text,
+  ADD COLUMN IF NOT EXISTS usage_code text,
+  ADD COLUMN IF NOT EXISTS quantity numeric DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS unit text,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.authorization_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -852,6 +1370,16 @@ CREATE TABLE IF NOT EXISTS public.authorization_audit_logs (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.authorization_audit_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS target_type text CHECK (target_type IN ('module', 'feature', 'agent', 'quota', 'permission', 'role', 'connector')),
+  ADD COLUMN IF NOT EXISTS target_id uuid,
+  ADD COLUMN IF NOT EXISTS action text CHECK (action IN ('grant', 'revoke', 'suspend', 'resume', 'update')),
+  ADD COLUMN IF NOT EXISTS before_data jsonb,
+  ADD COLUMN IF NOT EXISTS after_data jsonb,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_license_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -873,6 +1401,22 @@ CREATE TABLE IF NOT EXISTS public.tenant_license_requests (
   correlation_id uuid,
   CONSTRAINT tenant_license_requests_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_license_requests ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS requested_by uuid,
+  ADD COLUMN IF NOT EXISTS request_type text CHECK (request_type IN ('module', 'feature', 'agent', 'quota', 'plan_upgrade')),
+  ADD COLUMN IF NOT EXISTS target_code text,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS decided_by uuid,
+  ADD COLUMN IF NOT EXISTS decided_at timestamptz,
+  ADD COLUMN IF NOT EXISTS decision_reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_agent_suspensions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -892,18 +1436,46 @@ CREATE TABLE IF NOT EXISTS public.tenant_agent_suspensions (
   correlation_id uuid,
   CONSTRAINT tenant_agent_suspensions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_agent_suspensions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_id uuid,
+  ADD COLUMN IF NOT EXISTS suspended_by uuid,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS suspended_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS lifted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS lifted_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.connector_providers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text NOT NULL,
   name text NOT NULL,
-  category text NOT NULL CHECK (category IN ('analytics', 'crm', 'email', 'social', 'seo', 'cms', 'ads', 'storage', 'ai', 'other')),
-  auth_type text NOT NULL CHECK (auth_type IN ('oauth2', 'api_key', 'basic', 'none', 'webhook')),
+  category text NOT NULL CHECK (category IN ('analytics', 'crm', 'email', 'social', 'seo', 'cms', 'ads', 'storage', 'ai', 'messaging', 'payments', 'video', 'other')),
+  auth_type text NOT NULL CHECK (auth_type IN ('oauth2', 'api_key', 'basic', 'none', 'webhook', 'smtp', 'imap', 'app_password')),
   docs_url text,
   is_enabled boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  capabilities text[],
+  docs_status text NOT NULL DEFAULT 'available' CHECK (docs_status IN ('available', 'pending_approval', 'not_implemented'))
 );
+ALTER TABLE public.connector_providers ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS auth_type text,
+  ADD COLUMN IF NOT EXISTS docs_url text,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS capabilities text[],
+  ADD COLUMN IF NOT EXISTS docs_status text DEFAULT 'available' NOT NULL CHECK (docs_status IN ('available', 'pending_approval', 'not_implemented'));
+ALTER TABLE public.connector_providers DROP CONSTRAINT IF EXISTS connector_providers_category_check, ADD CONSTRAINT connector_providers_category_check CHECK (category IN ('analytics', 'crm', 'email', 'social', 'seo', 'cms', 'ads', 'storage', 'ai', 'messaging', 'payments', 'video', 'other'));
+ALTER TABLE public.connector_providers DROP CONSTRAINT IF EXISTS connector_providers_auth_type_check, ADD CONSTRAINT connector_providers_auth_type_check CHECK (auth_type IN ('oauth2', 'api_key', 'basic', 'none', 'webhook', 'smtp', 'imap', 'app_password'));
 
 CREATE TABLE IF NOT EXISTS public.connector_capabilities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -914,6 +1486,12 @@ CREATE TABLE IF NOT EXISTS public.connector_capabilities (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.connector_capabilities ADD COLUMN IF NOT EXISTS provider_id uuid,
+  ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS direction text CHECK (direction IN ('read', 'write', 'bidirectional', 'webhook')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.connector_global_configurations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -929,8 +1507,23 @@ CREATE TABLE IF NOT EXISTS public.connector_global_configurations (
   updated_by uuid,
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
-  correlation_id uuid
+  correlation_id uuid,
+  client_secret_ciphertext text
 );
+ALTER TABLE public.connector_global_configurations ADD COLUMN IF NOT EXISTS provider_id uuid,
+  ADD COLUMN IF NOT EXISTS client_id text,
+  ADD COLUMN IF NOT EXISTS client_secret_ref text,
+  ADD COLUMN IF NOT EXISTS redirect_uri text,
+  ADD COLUMN IF NOT EXISTS settings jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS client_secret_ciphertext text;
 
 CREATE TABLE IF NOT EXISTS public.tenant_connector_authorizations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -948,6 +1541,18 @@ CREATE TABLE IF NOT EXISTS public.tenant_connector_authorizations (
   correlation_id uuid,
   CONSTRAINT tenant_connector_authorizations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_connector_authorizations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS provider_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'enabled' NOT NULL CHECK (status IN ('enabled', 'disabled', 'suspended')),
+  ADD COLUMN IF NOT EXISTS granted_by uuid,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.tenant_connector_accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -956,7 +1561,7 @@ CREATE TABLE IF NOT EXISTS public.tenant_connector_accounts (
   product_id uuid,
   external_account_id text,
   display_name text NOT NULL,
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'connected', 'error', 'disconnected', 'revoked')),
+  status text NOT NULL DEFAULT 'configured' CHECK (status IN ('pending', 'not_configured', 'configured', 'authorized', 'connected', 'tested', 'degraded', 'expired', 'failed', 'pending_approval', 'error', 'disconnected', 'revoked')),
   connected_by uuid,
   connected_at timestamptz,
   last_sync_at timestamptz,
@@ -967,8 +1572,36 @@ CREATE TABLE IF NOT EXISTS public.tenant_connector_accounts (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  settings jsonb NOT NULL DEFAULT '{}',
+  last_test_at timestamptz,
+  last_test_status text,
+  last_error text,
+  expires_at timestamptz,
   CONSTRAINT tenant_connector_accounts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_connector_accounts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS provider_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS external_account_id text,
+  ADD COLUMN IF NOT EXISTS display_name text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'configured' NOT NULL,
+  ADD COLUMN IF NOT EXISTS connected_by uuid,
+  ADD COLUMN IF NOT EXISTS connected_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_sync_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS settings jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS last_test_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_test_status text,
+  ADD COLUMN IF NOT EXISTS last_error text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+ALTER TABLE public.tenant_connector_accounts DROP CONSTRAINT IF EXISTS tenant_connector_accounts_status_check, ADD CONSTRAINT tenant_connector_accounts_status_check CHECK (status IN ('pending', 'not_configured', 'configured', 'authorized', 'connected', 'tested', 'degraded', 'expired', 'failed', 'pending_approval', 'error', 'disconnected', 'revoked'));
+ALTER TABLE public.tenant_connector_accounts ALTER COLUMN status SET DEFAULT 'configured';
 
 CREATE TABLE IF NOT EXISTS public.tenant_connector_credentials (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -986,8 +1619,24 @@ CREATE TABLE IF NOT EXISTS public.tenant_connector_credentials (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  ciphertext text,
   CONSTRAINT tenant_connector_credentials_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_connector_credentials ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS credential_type text CHECK (credential_type IN ('oauth_token', 'api_key', 'basic', 'webhook_secret')),
+  ADD COLUMN IF NOT EXISTS vault_secret_id uuid,
+  ADD COLUMN IF NOT EXISTS masked_hint text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS rotated_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS ciphertext text;
 
 CREATE TABLE IF NOT EXISTS public.tenant_connector_scopes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1004,6 +1653,17 @@ CREATE TABLE IF NOT EXISTS public.tenant_connector_scopes (
   correlation_id uuid,
   CONSTRAINT tenant_connector_scopes_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_connector_scopes ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS scope text,
+  ADD COLUMN IF NOT EXISTS granted boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.connector_health_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1017,6 +1677,14 @@ CREATE TABLE IF NOT EXISTS public.connector_health_checks (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT connector_health_checks_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.connector_health_checks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('healthy', 'degraded', 'down', 'not_configured', 'unknown')),
+  ADD COLUMN IF NOT EXISTS latency_ms integer,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS checked_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.connector_sync_runs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1031,8 +1699,21 @@ CREATE TABLE IF NOT EXISTS public.connector_sync_runs (
   error_message text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT connector_sync_runs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.connector_sync_runs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS records_read integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS records_written integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.connector_error_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1046,6 +1727,14 @@ CREATE TABLE IF NOT EXISTS public.connector_error_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT connector_error_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.connector_error_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS sync_run_id uuid,
+  ADD COLUMN IF NOT EXISTS error_code text,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.connector_webhooks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1064,6 +1753,19 @@ CREATE TABLE IF NOT EXISTS public.connector_webhooks (
   correlation_id uuid,
   CONSTRAINT connector_webhooks_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.connector_webhooks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS endpoint_path text,
+  ADD COLUMN IF NOT EXISTS secret_ref text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'disabled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.connector_usage_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1076,6 +1778,13 @@ CREATE TABLE IF NOT EXISTS public.connector_usage_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT connector_usage_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.connector_usage_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS operation text,
+  ADD COLUMN IF NOT EXISTS quantity integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.connector_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1088,6 +1797,13 @@ CREATE TABLE IF NOT EXISTS public.connector_audit_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT connector_audit_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.connector_audit_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS action text CHECK (action IN ('connect', 'disconnect', 'reauthorize', 'rotate_secret', 'update_scopes', 'authorize', 'revoke')),
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1106,8 +1822,43 @@ CREATE TABLE IF NOT EXISTS public.products (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_type text NOT NULL DEFAULT 'saas' CHECK (product_type IN ('saas', 'website', 'ecommerce', 'marketplace', 'app', 'service', 'other')),
+  url text,
+  languages text[],
+  target_countries text[],
+  markets text[],
+  industries text[],
+  features jsonb NOT NULL DEFAULT '[]',
+  pricing jsonb NOT NULL DEFAULT '{}',
+  icp jsonb NOT NULL DEFAULT '{}',
+  sales_channels text[],
   CONSTRAINT products_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS slug text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('draft', 'active', 'paused', 'archived')),
+  ADD COLUMN IF NOT EXISTS primary_domain text,
+  ADD COLUMN IF NOT EXISTS logo_storage_path text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_type text DEFAULT 'saas' NOT NULL CHECK (product_type IN ('saas', 'website', 'ecommerce', 'marketplace', 'app', 'service', 'other')),
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS languages text[],
+  ADD COLUMN IF NOT EXISTS target_countries text[],
+  ADD COLUMN IF NOT EXISTS markets text[],
+  ADD COLUMN IF NOT EXISTS industries text[],
+  ADD COLUMN IF NOT EXISTS features jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS pricing jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS icp jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS sales_channels text[];
 
 CREATE TABLE IF NOT EXISTS public.product_domains (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1124,6 +1875,17 @@ CREATE TABLE IF NOT EXISTS public.product_domains (
   correlation_id uuid,
   CONSTRAINT product_domains_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_domains ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS domain text,
+  ADD COLUMN IF NOT EXISTS is_primary boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.product_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1140,6 +1902,17 @@ CREATE TABLE IF NOT EXISTS public.product_settings (
   correlation_id uuid,
   CONSTRAINT product_settings_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_settings ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS key text,
+  ADD COLUMN IF NOT EXISTS value jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.product_goals (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1160,6 +1933,21 @@ CREATE TABLE IF NOT EXISTS public.product_goals (
   correlation_id uuid,
   CONSTRAINT product_goals_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_goals ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS goal_type text CHECK (goal_type IN ('traffic', 'leads', 'revenue', 'visibility', 'engagement', 'other')),
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS target_value numeric,
+  ADD COLUMN IF NOT EXISTS unit text,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'achieved', 'abandoned')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.product_audiences (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1177,6 +1965,18 @@ CREATE TABLE IF NOT EXISTS public.product_audiences (
   correlation_id uuid,
   CONSTRAINT product_audiences_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_audiences ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS attributes jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.product_personas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1197,6 +1997,21 @@ CREATE TABLE IF NOT EXISTS public.product_personas (
   correlation_id uuid,
   CONSTRAINT product_personas_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_personas ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS audience_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS role text,
+  ADD COLUMN IF NOT EXISTS pains text[],
+  ADD COLUMN IF NOT EXISTS goals text[],
+  ADD COLUMN IF NOT EXISTS profile jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.product_competitors (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1214,6 +2029,18 @@ CREATE TABLE IF NOT EXISTS public.product_competitors (
   correlation_id uuid,
   CONSTRAINT product_competitors_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_competitors ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS website_url text,
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.product_integrations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1230,6 +2057,17 @@ CREATE TABLE IF NOT EXISTS public.product_integrations (
   correlation_id uuid,
   CONSTRAINT product_integrations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_integrations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS purpose text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.product_business_context (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1247,8 +2085,26 @@ CREATE TABLE IF NOT EXISTS public.product_business_context (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  facts jsonb NOT NULL DEFAULT '[]',
+  last_analysis_at timestamptz,
   CONSTRAINT product_business_context_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_business_context ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS value_proposition text,
+  ADD COLUMN IF NOT EXISTS positioning text,
+  ADD COLUMN IF NOT EXISTS pricing_model text,
+  ADD COLUMN IF NOT EXISTS key_messages text[],
+  ADD COLUMN IF NOT EXISTS context jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS facts jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS last_analysis_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS public.product_business_context_sources (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1267,6 +2123,19 @@ CREATE TABLE IF NOT EXISTS public.product_business_context_sources (
   correlation_id uuid,
   CONSTRAINT product_business_context_sources_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.product_business_context_sources ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS context_id uuid,
+  ADD COLUMN IF NOT EXISTS source_type text CHECK (source_type IN ('website', 'document', 'manual', 'connector', 'ai_extraction')),
+  ADD COLUMN IF NOT EXISTS source_ref text,
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS extracted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.websites (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1285,6 +2154,19 @@ CREATE TABLE IF NOT EXISTS public.websites (
   correlation_id uuid,
   CONSTRAINT websites_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.websites ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS cms text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.website_pages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1306,6 +2188,22 @@ CREATE TABLE IF NOT EXISTS public.website_pages (
   correlation_id uuid,
   CONSTRAINT website_pages_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.website_pages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS path text,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS meta_description text,
+  ADD COLUMN IF NOT EXISTS status_code integer,
+  ADD COLUMN IF NOT EXISTS content_hash text,
+  ADD COLUMN IF NOT EXISTS last_crawled_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.website_technologies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1324,6 +2222,19 @@ CREATE TABLE IF NOT EXISTS public.website_technologies (
   correlation_id uuid,
   CONSTRAINT website_technologies_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.website_technologies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS version text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.website_scans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1338,8 +2249,21 @@ CREATE TABLE IF NOT EXISTS public.website_scans (
   requested_by uuid,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT website_scans_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.website_scans ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS scan_type text CHECK (scan_type IN ('crawl', 'technology', 'performance', 'security', 'full')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'queued' NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS pages_scanned integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS requested_by uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.website_scan_results (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1353,6 +2277,14 @@ CREATE TABLE IF NOT EXISTS public.website_scan_results (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT website_scan_results_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.website_scan_results ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS scan_id uuid,
+  ADD COLUMN IF NOT EXISTS page_id uuid,
+  ADD COLUMN IF NOT EXISTS result_type text,
+  ADD COLUMN IF NOT EXISTS severity text CHECK (severity IN ('info', 'low', 'medium', 'high', 'critical')),
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.tenant_schedulers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1369,8 +2301,43 @@ CREATE TABLE IF NOT EXISTS public.tenant_schedulers (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  category text NOT NULL DEFAULT 'reporting' CHECK (category IN ('seo', 'geo', 'articles', 'pages', 'social', 'videos', 'opportunities', 'social_monitoring', 'prospects', 'crm', 'reporting', 'intelligence', 'agents')),
+  frequency_type text NOT NULL DEFAULT 'daily' CHECK (frequency_type IN ('hourly', 'every_x_hours', 'daily', 'weekly', 'monthly', 'cron', 'event', 'conditional')),
+  frequency_value text,
+  params jsonb NOT NULL DEFAULT '{}',
+  agent_code text,
+  mode text NOT NULL DEFAULT 'approval' CHECK (mode IN ('automatic', 'approval', 'analysis')),
+  budget_cents bigint,
+  quota_limit integer,
+  next_run_at timestamptz,
+  last_run_at timestamptz,
+  last_status text,
   CONSTRAINT tenant_schedulers_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_schedulers ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS timezone text DEFAULT 'UTC' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused', 'disabled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS category text DEFAULT 'reporting' NOT NULL CHECK (category IN ('seo', 'geo', 'articles', 'pages', 'social', 'videos', 'opportunities', 'social_monitoring', 'prospects', 'crm', 'reporting', 'intelligence', 'agents')),
+  ADD COLUMN IF NOT EXISTS frequency_type text DEFAULT 'daily' NOT NULL CHECK (frequency_type IN ('hourly', 'every_x_hours', 'daily', 'weekly', 'monthly', 'cron', 'event', 'conditional')),
+  ADD COLUMN IF NOT EXISTS frequency_value text,
+  ADD COLUMN IF NOT EXISTS params jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS agent_code text,
+  ADD COLUMN IF NOT EXISTS mode text DEFAULT 'approval' NOT NULL CHECK (mode IN ('automatic', 'approval', 'analysis')),
+  ADD COLUMN IF NOT EXISTS budget_cents bigint,
+  ADD COLUMN IF NOT EXISTS quota_limit integer,
+  ADD COLUMN IF NOT EXISTS next_run_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_run_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_status text;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_retry_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1383,6 +2350,14 @@ CREATE TABLE IF NOT EXISTS public.scheduler_retry_policies (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.scheduler_retry_policies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS max_attempts integer DEFAULT 3 NOT NULL,
+  ADD COLUMN IF NOT EXISTS backoff_seconds integer DEFAULT 60 NOT NULL,
+  ADD COLUMN IF NOT EXISTS backoff_multiplier numeric DEFAULT 2 NOT NULL,
+  ADD COLUMN IF NOT EXISTS max_backoff_seconds integer DEFAULT 3600 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_tasks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1406,6 +2381,24 @@ CREATE TABLE IF NOT EXISTS public.scheduler_tasks (
   correlation_id uuid,
   CONSTRAINT scheduler_tasks_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_tasks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS scheduler_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS task_type text,
+  ADD COLUMN IF NOT EXISTS cron_expression text,
+  ADD COLUMN IF NOT EXISTS interval_seconds integer,
+  ADD COLUMN IF NOT EXISTS payload jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS retry_policy_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused', 'disabled')),
+  ADD COLUMN IF NOT EXISTS next_run_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_run_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_task_dependencies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1422,11 +2415,22 @@ CREATE TABLE IF NOT EXISTS public.scheduler_task_dependencies (
   correlation_id uuid,
   CONSTRAINT scheduler_task_dependencies_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_task_dependencies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS task_id uuid,
+  ADD COLUMN IF NOT EXISTS depends_on_task_id uuid,
+  ADD COLUMN IF NOT EXISTS condition text DEFAULT 'success' NOT NULL CHECK (condition IN ('success', 'completion', 'failure')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_execution_runs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
-  task_id uuid NOT NULL,
+  task_id uuid,
   execution_id uuid NOT NULL,
   celery_task_id text,
   status text NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'retrying', 'dead_letter')),
@@ -1438,8 +2442,30 @@ CREATE TABLE IF NOT EXISTS public.scheduler_execution_runs (
   triggered_by text NOT NULL DEFAULT 'schedule' CHECK (triggered_by IN ('schedule', 'manual', 'dependency', 'retry')),
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  scheduler_id uuid,
+  cost_cents numeric,
+  result jsonb,
   CONSTRAINT scheduler_execution_runs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_execution_runs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS task_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS celery_task_id text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'retrying', 'dead_letter')),
+  ADD COLUMN IF NOT EXISTS attempt integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS triggered_by text DEFAULT 'schedule' NOT NULL CHECK (triggered_by IN ('schedule', 'manual', 'dependency', 'retry')),
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS scheduler_id uuid,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS result jsonb;
+ALTER TABLE public.scheduler_execution_runs ALTER COLUMN task_id DROP NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_execution_steps (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1452,8 +2478,19 @@ CREATE TABLE IF NOT EXISTS public.scheduler_execution_steps (
   output_summary jsonb,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT scheduler_execution_steps_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_execution_steps ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS run_id uuid,
+  ADD COLUMN IF NOT EXISTS step_name text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('pending', 'running', 'succeeded', 'failed', 'skipped')),
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS output_summary jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_execution_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1465,6 +2502,12 @@ CREATE TABLE IF NOT EXISTS public.scheduler_execution_metrics (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT scheduler_execution_metrics_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_execution_metrics ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS run_id uuid,
+  ADD COLUMN IF NOT EXISTS metric text,
+  ADD COLUMN IF NOT EXISTS value numeric,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_resource_locks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1482,6 +2525,18 @@ CREATE TABLE IF NOT EXISTS public.scheduler_resource_locks (
   correlation_id uuid,
   CONSTRAINT scheduler_resource_locks_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_resource_locks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS resource_key text,
+  ADD COLUMN IF NOT EXISTS locked_by text,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_approval_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1498,6 +2553,17 @@ CREATE TABLE IF NOT EXISTS public.scheduler_approval_policies (
   correlation_id uuid,
   CONSTRAINT scheduler_approval_policies_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_approval_policies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS task_type text,
+  ADD COLUMN IF NOT EXISTS requires_approval boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS approver_role_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.scheduler_quotas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1514,6 +2580,17 @@ CREATE TABLE IF NOT EXISTS public.scheduler_quotas (
   correlation_id uuid,
   CONSTRAINT scheduler_quotas_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduler_quotas ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS quota_code text,
+  ADD COLUMN IF NOT EXISTS limit_value integer,
+  ADD COLUMN IF NOT EXISTS used_value integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.scheduled_notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1532,6 +2609,19 @@ CREATE TABLE IF NOT EXISTS public.scheduled_notifications (
   correlation_id uuid,
   CONSTRAINT scheduled_notifications_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.scheduled_notifications ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS notification_template_code text,
+  ADD COLUMN IF NOT EXISTS recipient_user_id uuid,
+  ADD COLUMN IF NOT EXISTS send_at timestamptz,
+  ADD COLUMN IF NOT EXISTS payload jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'sent', 'cancelled', 'failed')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_workflow_definitions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1550,6 +2640,19 @@ CREATE TABLE IF NOT EXISTS public.growth_workflow_definitions (
   correlation_id uuid,
   CONSTRAINT growth_workflow_definitions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_workflow_definitions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'active', 'archived')),
+  ADD COLUMN IF NOT EXISTS definition jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_workflow_nodes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1568,36 +2671,89 @@ CREATE TABLE IF NOT EXISTS public.growth_workflow_nodes (
   correlation_id uuid,
   CONSTRAINT growth_workflow_nodes_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_workflow_nodes ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS workflow_id uuid,
+  ADD COLUMN IF NOT EXISTS node_key text,
+  ADD COLUMN IF NOT EXISTS node_type text,
+  ADD COLUMN IF NOT EXISTS config jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS position integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_workflow_executions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
   workflow_id uuid NOT NULL,
   workflow_execution_id uuid NOT NULL,
-  status text NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'waiting_approval')),
+  status text NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'waiting_approval', 'paused')),
   started_at timestamptz,
   completed_at timestamptz,
   triggered_by uuid,
   error_message text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  input jsonb NOT NULL DEFAULT '{}',
+  context jsonb NOT NULL DEFAULT '{}',
+  current_node text,
+  cancel_requested boolean NOT NULL DEFAULT false,
   CONSTRAINT growth_workflow_executions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_workflow_executions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS workflow_id uuid,
+  ADD COLUMN IF NOT EXISTS workflow_execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS triggered_by uuid,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS input jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS context jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS current_node text,
+  ADD COLUMN IF NOT EXISTS cancel_requested boolean DEFAULT false NOT NULL;
+ALTER TABLE public.growth_workflow_executions DROP CONSTRAINT IF EXISTS growth_workflow_executions_status_check, ADD CONSTRAINT growth_workflow_executions_status_check CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'waiting_approval', 'paused'));
 
 CREATE TABLE IF NOT EXISTS public.growth_workflow_execution_steps (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
   execution_id uuid NOT NULL,
   node_key text NOT NULL,
-  status text NOT NULL CHECK (status IN ('pending', 'running', 'succeeded', 'failed', 'skipped')),
+  status text NOT NULL CHECK (status IN ('pending', 'running', 'succeeded', 'failed', 'skipped', 'waiting_approval', 'cancelled', 'retrying')),
   started_at timestamptz,
   completed_at timestamptz,
   output_summary jsonb,
   error_message text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  attempt integer NOT NULL DEFAULT 1,
+  idempotency_key text,
+  next_retry_at timestamptz,
   CONSTRAINT growth_workflow_execution_steps_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_workflow_execution_steps ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS node_key text,
+  ADD COLUMN IF NOT EXISTS status text,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS output_summary jsonb,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS attempt integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS next_retry_at timestamptz;
+ALTER TABLE public.growth_workflow_execution_steps DROP CONSTRAINT IF EXISTS growth_workflow_execution_steps_status_check, ADD CONSTRAINT growth_workflow_execution_steps_status_check CHECK (status IN ('pending', 'running', 'succeeded', 'failed', 'skipped', 'waiting_approval', 'cancelled', 'retrying'));
 
 CREATE TABLE IF NOT EXISTS public.tenant_reporting_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1610,6 +2766,13 @@ CREATE TABLE IF NOT EXISTS public.tenant_reporting_snapshots (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT tenant_reporting_snapshots_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.tenant_reporting_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS period_start date,
+  ADD COLUMN IF NOT EXISTS period_end date,
+  ADD COLUMN IF NOT EXISTS metrics jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.execution_reports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1629,6 +2792,20 @@ CREATE TABLE IF NOT EXISTS public.execution_reports (
   correlation_id uuid,
   CONSTRAINT execution_reports_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.execution_reports ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS summary text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('draft', 'final')),
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.execution_report_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1641,6 +2818,13 @@ CREATE TABLE IF NOT EXISTS public.execution_report_metrics (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT execution_report_metrics_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.execution_report_metrics ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS report_id uuid,
+  ADD COLUMN IF NOT EXISTS metric text,
+  ADD COLUMN IF NOT EXISTS value numeric,
+  ADD COLUMN IF NOT EXISTS unit text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.execution_error_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1654,6 +2838,14 @@ CREATE TABLE IF NOT EXISTS public.execution_error_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT execution_error_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.execution_error_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS module text,
+  ADD COLUMN IF NOT EXISTS error_code text,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.report_schedules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1673,6 +2865,20 @@ CREATE TABLE IF NOT EXISTS public.report_schedules (
   correlation_id uuid,
   CONSTRAINT report_schedules_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.report_schedules ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS report_type text,
+  ADD COLUMN IF NOT EXISTS cron_expression text,
+  ADD COLUMN IF NOT EXISTS recipients text[],
+  ADD COLUMN IF NOT EXISTS format text DEFAULT 'pdf' NOT NULL CHECK (format IN ('pdf', 'csv', 'xlsx', 'html')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.report_exports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1685,6 +2891,13 @@ CREATE TABLE IF NOT EXISTS public.report_exports (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT report_exports_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.report_exports ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS report_id uuid,
+  ADD COLUMN IF NOT EXISTS export_job_id uuid,
+  ADD COLUMN IF NOT EXISTS format text CHECK (format IN ('pdf', 'csv', 'xlsx', 'html')),
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.analytics_sources (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1702,6 +2915,18 @@ CREATE TABLE IF NOT EXISTS public.analytics_sources (
   correlation_id uuid,
   CONSTRAINT analytics_sources_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.analytics_sources ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS source_type text CHECK (source_type IN ('ga4', 'search_console', 'matomo', 'plausible', 'custom')),
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.analytics_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1714,6 +2939,13 @@ CREATE TABLE IF NOT EXISTS public.analytics_snapshots (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT analytics_snapshots_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.analytics_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS period_start date,
+  ADD COLUMN IF NOT EXISTS period_end date,
+  ADD COLUMN IF NOT EXISTS data jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.analytics_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1727,6 +2959,14 @@ CREATE TABLE IF NOT EXISTS public.analytics_metrics (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT analytics_metrics_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.analytics_metrics ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS metric text,
+  ADD COLUMN IF NOT EXISTS dimension text,
+  ADD COLUMN IF NOT EXISTS date date,
+  ADD COLUMN IF NOT EXISTS value numeric,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.notification_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1743,6 +2983,18 @@ CREATE TABLE IF NOT EXISTS public.notification_templates (
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid
 );
+ALTER TABLE public.notification_templates ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS channel text CHECK (channel IN ('email', 'in_app', 'sms', 'webhook', 'slack')),
+  ADD COLUMN IF NOT EXISTS locale text DEFAULT 'fr' NOT NULL,
+  ADD COLUMN IF NOT EXISTS subject text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.notification_preferences (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1760,6 +3012,18 @@ CREATE TABLE IF NOT EXISTS public.notification_preferences (
   correlation_id uuid,
   CONSTRAINT notification_preferences_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.notification_preferences ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS channel text CHECK (channel IN ('email', 'in_app', 'sms', 'webhook', 'slack')),
+  ADD COLUMN IF NOT EXISTS enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1775,6 +3039,16 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT notifications_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS link text,
+  ADD COLUMN IF NOT EXISTS severity text DEFAULT 'info' NOT NULL CHECK (severity IN ('info', 'success', 'warning', 'error')),
+  ADD COLUMN IF NOT EXISTS read_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.notification_deliveries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1785,8 +3059,17 @@ CREATE TABLE IF NOT EXISTS public.notification_deliveries (
   provider text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT notification_deliveries_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.notification_deliveries ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS notification_id uuid,
+  ADD COLUMN IF NOT EXISTS channel text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('queued', 'sent', 'delivered', 'failed', 'bounced')),
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.notification_attempts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1799,6 +3082,13 @@ CREATE TABLE IF NOT EXISTS public.notification_attempts (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT notification_attempts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.notification_attempts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS delivery_id uuid,
+  ADD COLUMN IF NOT EXISTS attempt integer,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('sent', 'failed')),
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.notification_provider_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1811,6 +3101,14 @@ CREATE TABLE IF NOT EXISTS public.notification_provider_events (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.notification_provider_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS delivery_id uuid,
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS payload jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_services (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1822,6 +3120,13 @@ CREATE TABLE IF NOT EXISTS public.system_services (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_services ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS category text CHECK (category IN ('database', 'auth', 'storage', 'api', 'cache', 'queue', 'worker', 'scheduler', 'connector', 'ai_provider', 'infrastructure', 'configuration')),
+  ADD COLUMN IF NOT EXISTS is_critical boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_health_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1835,6 +3140,15 @@ CREATE TABLE IF NOT EXISTS public.system_health_checks (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_health_checks ADD COLUMN IF NOT EXISTS service_id uuid,
+  ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS check_type text,
+  ADD COLUMN IF NOT EXISTS interval_seconds integer DEFAULT 300 NOT NULL,
+  ADD COLUMN IF NOT EXISTS timeout_ms integer DEFAULT 5000 NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_health_results (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1848,6 +3162,15 @@ CREATE TABLE IF NOT EXISTS public.system_health_results (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_health_results ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS check_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('healthy', 'degraded', 'down', 'not_configured', 'unknown', 'checking')),
+  ADD COLUMN IF NOT EXISTS latency_ms integer,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_incidents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1866,6 +3189,20 @@ CREATE TABLE IF NOT EXISTS public.system_incidents (
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid
 );
+ALTER TABLE public.system_incidents ADD COLUMN IF NOT EXISTS service_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS severity text CHECK (severity IN ('sev1', 'sev2', 'sev3', 'sev4')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'investigating', 'mitigated', 'resolved')),
+  ADD COLUMN IF NOT EXISTS started_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS resolved_at timestamptz,
+  ADD COLUMN IF NOT EXISTS summary text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.system_alerts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1879,6 +3216,15 @@ CREATE TABLE IF NOT EXISTS public.system_alerts (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_alerts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS service_id uuid,
+  ADD COLUMN IF NOT EXISTS incident_id uuid,
+  ADD COLUMN IF NOT EXISTS severity text CHECK (severity IN ('info', 'warning', 'critical')),
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS acknowledged_at timestamptz,
+  ADD COLUMN IF NOT EXISTS acknowledged_by uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_test_runs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1893,6 +3239,16 @@ CREATE TABLE IF NOT EXISTS public.system_test_runs (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_test_runs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS triggered_by uuid,
+  ADD COLUMN IF NOT EXISTS suite text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('running', 'passed', 'failed', 'error')),
+  ADD COLUMN IF NOT EXISTS started_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS passed integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS failed integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_test_results (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1905,6 +3261,14 @@ CREATE TABLE IF NOT EXISTS public.system_test_results (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_test_results ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS run_id uuid,
+  ADD COLUMN IF NOT EXISTS test_name text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('passed', 'failed', 'skipped', 'error')),
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_configuration_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1915,6 +3279,12 @@ CREATE TABLE IF NOT EXISTS public.system_configuration_checks (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_configuration_checks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS key text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('ok', 'missing', 'invalid', 'warning')),
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_api_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1927,6 +3297,14 @@ CREATE TABLE IF NOT EXISTS public.system_api_checks (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_api_checks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS endpoint text,
+  ADD COLUMN IF NOT EXISTS method text DEFAULT 'GET' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status_code integer,
+  ADD COLUMN IF NOT EXISTS latency_ms integer,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('healthy', 'degraded', 'down')),
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_database_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1937,6 +3315,12 @@ CREATE TABLE IF NOT EXISTS public.system_database_checks (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_database_checks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS check_name text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('healthy', 'degraded', 'down')),
+  ADD COLUMN IF NOT EXISTS value jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_infrastructure_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1946,6 +3330,11 @@ CREATE TABLE IF NOT EXISTS public.system_infrastructure_snapshots (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_infrastructure_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS component text,
+  ADD COLUMN IF NOT EXISTS metrics jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_error_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1959,6 +3348,15 @@ CREATE TABLE IF NOT EXISTS public.system_error_events (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_error_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS service_code text,
+  ADD COLUMN IF NOT EXISTS error_code text,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS stack_trace text,
+  ADD COLUMN IF NOT EXISTS fingerprint text,
+  ADD COLUMN IF NOT EXISTS request_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.system_audit_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1970,6 +3368,13 @@ CREATE TABLE IF NOT EXISTS public.system_audit_logs (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.system_audit_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS action text,
+  ADD COLUMN IF NOT EXISTS target text,
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.application_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1985,6 +3390,15 @@ CREATE TABLE IF NOT EXISTS public.application_logs (
   PRIMARY KEY (id, created_at)
 ) PARTITION BY RANGE (created_at);
 CREATE TABLE IF NOT EXISTS public.application_logs_default PARTITION OF public.application_logs DEFAULT;
+ALTER TABLE public.application_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS level text CHECK (level IN ('debug', 'info', 'warning', 'error', 'critical')),
+  ADD COLUMN IF NOT EXISTS logger text,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS request_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS context jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_providers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1993,8 +3407,16 @@ CREATE TABLE IF NOT EXISTS public.ai_providers (
   base_url text,
   is_enabled boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  api_style text NOT NULL DEFAULT 'openai' CHECK (api_style IN ('openai', 'anthropic', 'gemini', 'cohere', 'azure_openai', 'ollama'))
 );
+ALTER TABLE public.ai_providers ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS base_url text,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS api_style text DEFAULT 'openai' NOT NULL CHECK (api_style IN ('openai', 'anthropic', 'gemini', 'cohere', 'azure_openai', 'ollama'));
 
 CREATE TABLE IF NOT EXISTS public.ai_models (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2008,6 +3430,15 @@ CREATE TABLE IF NOT EXISTS public.ai_models (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.ai_models ADD COLUMN IF NOT EXISTS provider_id uuid,
+  ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS context_window integer,
+  ADD COLUMN IF NOT EXISTS input_cost_per_mtok_cents numeric,
+  ADD COLUMN IF NOT EXISTS output_cost_per_mtok_cents numeric,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_provider_configurations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2022,8 +3453,32 @@ CREATE TABLE IF NOT EXISTS public.ai_provider_configurations (
   updated_by uuid,
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
-  correlation_id uuid
+  correlation_id uuid,
+  api_key_ciphertext text,
+  base_url text,
+  priority integer NOT NULL DEFAULT 100,
+  monthly_budget_cents bigint,
+  last_test_at timestamptz,
+  last_test_status text
 );
+ALTER TABLE public.ai_provider_configurations ADD COLUMN IF NOT EXISTS provider_id uuid,
+  ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS api_key_ref text,
+  ADD COLUMN IF NOT EXISTS settings jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS api_key_ciphertext text,
+  ADD COLUMN IF NOT EXISTS base_url text,
+  ADD COLUMN IF NOT EXISTS priority integer DEFAULT 100 NOT NULL,
+  ADD COLUMN IF NOT EXISTS monthly_budget_cents bigint,
+  ADD COLUMN IF NOT EXISTS last_test_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_test_status text;
 
 CREATE TABLE IF NOT EXISTS public.ai_model_capabilities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2032,6 +3487,10 @@ CREATE TABLE IF NOT EXISTS public.ai_model_capabilities (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.ai_model_capabilities ADD COLUMN IF NOT EXISTS model_id uuid,
+  ADD COLUMN IF NOT EXISTS capability text CHECK (capability IN ('chat', 'vision', 'embedding', 'tools', 'json', 'image', 'audio', 'video')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_prompt_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2050,6 +3509,20 @@ CREATE TABLE IF NOT EXISTS public.ai_prompt_templates (
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid
 );
+ALTER TABLE public.ai_prompt_templates ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS template text,
+  ADD COLUMN IF NOT EXISTS variables jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'active', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.ai_execution_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2069,8 +3542,34 @@ CREATE TABLE IF NOT EXISTS public.ai_execution_logs (
   output_summary jsonb,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  provider_code text,
+  model_code text,
+  feature_code text,
+  prompt_version text,
+  user_id uuid,
   CONSTRAINT ai_execution_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_execution_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_id uuid,
+  ADD COLUMN IF NOT EXISTS model_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS prompt_template_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('succeeded', 'failed', 'timeout', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS input_tokens integer,
+  ADD COLUMN IF NOT EXISTS output_tokens integer,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS input_summary jsonb,
+  ADD COLUMN IF NOT EXISTS output_summary jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS provider_code text,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS feature_code text,
+  ADD COLUMN IF NOT EXISTS prompt_version text,
+  ADD COLUMN IF NOT EXISTS user_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.ai_usage_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2085,6 +3584,15 @@ CREATE TABLE IF NOT EXISTS public.ai_usage_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_usage_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_usage_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS model_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_id uuid,
+  ADD COLUMN IF NOT EXISTS input_tokens integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS output_tokens integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_cost_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2097,6 +3605,13 @@ CREATE TABLE IF NOT EXISTS public.ai_cost_snapshots (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_cost_snapshots_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_cost_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS period_start date,
+  ADD COLUMN IF NOT EXISTS period_end date,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS breakdown jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_fallback_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2108,6 +3623,13 @@ CREATE TABLE IF NOT EXISTS public.ai_fallback_policies (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.ai_fallback_policies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS primary_model_id uuid,
+  ADD COLUMN IF NOT EXISTS fallback_model_id uuid,
+  ADD COLUMN IF NOT EXISTS priority integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS trigger_on text[],
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.audit_events (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -2131,6 +3653,23 @@ CREATE TABLE IF NOT EXISTS public.audit_events (
   PRIMARY KEY (id, created_at)
 ) PARTITION BY RANGE (created_at);
 CREATE TABLE IF NOT EXISTS public.audit_events_default PARTITION OF public.audit_events DEFAULT;
+ALTER TABLE public.audit_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS actor_user_id uuid,
+  ADD COLUMN IF NOT EXISTS actor_type text CHECK (actor_type IN ('user', 'pilot', 'system', 'celery', 'agent', 'webhook', 'anonymous')),
+  ADD COLUMN IF NOT EXISTS action text,
+  ADD COLUMN IF NOT EXISTS module text,
+  ADD COLUMN IF NOT EXISTS entity_type text,
+  ADD COLUMN IF NOT EXISTS entity_id uuid,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS before_data jsonb,
+  ADD COLUMN IF NOT EXISTS after_data jsonb,
+  ADD COLUMN IF NOT EXISTS source text DEFAULT 'api' NOT NULL CHECK (source IN ('api', 'admin', 'celery', 'webhook', 'sql', 'system', 'frontend')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'success' NOT NULL CHECK (status IN ('success', 'failure', 'denied')),
+  ADD COLUMN IF NOT EXISTS ip_address inet,
+  ADD COLUMN IF NOT EXISTS user_agent text,
+  ADD COLUMN IF NOT EXISTS request_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.activity_events (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -2148,6 +3687,17 @@ CREATE TABLE IF NOT EXISTS public.activity_events (
   PRIMARY KEY (id, created_at)
 ) PARTITION BY RANGE (created_at);
 CREATE TABLE IF NOT EXISTS public.activity_events_default PARTITION OF public.activity_events DEFAULT;
+ALTER TABLE public.activity_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS module text,
+  ADD COLUMN IF NOT EXISTS entity_type text,
+  ADD COLUMN IF NOT EXISTS entity_id uuid,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.execution_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -2175,6 +3725,27 @@ CREATE TABLE IF NOT EXISTS public.execution_logs (
   PRIMARY KEY (id, created_at)
 ) PARTITION BY RANGE (created_at);
 CREATE TABLE IF NOT EXISTS public.execution_logs_default PARTITION OF public.execution_logs DEFAULT;
+ALTER TABLE public.execution_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS module text,
+  ADD COLUMN IF NOT EXISTS operation text,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS parent_execution_id uuid,
+  ADD COLUMN IF NOT EXISTS workflow_execution_id uuid,
+  ADD COLUMN IF NOT EXISTS webhook_event_id uuid,
+  ADD COLUMN IF NOT EXISTS request_id uuid,
+  ADD COLUMN IF NOT EXISTS celery_task_id text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled', 'retrying', 'dead_letter')),
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS input_summary jsonb,
+  ADD COLUMN IF NOT EXISTS output_summary jsonb,
+  ADD COLUMN IF NOT EXISTS error_code text,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS retry_count integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.audit_log_corrections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2188,6 +3759,15 @@ CREATE TABLE IF NOT EXISTS public.audit_log_corrections (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.audit_log_corrections ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS table_name text,
+  ADD COLUMN IF NOT EXISTS row_id uuid,
+  ADD COLUMN IF NOT EXISTS before_data jsonb,
+  ADD COLUMN IF NOT EXISTS after_data jsonb,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS corrected_by uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.data_retention_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2206,6 +3786,20 @@ CREATE TABLE IF NOT EXISTS public.data_retention_policies (
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid
 );
+ALTER TABLE public.data_retention_policies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS data_category text,
+  ADD COLUMN IF NOT EXISTS history_type text CHECK (history_type IN ('business', 'history', 'activity', 'technical')),
+  ADD COLUMN IF NOT EXISTS retention_days integer,
+  ADD COLUMN IF NOT EXISTS archive_mode text DEFAULT 'none' NOT NULL CHECK (archive_mode IN ('none', 'storage_export', 'cold_table')),
+  ADD COLUMN IF NOT EXISTS deletion_rule text DEFAULT 'delete' NOT NULL CHECK (deletion_rule IN ('delete', 'anonymize', 'keep')),
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.data_deletion_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2229,6 +3823,24 @@ CREATE TABLE IF NOT EXISTS public.data_deletion_requests (
   correlation_id uuid,
   CONSTRAINT data_deletion_requests_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.data_deletion_requests ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS requested_by uuid,
+  ADD COLUMN IF NOT EXISTS subject_user_id uuid,
+  ADD COLUMN IF NOT EXISTS subject_email text,
+  ADD COLUMN IF NOT EXISTS scope jsonb,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'running', 'completed', 'failed')),
+  ADD COLUMN IF NOT EXISTS approved_by uuid,
+  ADD COLUMN IF NOT EXISTS approved_at timestamptz,
+  ADD COLUMN IF NOT EXISTS executed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS result jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.export_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2250,6 +3862,22 @@ CREATE TABLE IF NOT EXISTS public.export_jobs (
   correlation_id uuid,
   CONSTRAINT export_jobs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.export_jobs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS requested_by uuid,
+  ADD COLUMN IF NOT EXISTS export_type text,
+  ADD COLUMN IF NOT EXISTS scope jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS format text CHECK (format IN ('csv', 'json', 'xlsx', 'pdf')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'queued' NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'expired')),
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS link_expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS result jsonb,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.record_access_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2264,6 +3892,15 @@ CREATE TABLE IF NOT EXISTS public.record_access_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT record_access_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.record_access_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS entity_type text,
+  ADD COLUMN IF NOT EXISTS entity_id uuid,
+  ADD COLUMN IF NOT EXISTS access_type text CHECK (access_type IN ('read', 'export', 'download', 'reveal')),
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS request_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.idempotency_keys (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2275,6 +3912,13 @@ CREATE TABLE IF NOT EXISTS public.idempotency_keys (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.idempotency_keys ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS scope text,
+  ADD COLUMN IF NOT EXISTS key text,
+  ADD COLUMN IF NOT EXISTS response_hash text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.entity_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2292,6 +3936,19 @@ CREATE TABLE IF NOT EXISTS public.entity_history (
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.entity_history ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS entity_type text,
+  ADD COLUMN IF NOT EXISTS entity_id uuid,
+  ADD COLUMN IF NOT EXISTS version_number integer,
+  ADD COLUMN IF NOT EXISTS operation text CHECK (operation IN ('INSERT', 'UPDATE', 'DELETE', 'SOFT_DELETE', 'RESTORE')),
+  ADD COLUMN IF NOT EXISTS previous_data jsonb,
+  ADD COLUMN IF NOT EXISTS current_data jsonb,
+  ADD COLUMN IF NOT EXISTS changed_fields text[],
+  ADD COLUMN IF NOT EXISTS changed_by uuid,
+  ADD COLUMN IF NOT EXISTS actor_type text DEFAULT 'system' NOT NULL,
+  ADD COLUMN IF NOT EXISTS change_reason text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.seo_projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2311,6 +3968,20 @@ CREATE TABLE IF NOT EXISTS public.seo_projects (
   correlation_id uuid,
   CONSTRAINT seo_projects_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.seo_projects ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS target_country text,
+  ADD COLUMN IF NOT EXISTS target_language text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.seo_audits (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2325,8 +3996,33 @@ CREATE TABLE IF NOT EXISTS public.seo_audits (
   requested_by uuid,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  website_id uuid,
+  audit_type text NOT NULL DEFAULT 'full' CHECK (audit_type IN ('full', 'technical', 'onpage', 'keywords', 'competitors', 'backlinks', 'content_gap')),
+  pages_limit integer NOT NULL DEFAULT 50,
+  issues_count integer NOT NULL DEFAULT 0,
+  summary jsonb NOT NULL DEFAULT '{}',
+  error_message text,
   CONSTRAINT seo_audits_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.seo_audits ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'queued' NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS pages_analyzed integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS requested_by uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_type text DEFAULT 'full' NOT NULL CHECK (audit_type IN ('full', 'technical', 'onpage', 'keywords', 'competitors', 'backlinks', 'content_gap')),
+  ADD COLUMN IF NOT EXISTS pages_limit integer DEFAULT 50 NOT NULL,
+  ADD COLUMN IF NOT EXISTS issues_count integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS summary jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS error_message text;
 
 CREATE TABLE IF NOT EXISTS public.seo_audit_pages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2338,8 +4034,20 @@ CREATE TABLE IF NOT EXISTS public.seo_audit_pages (
   data jsonb NOT NULL DEFAULT '{}',
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  status_code integer,
+  load_ms integer,
   CONSTRAINT seo_audit_pages_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.seo_audit_pages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS page_id uuid,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS status_code integer,
+  ADD COLUMN IF NOT EXISTS load_ms integer;
 
 CREATE TABLE IF NOT EXISTS public.seo_issues (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2357,8 +4065,30 @@ CREATE TABLE IF NOT EXISTS public.seo_issues (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  category text,
+  page_url text,
+  details jsonb NOT NULL DEFAULT '{}',
+  impact text CHECK (impact IN ('low', 'medium', 'high')),
   CONSTRAINT seo_issues_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.seo_issues ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_page_id uuid,
+  ADD COLUMN IF NOT EXISTS issue_code text,
+  ADD COLUMN IF NOT EXISTS severity text CHECK (severity IN ('info', 'low', 'medium', 'high', 'critical')),
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'ignored', 'fixed')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS page_url text,
+  ADD COLUMN IF NOT EXISTS details jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS impact text CHECK (impact IN ('low', 'medium', 'high'));
 
 CREATE TABLE IF NOT EXISTS public.seo_recommendations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2377,8 +4107,33 @@ CREATE TABLE IF NOT EXISTS public.seo_recommendations (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  audit_id uuid,
+  category text,
+  difficulty text CHECK (difficulty IN ('low', 'medium', 'high')),
+  estimated_impact text,
+  details jsonb NOT NULL DEFAULT '{}',
   CONSTRAINT seo_recommendations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.seo_recommendations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS issue_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS priority integer DEFAULT 3 NOT NULL,
+  ADD COLUMN IF NOT EXISTS impact text CHECK (impact IN ('low', 'medium', 'high')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'in_progress', 'done', 'dismissed')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS difficulty text CHECK (difficulty IN ('low', 'medium', 'high')),
+  ADD COLUMN IF NOT EXISTS estimated_impact text,
+  ADD COLUMN IF NOT EXISTS details jsonb DEFAULT '{}' NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.keyword_groups (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2395,6 +4150,17 @@ CREATE TABLE IF NOT EXISTS public.keyword_groups (
   correlation_id uuid,
   CONSTRAINT keyword_groups_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.keyword_groups ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS intent text CHECK (intent IN ('informational', 'navigational', 'commercial', 'transactional')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.seo_keywords (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2415,6 +4181,21 @@ CREATE TABLE IF NOT EXISTS public.seo_keywords (
   correlation_id uuid,
   CONSTRAINT seo_keywords_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.seo_keywords ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS group_id uuid,
+  ADD COLUMN IF NOT EXISTS keyword text,
+  ADD COLUMN IF NOT EXISTS search_volume integer,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS cpc_cents numeric,
+  ADD COLUMN IF NOT EXISTS is_tracked boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.keyword_rankings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2429,6 +4210,15 @@ CREATE TABLE IF NOT EXISTS public.keyword_rankings (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT keyword_rankings_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.keyword_rankings ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS keyword_id uuid,
+  ADD COLUMN IF NOT EXISTS position integer,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS search_engine text DEFAULT 'google' NOT NULL,
+  ADD COLUMN IF NOT EXISTS device text DEFAULT 'desktop' NOT NULL CHECK (device IN ('desktop', 'mobile')),
+  ADD COLUMN IF NOT EXISTS checked_on date,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.backlinks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2450,6 +4240,22 @@ CREATE TABLE IF NOT EXISTS public.backlinks (
   correlation_id uuid,
   CONSTRAINT backlinks_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.backlinks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS source_url text,
+  ADD COLUMN IF NOT EXISTS target_url text,
+  ADD COLUMN IF NOT EXISTS anchor_text text,
+  ADD COLUMN IF NOT EXISTS domain_rating numeric,
+  ADD COLUMN IF NOT EXISTS is_dofollow boolean,
+  ADD COLUMN IF NOT EXISTS first_seen_at timestamptz,
+  ADD COLUMN IF NOT EXISTS lost_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.page_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2465,6 +4271,16 @@ CREATE TABLE IF NOT EXISTS public.page_metrics (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT page_metrics_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.page_metrics ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS page_id uuid,
+  ADD COLUMN IF NOT EXISTS date date,
+  ADD COLUMN IF NOT EXISTS clicks integer,
+  ADD COLUMN IF NOT EXISTS impressions integer,
+  ADD COLUMN IF NOT EXISTS ctr numeric,
+  ADD COLUMN IF NOT EXISTS avg_position numeric,
+  ADD COLUMN IF NOT EXISTS sessions integer,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.seo_competitor_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2476,6 +4292,12 @@ CREATE TABLE IF NOT EXISTS public.seo_competitor_snapshots (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT seo_competitor_snapshots_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.seo_competitor_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS competitor_id uuid,
+  ADD COLUMN IF NOT EXISTS data jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.geo_audits (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2488,8 +4310,25 @@ CREATE TABLE IF NOT EXISTS public.geo_audits (
   completed_at timestamptz,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  website_id uuid,
+  summary jsonb NOT NULL DEFAULT '{}',
+  error_message text,
   CONSTRAINT geo_audits_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.geo_audits ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'queued' NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS summary jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS error_message text;
 
 CREATE TABLE IF NOT EXISTS public.geo_audit_pages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2503,6 +4342,14 @@ CREATE TABLE IF NOT EXISTS public.geo_audit_pages (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT geo_audit_pages_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.geo_audit_pages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS page_id uuid,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_crawler_registry (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2511,8 +4358,16 @@ CREATE TABLE IF NOT EXISTS public.ai_crawler_registry (
   user_agent_pattern text NOT NULL,
   operator text,
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  purpose text NOT NULL DEFAULT 'crawl' CHECK (purpose IN ('crawl', 'search', 'training', 'user_fetch'))
 );
+ALTER TABLE public.ai_crawler_registry ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS user_agent_pattern text,
+  ADD COLUMN IF NOT EXISTS operator text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS purpose text DEFAULT 'crawl' NOT NULL CHECK (purpose IN ('crawl', 'search', 'training', 'user_fetch'));
 
 CREATE TABLE IF NOT EXISTS public.ai_crawler_checks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2525,6 +4380,13 @@ CREATE TABLE IF NOT EXISTS public.ai_crawler_checks (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_crawler_checks_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_crawler_checks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS crawler_id uuid,
+  ADD COLUMN IF NOT EXISTS allowed boolean,
+  ADD COLUMN IF NOT EXISTS robots_rule text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_crawler_visits (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2537,6 +4399,13 @@ CREATE TABLE IF NOT EXISTS public.ai_crawler_visits (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_crawler_visits_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_crawler_visits ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS crawler_id uuid,
+  ADD COLUMN IF NOT EXISTS path text,
+  ADD COLUMN IF NOT EXISTS visited_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_search_queries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2552,8 +4421,24 @@ CREATE TABLE IF NOT EXISTS public.ai_search_queries (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  engines text[],
+  competitor_names text[],
   CONSTRAINT ai_search_queries_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_search_queries ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS query text,
+  ADD COLUMN IF NOT EXISTS locale text,
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS engines text[],
+  ADD COLUMN IF NOT EXISTS competitor_names text[];
 
 CREATE TABLE IF NOT EXISTS public.ai_search_runs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2564,8 +4449,29 @@ CREATE TABLE IF NOT EXISTS public.ai_search_runs (
   status text NOT NULL CHECK (status IN ('succeeded', 'failed')),
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  provider_code text,
+  model_code text,
+  method text NOT NULL DEFAULT 'api_answer' CHECK (method IN ('api_answer', 'api_search', 'manual_import')),
+  cost_cents numeric,
+  duration_ms integer,
+  error_message text,
   CONSTRAINT ai_search_runs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_search_runs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS query_id uuid,
+  ADD COLUMN IF NOT EXISTS engine text,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('succeeded', 'failed')),
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS provider_code text,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS method text DEFAULT 'api_answer' NOT NULL CHECK (method IN ('api_answer', 'api_search', 'manual_import')),
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS error_message text;
 
 CREATE TABLE IF NOT EXISTS public.ai_search_responses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2577,6 +4483,12 @@ CREATE TABLE IF NOT EXISTS public.ai_search_responses (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_search_responses_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_search_responses ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS run_id uuid,
+  ADD COLUMN IF NOT EXISTS response_text text,
+  ADD COLUMN IF NOT EXISTS raw jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_search_mentions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2590,6 +4502,14 @@ CREATE TABLE IF NOT EXISTS public.ai_search_mentions (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_search_mentions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_search_mentions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS response_id uuid,
+  ADD COLUMN IF NOT EXISTS brand_entity_id uuid,
+  ADD COLUMN IF NOT EXISTS mention_text text,
+  ADD COLUMN IF NOT EXISTS sentiment text CHECK (sentiment IN ('positive', 'neutral', 'negative')),
+  ADD COLUMN IF NOT EXISTS position integer,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_search_citations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2602,6 +4522,13 @@ CREATE TABLE IF NOT EXISTS public.ai_search_citations (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_search_citations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_search_citations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS response_id uuid,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS domain text,
+  ADD COLUMN IF NOT EXISTS position integer,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_visibility_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2615,6 +4542,14 @@ CREATE TABLE IF NOT EXISTS public.ai_visibility_snapshots (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT ai_visibility_snapshots_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.ai_visibility_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS engine text,
+  ADD COLUMN IF NOT EXISTS visibility_score numeric,
+  ADD COLUMN IF NOT EXISTS share_of_voice numeric,
+  ADD COLUMN IF NOT EXISTS data jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.brand_entities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2632,6 +4567,18 @@ CREATE TABLE IF NOT EXISTS public.brand_entities (
   correlation_id uuid,
   CONSTRAINT brand_entities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.brand_entities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS entity_type text CHECK (entity_type IN ('brand', 'product', 'person', 'organization', 'competitor')),
+  ADD COLUMN IF NOT EXISTS aliases text[],
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.brand_entity_sources (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2648,6 +4595,17 @@ CREATE TABLE IF NOT EXISTS public.brand_entity_sources (
   correlation_id uuid,
   CONSTRAINT brand_entity_sources_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.brand_entity_sources ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS brand_entity_id uuid,
+  ADD COLUMN IF NOT EXISTS source_url text,
+  ADD COLUMN IF NOT EXISTS source_type text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.geo_recommendations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2667,6 +4625,20 @@ CREATE TABLE IF NOT EXISTS public.geo_recommendations (
   correlation_id uuid,
   CONSTRAINT geo_recommendations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.geo_recommendations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS priority integer DEFAULT 3 NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'in_progress', 'done', 'dismissed')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.content_projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2683,6 +4655,17 @@ CREATE TABLE IF NOT EXISTS public.content_projects (
   correlation_id uuid,
   CONSTRAINT content_projects_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_projects ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.content_categories (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2699,6 +4682,17 @@ CREATE TABLE IF NOT EXISTS public.content_categories (
   correlation_id uuid,
   CONSTRAINT content_categories_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_categories ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS slug text,
+  ADD COLUMN IF NOT EXISTS parent_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.content_tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2713,6 +4707,15 @@ CREATE TABLE IF NOT EXISTS public.content_tags (
   correlation_id uuid,
   CONSTRAINT content_tags_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_tags ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.content_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2730,6 +4733,18 @@ CREATE TABLE IF NOT EXISTS public.content_templates (
   correlation_id uuid,
   CONSTRAINT content_templates_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_templates ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS content_type text,
+  ADD COLUMN IF NOT EXISTS template text,
+  ADD COLUMN IF NOT EXISTS variables jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.generated_contents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2738,7 +4753,7 @@ CREATE TABLE IF NOT EXISTS public.generated_contents (
   category_id uuid,
   template_id uuid,
   title text NOT NULL,
-  content_type text NOT NULL CHECK (content_type IN ('article', 'page', 'email', 'social_post', 'ad', 'video_script', 'other')),
+  content_type text NOT NULL CHECK (content_type IN ('article', 'guide', 'tutorial', 'comparison', 'faq', 'case_study', 'product_page', 'feature_page', 'landing_page', 'industry_page', 'linkedin_post', 'facebook_post', 'instagram_post', 'x_post', 'newsletter', 'video_script', 'page', 'email', 'social_post', 'ad', 'other')),
   body text,
   language text NOT NULL DEFAULT 'fr',
   status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'review', 'approved', 'published', 'archived')),
@@ -2750,8 +4765,62 @@ CREATE TABLE IF NOT EXISTS public.generated_contents (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  keyword text,
+  campaign text,
+  objective text,
+  channel text,
+  domain text,
+  author_id uuid,
+  agent_code text,
+  prompt_template_code text,
+  prompt_version text,
+  model_code text,
+  provider_code text,
+  cost_cents numeric,
+  seo_score numeric,
+  geo_score numeric,
+  sources jsonb NOT NULL DEFAULT '[]',
+  scheduled_at timestamptz,
+  published_url text,
   CONSTRAINT generated_contents_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.generated_contents ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS category_id uuid,
+  ADD COLUMN IF NOT EXISTS template_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS content_type text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS language text DEFAULT 'fr' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'review', 'approved', 'published', 'archived')),
+  ADD COLUMN IF NOT EXISTS tags text[],
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS keyword text,
+  ADD COLUMN IF NOT EXISTS campaign text,
+  ADD COLUMN IF NOT EXISTS objective text,
+  ADD COLUMN IF NOT EXISTS channel text,
+  ADD COLUMN IF NOT EXISTS domain text,
+  ADD COLUMN IF NOT EXISTS author_id uuid,
+  ADD COLUMN IF NOT EXISTS agent_code text,
+  ADD COLUMN IF NOT EXISTS prompt_template_code text,
+  ADD COLUMN IF NOT EXISTS prompt_version text,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS provider_code text,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS seo_score numeric,
+  ADD COLUMN IF NOT EXISTS geo_score numeric,
+  ADD COLUMN IF NOT EXISTS sources jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS scheduled_at timestamptz,
+  ADD COLUMN IF NOT EXISTS published_url text;
+ALTER TABLE public.generated_contents DROP CONSTRAINT IF EXISTS generated_contents_content_type_check, ADD CONSTRAINT generated_contents_content_type_check CHECK (content_type IN ('article', 'guide', 'tutorial', 'comparison', 'faq', 'case_study', 'product_page', 'feature_page', 'landing_page', 'industry_page', 'linkedin_post', 'facebook_post', 'instagram_post', 'x_post', 'newsletter', 'video_script', 'page', 'email', 'social_post', 'ad', 'other'));
 
 CREATE TABLE IF NOT EXISTS public.content_versions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2763,8 +4832,24 @@ CREATE TABLE IF NOT EXISTS public.content_versions (
   change_note text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  source text NOT NULL DEFAULT 'manual' CHECK (source IN ('ai', 'manual', 'restore', 'translation', 'optimization')),
+  model_code text,
+  prompt_version text,
+  author_id uuid,
   CONSTRAINT content_versions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_versions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS content_id uuid,
+  ADD COLUMN IF NOT EXISTS version integer,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS change_note text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS source text DEFAULT 'manual' NOT NULL CHECK (source IN ('ai', 'manual', 'restore', 'translation', 'optimization')),
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS prompt_version text,
+  ADD COLUMN IF NOT EXISTS author_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.content_approvals (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2777,6 +4862,13 @@ CREATE TABLE IF NOT EXISTS public.content_approvals (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT content_approvals_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_approvals ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS content_id uuid,
+  ADD COLUMN IF NOT EXISTS reviewer_id uuid,
+  ADD COLUMN IF NOT EXISTS decision text CHECK (decision IN ('approved', 'rejected', 'changes_requested')),
+  ADD COLUMN IF NOT EXISTS comment text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.content_media (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2795,6 +4887,19 @@ CREATE TABLE IF NOT EXISTS public.content_media (
   correlation_id uuid,
   CONSTRAINT content_media_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_media ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS content_id uuid,
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS mime_type text,
+  ADD COLUMN IF NOT EXISTS size_bytes bigint,
+  ADD COLUMN IF NOT EXISTS alt_text text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.content_generation_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2806,8 +4911,18 @@ CREATE TABLE IF NOT EXISTS public.content_generation_jobs (
   error_message text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT content_generation_jobs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_generation_jobs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS content_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.content_publications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2824,8 +4939,27 @@ CREATE TABLE IF NOT EXISTS public.content_publications (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  connector_account_id uuid,
+  external_id text,
+  error_message text,
   CONSTRAINT content_publications_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.content_publications ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS content_id uuid,
+  ADD COLUMN IF NOT EXISTS channel text CHECK (channel IN ('website', 'cms', 'social', 'email', 'other')),
+  ADD COLUMN IF NOT EXISTS external_url text,
+  ADD COLUMN IF NOT EXISTS published_at timestamptz,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('scheduled', 'published', 'failed', 'unpublished')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS external_id text,
+  ADD COLUMN IF NOT EXISTS error_message text;
 
 CREATE TABLE IF NOT EXISTS public.publication_schedules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2843,13 +4977,25 @@ CREATE TABLE IF NOT EXISTS public.publication_schedules (
   correlation_id uuid,
   CONSTRAINT publication_schedules_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.publication_schedules ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS content_id uuid,
+  ADD COLUMN IF NOT EXISTS channel text,
+  ADD COLUMN IF NOT EXISTS scheduled_at timestamptz,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'scheduled' NOT NULL CHECK (status IN ('scheduled', 'done', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.social_accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
   product_id uuid,
   connector_account_id uuid,
-  platform text NOT NULL CHECK (platform IN ('linkedin', 'x', 'facebook', 'instagram', 'tiktok', 'youtube', 'other')),
+  platform text NOT NULL CHECK (platform IN ('linkedin', 'x', 'facebook', 'instagram', 'tiktok', 'youtube', 'pinterest', 'reddit', 'other')),
   handle text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -2858,8 +5004,23 @@ CREATE TABLE IF NOT EXISTS public.social_accounts (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  status text NOT NULL DEFAULT 'configured' CHECK (status IN ('configured', 'connected', 'expired', 'failed', 'disconnected')),
   CONSTRAINT social_accounts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.social_accounts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS platform text,
+  ADD COLUMN IF NOT EXISTS handle text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'configured' NOT NULL CHECK (status IN ('configured', 'connected', 'expired', 'failed', 'disconnected'));
+ALTER TABLE public.social_accounts DROP CONSTRAINT IF EXISTS social_accounts_platform_check, ADD CONSTRAINT social_accounts_platform_check CHECK (platform IN ('linkedin', 'x', 'facebook', 'instagram', 'tiktok', 'youtube', 'pinterest', 'reddit', 'other'));
 
 CREATE TABLE IF NOT EXISTS public.social_publications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2868,7 +5029,7 @@ CREATE TABLE IF NOT EXISTS public.social_publications (
   content_id uuid,
   body text,
   external_post_id text,
-  status text NOT NULL CHECK (status IN ('draft', 'scheduled', 'published', 'failed')),
+  status text NOT NULL CHECK (status IN ('draft', 'approved', 'scheduled', 'publishing', 'published', 'failed', 'cancelled')),
   published_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -2877,8 +5038,33 @@ CREATE TABLE IF NOT EXISTS public.social_publications (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  scheduled_at timestamptz,
+  media jsonb NOT NULL DEFAULT '[]',
+  attempts integer NOT NULL DEFAULT 0,
+  error_message text,
+  published_url text,
   CONSTRAINT social_publications_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.social_publications ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS social_account_id uuid,
+  ADD COLUMN IF NOT EXISTS content_id uuid,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS external_post_id text,
+  ADD COLUMN IF NOT EXISTS status text,
+  ADD COLUMN IF NOT EXISTS published_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS scheduled_at timestamptz,
+  ADD COLUMN IF NOT EXISTS media jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS attempts integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS published_url text;
+ALTER TABLE public.social_publications DROP CONSTRAINT IF EXISTS social_publications_status_check, ADD CONSTRAINT social_publications_status_check CHECK (status IN ('draft', 'approved', 'scheduled', 'publishing', 'published', 'failed', 'cancelled'));
 
 CREATE TABLE IF NOT EXISTS public.social_publication_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2892,6 +5078,14 @@ CREATE TABLE IF NOT EXISTS public.social_publication_metrics (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT social_publication_metrics_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.social_publication_metrics ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS publication_id uuid,
+  ADD COLUMN IF NOT EXISTS date date,
+  ADD COLUMN IF NOT EXISTS impressions integer,
+  ADD COLUMN IF NOT EXISTS engagements integer,
+  ADD COLUMN IF NOT EXISTS clicks integer,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.video_projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2906,8 +5100,21 @@ CREATE TABLE IF NOT EXISTS public.video_projects (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  format text NOT NULL DEFAULT 'short' CHECK (format IN ('short', 'long')),
   CONSTRAINT video_projects_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_projects ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'scripting', 'production', 'rendering', 'published', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS format text DEFAULT 'short' NOT NULL CHECK (format IN ('short', 'long'));
 
 CREATE TABLE IF NOT EXISTS public.video_scripts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2924,6 +5131,17 @@ CREATE TABLE IF NOT EXISTS public.video_scripts (
   correlation_id uuid,
   CONSTRAINT video_scripts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_scripts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS language text DEFAULT 'fr' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.video_storyboards (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2940,6 +5158,17 @@ CREATE TABLE IF NOT EXISTS public.video_storyboards (
   correlation_id uuid,
   CONSTRAINT video_storyboards_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_storyboards ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS script_id uuid,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.video_scenes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2957,6 +5186,18 @@ CREATE TABLE IF NOT EXISTS public.video_scenes (
   correlation_id uuid,
   CONSTRAINT video_scenes_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_scenes ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS storyboard_id uuid,
+  ADD COLUMN IF NOT EXISTS position integer,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS duration_seconds numeric,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.video_assets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2971,8 +5212,27 @@ CREATE TABLE IF NOT EXISTS public.video_assets (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  source text NOT NULL DEFAULT 'uploaded' CHECK (source IN ('uploaded', 'generated', 'rendered')),
+  mime_type text,
+  size_bytes bigint,
+  duration_seconds numeric,
   CONSTRAINT video_assets_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_assets ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS asset_type text CHECK (asset_type IN ('image', 'video', 'audio', 'font', 'other')),
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS source text DEFAULT 'uploaded' NOT NULL CHECK (source IN ('uploaded', 'generated', 'rendered')),
+  ADD COLUMN IF NOT EXISTS mime_type text,
+  ADD COLUMN IF NOT EXISTS size_bytes bigint,
+  ADD COLUMN IF NOT EXISTS duration_seconds numeric;
 
 CREATE TABLE IF NOT EXISTS public.video_generation_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2983,8 +5243,23 @@ CREATE TABLE IF NOT EXISTS public.video_generation_jobs (
   error_message text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  provider_code text,
+  cost_cents numeric,
+  output_asset_id uuid,
   CONSTRAINT video_generation_jobs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_generation_jobs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS provider_code text,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS output_asset_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.video_render_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2995,8 +5270,17 @@ CREATE TABLE IF NOT EXISTS public.video_render_jobs (
   output_storage_path text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT video_render_jobs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_render_jobs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('queued', 'running', 'succeeded', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS output_storage_path text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.video_subtitles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3013,6 +5297,17 @@ CREATE TABLE IF NOT EXISTS public.video_subtitles (
   correlation_id uuid,
   CONSTRAINT video_subtitles_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_subtitles ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS language text,
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.video_publications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3031,6 +5326,19 @@ CREATE TABLE IF NOT EXISTS public.video_publications (
   correlation_id uuid,
   CONSTRAINT video_publications_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_publications ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS social_account_id uuid,
+  ADD COLUMN IF NOT EXISTS external_url text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('scheduled', 'published', 'failed')),
+  ADD COLUMN IF NOT EXISTS published_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.video_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3043,6 +5351,13 @@ CREATE TABLE IF NOT EXISTS public.video_metrics (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT video_metrics_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.video_metrics ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS publication_id uuid,
+  ADD COLUMN IF NOT EXISTS date date,
+  ADD COLUMN IF NOT EXISTS views integer,
+  ADD COLUMN IF NOT EXISTS watch_time_seconds bigint,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_search_projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3058,8 +5373,24 @@ CREATE TABLE IF NOT EXISTS public.opportunity_search_projects (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  hunters text[],
+  config jsonb NOT NULL DEFAULT '{}',
   CONSTRAINT opportunity_search_projects_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_search_projects ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS objective text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS hunters text[],
+  ADD COLUMN IF NOT EXISTS config jsonb DEFAULT '{}' NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_search_queries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3076,6 +5407,17 @@ CREATE TABLE IF NOT EXISTS public.opportunity_search_queries (
   correlation_id uuid,
   CONSTRAINT opportunity_search_queries_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_search_queries ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS query text,
+  ADD COLUMN IF NOT EXISTS filters jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_sources (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3092,6 +5434,17 @@ CREATE TABLE IF NOT EXISTS public.opportunity_sources (
   correlation_id uuid,
   CONSTRAINT opportunity_sources_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_sources ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS source_type text CHECK (source_type IN ('web', 'marketplace', 'social', 'news', 'directory', 'api', 'other')),
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_source_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3104,6 +5457,13 @@ CREATE TABLE IF NOT EXISTS public.opportunity_source_snapshots (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT opportunity_source_snapshots_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_source_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS content_hash text,
+  ADD COLUMN IF NOT EXISTS data jsonb,
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.market_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3112,7 +5472,7 @@ CREATE TABLE IF NOT EXISTS public.market_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3121,8 +5481,41 @@ CREATE TABLE IF NOT EXISTS public.market_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT market_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.market_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.market_opportunities DROP CONSTRAINT IF EXISTS market_opportunities_status_check, ADD CONSTRAINT market_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.saas_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3131,7 +5524,7 @@ CREATE TABLE IF NOT EXISTS public.saas_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3140,8 +5533,41 @@ CREATE TABLE IF NOT EXISTS public.saas_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT saas_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.saas_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.saas_opportunities DROP CONSTRAINT IF EXISTS saas_opportunities_status_check, ADD CONSTRAINT saas_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.website_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3150,7 +5576,7 @@ CREATE TABLE IF NOT EXISTS public.website_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3159,8 +5585,41 @@ CREATE TABLE IF NOT EXISTS public.website_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT website_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.website_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.website_opportunities DROP CONSTRAINT IF EXISTS website_opportunities_status_check, ADD CONSTRAINT website_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.keyword_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3169,7 +5628,7 @@ CREATE TABLE IF NOT EXISTS public.keyword_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3178,8 +5637,41 @@ CREATE TABLE IF NOT EXISTS public.keyword_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT keyword_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.keyword_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.keyword_opportunities DROP CONSTRAINT IF EXISTS keyword_opportunities_status_check, ADD CONSTRAINT keyword_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.customer_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3188,7 +5680,7 @@ CREATE TABLE IF NOT EXISTS public.customer_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3197,8 +5689,41 @@ CREATE TABLE IF NOT EXISTS public.customer_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT customer_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.customer_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.customer_opportunities DROP CONSTRAINT IF EXISTS customer_opportunities_status_check, ADD CONSTRAINT customer_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.trend_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3207,7 +5732,7 @@ CREATE TABLE IF NOT EXISTS public.trend_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3216,8 +5741,41 @@ CREATE TABLE IF NOT EXISTS public.trend_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT trend_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.trend_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.trend_opportunities DROP CONSTRAINT IF EXISTS trend_opportunities_status_check, ADD CONSTRAINT trend_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.partnership_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3226,7 +5784,7 @@ CREATE TABLE IF NOT EXISTS public.partnership_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3235,8 +5793,41 @@ CREATE TABLE IF NOT EXISTS public.partnership_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT partnership_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.partnership_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.partnership_opportunities DROP CONSTRAINT IF EXISTS partnership_opportunities_status_check, ADD CONSTRAINT partnership_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.revenue_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3245,7 +5836,7 @@ CREATE TABLE IF NOT EXISTS public.revenue_opportunities (
   title text NOT NULL,
   description text,
   score numeric,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'in_progress', 'won', 'lost', 'dismissed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed')),
   data jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3254,8 +5845,41 @@ CREATE TABLE IF NOT EXISTS public.revenue_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  source_id uuid,
+  hunter text,
+  confidence numeric,
+  potential numeric,
+  difficulty numeric,
+  recommendation text,
+  dedup_hash text,
+  detected_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT revenue_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.revenue_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS hunter text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS potential numeric,
+  ADD COLUMN IF NOT EXISTS difficulty numeric,
+  ADD COLUMN IF NOT EXISTS recommendation text,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS detected_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.revenue_opportunities DROP CONSTRAINT IF EXISTS revenue_opportunities_status_check, ADD CONSTRAINT revenue_opportunities_status_check CHECK (status IN ('new', 'detected', 'under_analysis', 'qualified', 'approved', 'in_progress', 'won', 'rejected', 'archived', 'lost', 'dismissed'));
 
 CREATE TABLE IF NOT EXISTS public.opportunity_evidence (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3269,6 +5893,14 @@ CREATE TABLE IF NOT EXISTS public.opportunity_evidence (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT opportunity_evidence_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_evidence ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_type text CHECK (opportunity_type IN ('market', 'saas', 'website', 'keyword', 'customer', 'trend', 'partnership', 'revenue')),
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS excerpt text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_scores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3281,6 +5913,13 @@ CREATE TABLE IF NOT EXISTS public.opportunity_scores (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT opportunity_scores_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_scores ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_type text CHECK (opportunity_type IN ('market', 'saas', 'website', 'keyword', 'customer', 'trend', 'partnership', 'revenue')),
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS model_version text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_score_factors (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3293,6 +5932,13 @@ CREATE TABLE IF NOT EXISTS public.opportunity_score_factors (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT opportunity_score_factors_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_score_factors ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS score_id uuid,
+  ADD COLUMN IF NOT EXISTS factor text,
+  ADD COLUMN IF NOT EXISTS weight numeric,
+  ADD COLUMN IF NOT EXISTS value numeric,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_actions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3312,6 +5958,20 @@ CREATE TABLE IF NOT EXISTS public.opportunity_actions (
   correlation_id uuid,
   CONSTRAINT opportunity_actions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_actions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_type text CHECK (opportunity_type IN ('market', 'saas', 'website', 'keyword', 'customer', 'trend', 'partnership', 'revenue')),
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS action text,
+  ADD COLUMN IF NOT EXISTS assigned_to uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'todo' NOT NULL CHECK (status IN ('todo', 'doing', 'done')),
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_followups (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3329,6 +5989,18 @@ CREATE TABLE IF NOT EXISTS public.opportunity_followups (
   correlation_id uuid,
   CONSTRAINT opportunity_followups_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_followups ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_type text CHECK (opportunity_type IN ('market', 'saas', 'website', 'keyword', 'customer', 'trend', 'partnership', 'revenue')),
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS follow_up_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_outcomes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3342,6 +6014,14 @@ CREATE TABLE IF NOT EXISTS public.opportunity_outcomes (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT opportunity_outcomes_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_outcomes ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_type text CHECK (opportunity_type IN ('market', 'saas', 'website', 'keyword', 'customer', 'trend', 'partnership', 'revenue')),
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS outcome text CHECK (outcome IN ('won', 'lost', 'abandoned')),
+  ADD COLUMN IF NOT EXISTS value_cents bigint,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.opportunity_alerts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3355,6 +6035,14 @@ CREATE TABLE IF NOT EXISTS public.opportunity_alerts (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT opportunity_alerts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.opportunity_alerts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_type text CHECK (opportunity_type IN ('market', 'saas', 'website', 'keyword', 'customer', 'trend', 'partnership', 'revenue')),
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS severity text DEFAULT 'info' NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+  ADD COLUMN IF NOT EXISTS read_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3369,8 +6057,21 @@ CREATE TABLE IF NOT EXISTS public.prospect_projects (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  icp jsonb NOT NULL DEFAULT '{}',
   CONSTRAINT prospect_projects_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_projects ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS icp jsonb DEFAULT '{}' NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_companies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3388,8 +6089,28 @@ CREATE TABLE IF NOT EXISTS public.prospect_companies (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  size_employees integer,
+  technologies text[],
+  source text,
   CONSTRAINT prospect_companies_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_companies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS domain text,
+  ADD COLUMN IF NOT EXISTS industry text,
+  ADD COLUMN IF NOT EXISTS size_range text,
+  ADD COLUMN IF NOT EXISTS country_code text,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS size_employees integer,
+  ADD COLUMN IF NOT EXISTS technologies text[],
+  ADD COLUMN IF NOT EXISTS source text;
 
 CREATE TABLE IF NOT EXISTS public.prospect_sources (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3405,6 +6126,16 @@ CREATE TABLE IF NOT EXISTS public.prospect_sources (
   correlation_id uuid,
   CONSTRAINT prospect_sources_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_sources ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS source_type text CHECK (source_type IN ('import', 'connector', 'scraping', 'manual', 'api')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3412,7 +6143,7 @@ CREATE TABLE IF NOT EXISTS public.prospects (
   project_id uuid,
   company_id uuid,
   source_id uuid,
-  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'enriched', 'qualified', 'contacted', 'replied', 'converted', 'disqualified', 'unsubscribed')),
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'new_lead', 'enriched', 'contacted', 'qualified', 'interested', 'demo_requested', 'meeting_scheduled', 'proposal_sent', 'negotiation', 'customer', 'lost', 'replied', 'converted', 'disqualified', 'unsubscribed')),
   owner_user_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -3421,8 +6152,34 @@ CREATE TABLE IF NOT EXISTS public.prospects (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
+  score numeric,
+  confidence numeric,
+  need_detected text,
+  source_detail text,
+  last_activity_at timestamptz,
   CONSTRAINT prospects_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospects ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS company_id uuid,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL,
+  ADD COLUMN IF NOT EXISTS owner_user_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS need_detected text,
+  ADD COLUMN IF NOT EXISTS source_detail text,
+  ADD COLUMN IF NOT EXISTS last_activity_at timestamptz;
+ALTER TABLE public.prospects DROP CONSTRAINT IF EXISTS prospects_status_check, ADD CONSTRAINT prospects_status_check CHECK (status IN ('new', 'new_lead', 'enriched', 'contacted', 'qualified', 'interested', 'demo_requested', 'meeting_scheduled', 'proposal_sent', 'negotiation', 'customer', 'lost', 'replied', 'converted', 'disqualified', 'unsubscribed'));
 
 CREATE TABLE IF NOT EXISTS public.prospect_contacts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3444,6 +6201,22 @@ CREATE TABLE IF NOT EXISTS public.prospect_contacts (
   correlation_id uuid,
   CONSTRAINT prospect_contacts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_contacts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS first_name text,
+  ADD COLUMN IF NOT EXISTS last_name text,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS phone text,
+  ADD COLUMN IF NOT EXISTS job_title text,
+  ADD COLUMN IF NOT EXISTS linkedin_url text,
+  ADD COLUMN IF NOT EXISTS consent_status text DEFAULT 'unknown' NOT NULL CHECK (consent_status IN ('unknown', 'legitimate_interest', 'consented', 'opted_out')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospect_enrichment_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3456,6 +6229,13 @@ CREATE TABLE IF NOT EXISTS public.prospect_enrichment_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT prospect_enrichment_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_enrichment_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('succeeded', 'failed')),
+  ADD COLUMN IF NOT EXISTS fields_updated text[],
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_scores (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3468,6 +6248,13 @@ CREATE TABLE IF NOT EXISTS public.prospect_scores (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT prospect_scores_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_scores ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS model_version text,
+  ADD COLUMN IF NOT EXISTS factors jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_segments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3484,6 +6271,17 @@ CREATE TABLE IF NOT EXISTS public.prospect_segments (
   correlation_id uuid,
   CONSTRAINT prospect_segments_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_segments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS criteria jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospect_templates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3501,6 +6299,18 @@ CREATE TABLE IF NOT EXISTS public.prospect_templates (
   correlation_id uuid,
   CONSTRAINT prospect_templates_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_templates ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS channel text CHECK (channel IN ('email', 'linkedin', 'sms')),
+  ADD COLUMN IF NOT EXISTS subject text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospect_campaigns (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3517,8 +6327,27 @@ CREATE TABLE IF NOT EXISTS public.prospect_campaigns (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  channel text NOT NULL DEFAULT 'email' CHECK (channel IN ('email', 'whatsapp')),
+  product_id uuid,
+  settings jsonb NOT NULL DEFAULT '{}',
   CONSTRAINT prospect_campaigns_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_campaigns ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS project_id uuid,
+  ADD COLUMN IF NOT EXISTS segment_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'scheduled', 'running', 'paused', 'completed', 'archived')),
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS channel text DEFAULT 'email' NOT NULL CHECK (channel IN ('email', 'whatsapp')),
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS settings jsonb DEFAULT '{}' NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_campaign_sequences (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3536,6 +6365,18 @@ CREATE TABLE IF NOT EXISTS public.prospect_campaign_sequences (
   correlation_id uuid,
   CONSTRAINT prospect_campaign_sequences_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_campaign_sequences ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS campaign_id uuid,
+  ADD COLUMN IF NOT EXISTS step integer,
+  ADD COLUMN IF NOT EXISTS template_id uuid,
+  ADD COLUMN IF NOT EXISTS delay_hours integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospect_campaign_recipients (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3553,6 +6394,18 @@ CREATE TABLE IF NOT EXISTS public.prospect_campaign_recipients (
   correlation_id uuid,
   CONSTRAINT prospect_campaign_recipients_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_campaign_recipients ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS campaign_id uuid,
+  ADD COLUMN IF NOT EXISTS contact_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'active', 'completed', 'replied', 'bounced', 'unsubscribed', 'stopped')),
+  ADD COLUMN IF NOT EXISTS current_step integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospect_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3569,8 +6422,27 @@ CREATE TABLE IF NOT EXISTS public.prospect_messages (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  channel text NOT NULL DEFAULT 'email' CHECK (channel IN ('email', 'whatsapp')),
+  error_message text,
+  provider_message_id text,
   CONSTRAINT prospect_messages_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_messages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS recipient_id uuid,
+  ADD COLUMN IF NOT EXISTS sequence_id uuid,
+  ADD COLUMN IF NOT EXISTS email_message_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('scheduled', 'sent', 'failed', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS sent_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS channel text DEFAULT 'email' NOT NULL CHECK (channel IN ('email', 'whatsapp')),
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS provider_message_id text;
 
 CREATE TABLE IF NOT EXISTS public.prospect_message_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3582,6 +6454,12 @@ CREATE TABLE IF NOT EXISTS public.prospect_message_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT prospect_message_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_message_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text CHECK (event_type IN ('sent', 'delivered', 'opened', 'clicked', 'replied', 'bounced', 'unsubscribed', 'complained')),
+  ADD COLUMN IF NOT EXISTS occurred_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_conversations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3598,6 +6476,17 @@ CREATE TABLE IF NOT EXISTS public.prospect_conversations (
   correlation_id uuid,
   CONSTRAINT prospect_conversations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_conversations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS contact_id uuid,
+  ADD COLUMN IF NOT EXISTS email_conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'pending', 'closed')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospect_conversation_assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3610,6 +6499,13 @@ CREATE TABLE IF NOT EXISTS public.prospect_conversation_assignments (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT prospect_conversation_assignments_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_conversation_assignments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS assigned_to uuid,
+  ADD COLUMN IF NOT EXISTS assigned_by uuid,
+  ADD COLUMN IF NOT EXISTS unassigned_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_suppression_lists (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3625,6 +6521,16 @@ CREATE TABLE IF NOT EXISTS public.prospect_suppression_lists (
   correlation_id uuid,
   CONSTRAINT prospect_suppression_lists_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_suppression_lists ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS reason text CHECK (reason IN ('unsubscribed', 'bounced', 'complained', 'manual', 'legal')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.crm_pipeline_stages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3643,6 +6549,19 @@ CREATE TABLE IF NOT EXISTS public.crm_pipeline_stages (
   correlation_id uuid,
   CONSTRAINT crm_pipeline_stages_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.crm_pipeline_stages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS position integer,
+  ADD COLUMN IF NOT EXISTS probability_pct integer,
+  ADD COLUMN IF NOT EXISTS is_won boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_lost boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.crm_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3661,21 +6580,53 @@ CREATE TABLE IF NOT EXISTS public.crm_opportunities (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  product_id uuid,
   CONSTRAINT crm_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.crm_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS stage_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS amount_cents bigint,
+  ADD COLUMN IF NOT EXISTS currency text DEFAULT 'EUR' NOT NULL,
+  ADD COLUMN IF NOT EXISTS expected_close_date date,
+  ADD COLUMN IF NOT EXISTS owner_user_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.crm_activities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
   opportunity_id uuid,
   prospect_id uuid,
-  activity_type text NOT NULL CHECK (activity_type IN ('call', 'email', 'meeting', 'note', 'task')),
+  activity_type text NOT NULL CHECK (activity_type IN ('call', 'email', 'meeting', 'note', 'task', 'whatsapp', 'status_change', 'thor_action')),
   summary text NOT NULL,
   occurred_at timestamptz NOT NULL DEFAULT now(),
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  channel text,
+  actor_type text NOT NULL DEFAULT 'user' CHECK (actor_type IN ('user', 'thor', 'system', 'prospect')),
+  entity_ref jsonb NOT NULL DEFAULT '{}',
   CONSTRAINT crm_activities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.crm_activities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS activity_type text,
+  ADD COLUMN IF NOT EXISTS summary text,
+  ADD COLUMN IF NOT EXISTS occurred_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS channel text,
+  ADD COLUMN IF NOT EXISTS actor_type text DEFAULT 'user' NOT NULL CHECK (actor_type IN ('user', 'thor', 'system', 'prospect')),
+  ADD COLUMN IF NOT EXISTS entity_ref jsonb DEFAULT '{}' NOT NULL;
+ALTER TABLE public.crm_activities DROP CONSTRAINT IF EXISTS crm_activities_activity_type_check, ADD CONSTRAINT crm_activities_activity_type_check CHECK (activity_type IN ('call', 'email', 'meeting', 'note', 'task', 'whatsapp', 'status_change', 'thor_action'));
 
 CREATE TABLE IF NOT EXISTS public.crm_meetings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3694,6 +6645,19 @@ CREATE TABLE IF NOT EXISTS public.crm_meetings (
   correlation_id uuid,
   CONSTRAINT crm_meetings_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.crm_meetings ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS starts_at timestamptz,
+  ADD COLUMN IF NOT EXISTS ends_at timestamptz,
+  ADD COLUMN IF NOT EXISTS location text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.crm_tasks (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3712,6 +6676,19 @@ CREATE TABLE IF NOT EXISTS public.crm_tasks (
   correlation_id uuid,
   CONSTRAINT crm_tasks_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.crm_tasks ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS assigned_to uuid,
+  ADD COLUMN IF NOT EXISTS due_at timestamptz,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'todo' NOT NULL CHECK (status IN ('todo', 'doing', 'done', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.prospect_commercial_assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3724,6 +6701,13 @@ CREATE TABLE IF NOT EXISTS public.prospect_commercial_assignments (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT prospect_commercial_assignments_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_commercial_assignments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS assigned_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS unassigned_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.prospect_campaign_metrics (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3738,6 +6722,15 @@ CREATE TABLE IF NOT EXISTS public.prospect_campaign_metrics (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT prospect_campaign_metrics_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.prospect_campaign_metrics ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS campaign_id uuid,
+  ADD COLUMN IF NOT EXISTS date date,
+  ADD COLUMN IF NOT EXISTS sent integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS opened integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS replied integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS bounced integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.email_provider_accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3755,6 +6748,18 @@ CREATE TABLE IF NOT EXISTS public.email_provider_accounts (
   correlation_id uuid,
   CONSTRAINT email_provider_accounts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_provider_accounts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS provider text CHECK (provider IN ('gmail', 'outlook', 'smtp', 'sendgrid', 'mailgun', 'ses', 'other')),
+  ADD COLUMN IF NOT EXISTS display_name text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'error', 'disabled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.email_mailboxes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3771,8 +6776,31 @@ CREATE TABLE IF NOT EXISTS public.email_mailboxes (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  connector_account_id uuid,
+  receive_mode text NOT NULL DEFAULT 'none' CHECK (receive_mode IN ('none', 'webhook', 'gmail', 'graph', 'imap')),
+  send_enabled boolean NOT NULL DEFAULT true,
+  last_sync_at timestamptz,
+  sync_error text,
   CONSTRAINT email_mailboxes_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_mailboxes ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS provider_account_id uuid,
+  ADD COLUMN IF NOT EXISTS address text,
+  ADD COLUMN IF NOT EXISTS display_name text,
+  ADD COLUMN IF NOT EXISTS daily_send_limit integer,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'warming', 'paused', 'disabled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS receive_mode text DEFAULT 'none' NOT NULL CHECK (receive_mode IN ('none', 'webhook', 'gmail', 'graph', 'imap')),
+  ADD COLUMN IF NOT EXISTS send_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS last_sync_at timestamptz,
+  ADD COLUMN IF NOT EXISTS sync_error text;
 
 CREATE TABLE IF NOT EXISTS public.email_mailbox_permissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3790,6 +6818,18 @@ CREATE TABLE IF NOT EXISTS public.email_mailbox_permissions (
   correlation_id uuid,
   CONSTRAINT email_mailbox_permissions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_mailbox_permissions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS can_read boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS can_send boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.email_sync_cursors (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3806,6 +6846,17 @@ CREATE TABLE IF NOT EXISTS public.email_sync_cursors (
   correlation_id uuid,
   CONSTRAINT email_sync_cursors_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_sync_cursors ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS cursor text,
+  ADD COLUMN IF NOT EXISTS last_synced_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.email_webhook_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3818,8 +6869,25 @@ CREATE TABLE IF NOT EXISTS public.email_webhook_events (
   processed_at timestamptz,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  signature_valid boolean,
+  status text NOT NULL DEFAULT 'received' CHECK (status IN ('received', 'processed', 'rejected', 'failed', 'duplicate')),
+  error_message text,
   CONSTRAINT email_webhook_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_webhook_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS payload jsonb,
+  ADD COLUMN IF NOT EXISTS processed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS signature_valid boolean,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'received' NOT NULL CHECK (status IN ('received', 'processed', 'rejected', 'failed', 'duplicate')),
+  ADD COLUMN IF NOT EXISTS error_message text;
 
 CREATE TABLE IF NOT EXISTS public.email_conversations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3838,8 +6906,35 @@ CREATE TABLE IF NOT EXISTS public.email_conversations (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  labels text[],
+  is_unread boolean NOT NULL DEFAULT false,
+  assigned_to uuid,
+  product_id uuid,
+  last_inbound_at timestamptz,
+  last_outbound_at timestamptz,
   CONSTRAINT email_conversations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_conversations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS thread_id text,
+  ADD COLUMN IF NOT EXISTS subject text,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS campaign_id uuid,
+  ADD COLUMN IF NOT EXISTS last_message_at timestamptz,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'pending', 'closed', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS labels text[],
+  ADD COLUMN IF NOT EXISTS is_unread boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS assigned_to uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS last_inbound_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_outbound_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS public.email_conversation_participants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3857,6 +6952,18 @@ CREATE TABLE IF NOT EXISTS public.email_conversation_participants (
   correlation_id uuid,
   CONSTRAINT email_conversation_participants_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_conversation_participants ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS role text CHECK (role IN ('from', 'to', 'cc', 'bcc')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.email_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3885,8 +6992,47 @@ CREATE TABLE IF NOT EXISTS public.email_messages (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  status text NOT NULL DEFAULT 'received' CHECK (status IN ('draft', 'queued', 'sent', 'accepted', 'delivered', 'deferred', 'bounced', 'failed', 'received')),
+  is_read boolean NOT NULL DEFAULT false,
+  classification text,
+  provider_thread_id text,
+  headers jsonb NOT NULL DEFAULT '{}',
+  sent_by uuid,
+  error_message text,
   CONSTRAINT email_messages_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_messages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id_header text,
+  ADD COLUMN IF NOT EXISTS in_reply_to text,
+  ADD COLUMN IF NOT EXISTS references_header text,
+  ADD COLUMN IF NOT EXISTS provider_message_id text,
+  ADD COLUMN IF NOT EXISTS direction text CHECK (direction IN ('inbound', 'outbound')),
+  ADD COLUMN IF NOT EXISTS from_email text,
+  ADD COLUMN IF NOT EXISTS to_emails text[],
+  ADD COLUMN IF NOT EXISTS cc_emails text[],
+  ADD COLUMN IF NOT EXISTS subject text,
+  ADD COLUMN IF NOT EXISTS body_text text,
+  ADD COLUMN IF NOT EXISTS body_html_storage_path text,
+  ADD COLUMN IF NOT EXISTS sent_at timestamptz,
+  ADD COLUMN IF NOT EXISTS received_at timestamptz,
+  ADD COLUMN IF NOT EXISTS prospect_id uuid,
+  ADD COLUMN IF NOT EXISTS campaign_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'received' NOT NULL CHECK (status IN ('draft', 'queued', 'sent', 'accepted', 'delivered', 'deferred', 'bounced', 'failed', 'received')),
+  ADD COLUMN IF NOT EXISTS is_read boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS classification text,
+  ADD COLUMN IF NOT EXISTS provider_thread_id text,
+  ADD COLUMN IF NOT EXISTS headers jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS sent_by uuid,
+  ADD COLUMN IF NOT EXISTS error_message text;
 
 CREATE TABLE IF NOT EXISTS public.email_message_attachments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3903,8 +7049,25 @@ CREATE TABLE IF NOT EXISTS public.email_message_attachments (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  verification_status text NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'clean', 'rejected', 'infected', 'not_scanned')),
+  sha256 text,
   CONSTRAINT email_message_attachments_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_message_attachments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS filename text,
+  ADD COLUMN IF NOT EXISTS mime_type text,
+  ADD COLUMN IF NOT EXISTS size_bytes bigint,
+  ADD COLUMN IF NOT EXISTS storage_path text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS verification_status text DEFAULT 'pending' NOT NULL CHECK (verification_status IN ('pending', 'clean', 'rejected', 'infected', 'not_scanned')),
+  ADD COLUMN IF NOT EXISTS sha256 text;
 
 CREATE TABLE IF NOT EXISTS public.email_message_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3916,6 +7079,12 @@ CREATE TABLE IF NOT EXISTS public.email_message_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT email_message_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_message_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text CHECK (event_type IN ('opened', 'clicked', 'replied', 'forwarded', 'flagged')),
+  ADD COLUMN IF NOT EXISTS occurred_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.email_delivery_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3929,18 +7098,50 @@ CREATE TABLE IF NOT EXISTS public.email_delivery_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT email_delivery_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_delivery_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS provider text,
+  ADD COLUMN IF NOT EXISTS event_type text CHECK (event_type IN ('queued', 'sent', 'delivered', 'deferred', 'bounced', 'dropped', 'complained')),
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS details jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.email_reply_classifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
   message_id uuid NOT NULL,
-  category text NOT NULL CHECK (category IN ('interested', 'not_interested', 'out_of_office', 'unsubscribe', 'question', 'bounce', 'other')),
+  category text NOT NULL CHECK (category IN ('interested', 'demo_requested', 'pricing_request', 'information_request', 'meeting_request', 'negotiation', 'not_interested', 'unsubscribe', 'out_of_office', 'automatic_reply', 'human_review_required', 'question', 'bounce', 'other')),
   confidence numeric,
   model_code text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  summary text,
+  intents jsonb NOT NULL DEFAULT '[]',
+  questions jsonb NOT NULL DEFAULT '[]',
+  objections jsonb NOT NULL DEFAULT '[]',
+  next_action text,
+  provider_code text,
+  cost_cents numeric,
+  method text NOT NULL DEFAULT 'rules' CHECK (method IN ('rules', 'ai')),
   CONSTRAINT email_reply_classifications_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_reply_classifications ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS summary text,
+  ADD COLUMN IF NOT EXISTS intents jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS questions jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS objections jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS next_action text,
+  ADD COLUMN IF NOT EXISTS provider_code text,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS method text DEFAULT 'rules' NOT NULL CHECK (method IN ('rules', 'ai'));
+ALTER TABLE public.email_reply_classifications DROP CONSTRAINT IF EXISTS email_reply_classifications_category_check, ADD CONSTRAINT email_reply_classifications_category_check CHECK (category IN ('interested', 'demo_requested', 'pricing_request', 'information_request', 'meeting_request', 'negotiation', 'not_interested', 'unsubscribe', 'out_of_office', 'automatic_reply', 'human_review_required', 'question', 'bounce', 'other'));
 
 CREATE TABLE IF NOT EXISTS public.email_reply_suggestions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3952,6 +7153,12 @@ CREATE TABLE IF NOT EXISTS public.email_reply_suggestions (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT email_reply_suggestions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_reply_suggestions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.email_reply_drafts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3967,8 +7174,28 @@ CREATE TABLE IF NOT EXISTS public.email_reply_drafts (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  conversation_id uuid,
+  sent_message_id uuid,
+  generated_by text NOT NULL DEFAULT 'thor' CHECK (generated_by IN ('thor', 'user')),
+  model_code text,
   CONSTRAINT email_reply_drafts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_reply_drafts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS author_id uuid,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'approved', 'sent', 'discarded')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS sent_message_id uuid,
+  ADD COLUMN IF NOT EXISTS generated_by text DEFAULT 'thor' NOT NULL CHECK (generated_by IN ('thor', 'user')),
+  ADD COLUMN IF NOT EXISTS model_code text;
 
 CREATE TABLE IF NOT EXISTS public.email_suppression_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3980,6 +7207,12 @@ CREATE TABLE IF NOT EXISTS public.email_suppression_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT email_suppression_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_suppression_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS email text,
+  ADD COLUMN IF NOT EXISTS reason text CHECK (reason IN ('bounce', 'complaint', 'unsubscribe', 'manual')),
+  ADD COLUMN IF NOT EXISTS source_message_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.email_thread_associations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -3996,6 +7229,17 @@ CREATE TABLE IF NOT EXISTS public.email_thread_associations (
   correlation_id uuid,
   CONSTRAINT email_thread_associations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_thread_associations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS entity_type text,
+  ADD COLUMN IF NOT EXISTS entity_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.email_sync_runs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4007,8 +7251,18 @@ CREATE TABLE IF NOT EXISTS public.email_sync_runs (
   error_message text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT email_sync_runs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_sync_runs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('running', 'succeeded', 'failed')),
+  ADD COLUMN IF NOT EXISTS messages_synced integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.email_provider_errors (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4020,6 +7274,12 @@ CREATE TABLE IF NOT EXISTS public.email_provider_errors (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT email_provider_errors_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_provider_errors ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS mailbox_id uuid,
+  ADD COLUMN IF NOT EXISTS error_code text,
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.email_commercial_assignments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4032,6 +7292,13 @@ CREATE TABLE IF NOT EXISTS public.email_commercial_assignments (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT email_commercial_assignments_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.email_commercial_assignments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS assigned_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS unassigned_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_intelligence_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4044,6 +7311,13 @@ CREATE TABLE IF NOT EXISTS public.growth_intelligence_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_intelligence_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_intelligence_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS source text,
+  ADD COLUMN IF NOT EXISTS data jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_intelligence_insights (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4060,8 +7334,27 @@ CREATE TABLE IF NOT EXISTS public.growth_intelligence_insights (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  rule_code text,
+  sources jsonb NOT NULL DEFAULT '[]',
+  nature text NOT NULL DEFAULT 'fact' CHECK (nature IN ('fact', 'hypothesis')),
   CONSTRAINT growth_intelligence_insights_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_intelligence_insights ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL CHECK (status IN ('new', 'acknowledged', 'dismissed')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS rule_code text,
+  ADD COLUMN IF NOT EXISTS sources jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS nature text DEFAULT 'fact' NOT NULL CHECK (nature IN ('fact', 'hypothesis'));
 
 CREATE TABLE IF NOT EXISTS public.growth_opportunities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4080,6 +7373,19 @@ CREATE TABLE IF NOT EXISTS public.growth_opportunities (
   correlation_id uuid,
   CONSTRAINT growth_opportunities_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_opportunities ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS impact_score numeric,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'planned', 'done', 'dismissed')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_opportunity_evidence (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4091,6 +7397,12 @@ CREATE TABLE IF NOT EXISTS public.growth_opportunity_evidence (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_opportunity_evidence_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_opportunity_evidence ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS opportunity_id uuid,
+  ADD COLUMN IF NOT EXISTS source text,
+  ADD COLUMN IF NOT EXISTS data jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_strategy_plans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4109,6 +7421,19 @@ CREATE TABLE IF NOT EXISTS public.growth_strategy_plans (
   correlation_id uuid,
   CONSTRAINT growth_strategy_plans_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_strategy_plans ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS horizon text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'active', 'completed', 'archived')),
+  ADD COLUMN IF NOT EXISTS plan jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_strategy_actions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4127,6 +7452,19 @@ CREATE TABLE IF NOT EXISTS public.growth_strategy_actions (
   correlation_id uuid,
   CONSTRAINT growth_strategy_actions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_strategy_actions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS plan_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS owner_user_id uuid,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'todo' NOT NULL CHECK (status IN ('todo', 'doing', 'done', 'cancelled')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_predictions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4140,6 +7478,14 @@ CREATE TABLE IF NOT EXISTS public.growth_predictions (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_predictions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_predictions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS metric text,
+  ADD COLUMN IF NOT EXISTS horizon_days integer,
+  ADD COLUMN IF NOT EXISTS predicted_value numeric,
+  ADD COLUMN IF NOT EXISTS model_version text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_prediction_evaluations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4151,6 +7497,12 @@ CREATE TABLE IF NOT EXISTS public.growth_prediction_evaluations (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_prediction_evaluations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_prediction_evaluations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS prediction_id uuid,
+  ADD COLUMN IF NOT EXISTS actual_value numeric,
+  ADD COLUMN IF NOT EXISTS error numeric,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_experiments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4170,6 +7522,20 @@ CREATE TABLE IF NOT EXISTS public.growth_experiments (
   correlation_id uuid,
   CONSTRAINT growth_experiments_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_experiments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS hypothesis text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'running', 'completed', 'stopped')),
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS ended_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_experiment_variants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4186,6 +7552,17 @@ CREATE TABLE IF NOT EXISTS public.growth_experiment_variants (
   correlation_id uuid,
   CONSTRAINT growth_experiment_variants_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_experiment_variants ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS experiment_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS allocation_pct numeric,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.growth_experiment_results (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4198,6 +7575,13 @@ CREATE TABLE IF NOT EXISTS public.growth_experiment_results (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_experiment_results_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_experiment_results ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS variant_id uuid,
+  ADD COLUMN IF NOT EXISTS metric text,
+  ADD COLUMN IF NOT EXISTS value numeric,
+  ADD COLUMN IF NOT EXISTS significance numeric,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_learning_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4209,6 +7593,12 @@ CREATE TABLE IF NOT EXISTS public.growth_learning_events (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_learning_events_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_learning_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS source text,
+  ADD COLUMN IF NOT EXISTS lesson text,
+  ADD COLUMN IF NOT EXISTS data jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_recommendations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4225,8 +7615,41 @@ CREATE TABLE IF NOT EXISTS public.growth_recommendations (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  rule_code text,
+  dedup_key text,
+  sources jsonb NOT NULL DEFAULT '[]',
+  justification text,
+  confidence numeric,
+  impact text,
+  difficulty text,
+  risks jsonb NOT NULL DEFAULT '[]',
+  actions jsonb NOT NULL DEFAULT '[]',
+  nature text NOT NULL DEFAULT 'recommendation' CHECK (nature IN ('fact', 'hypothesis', 'recommendation')),
   CONSTRAINT growth_recommendations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_recommendations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS priority integer DEFAULT 3 NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'accepted', 'rejected', 'done')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS rule_code text,
+  ADD COLUMN IF NOT EXISTS dedup_key text,
+  ADD COLUMN IF NOT EXISTS sources jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS justification text,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS impact text,
+  ADD COLUMN IF NOT EXISTS difficulty text,
+  ADD COLUMN IF NOT EXISTS risks jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS actions jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS nature text DEFAULT 'recommendation' NOT NULL CHECK (nature IN ('fact', 'hypothesis', 'recommendation'));
 
 CREATE TABLE IF NOT EXISTS public.growth_recommendation_feedback (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4239,6 +7662,13 @@ CREATE TABLE IF NOT EXISTS public.growth_recommendation_feedback (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_recommendation_feedback_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_recommendation_feedback ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS recommendation_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS rating integer,
+  ADD COLUMN IF NOT EXISTS comment text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_decision_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4251,6 +7681,13 @@ CREATE TABLE IF NOT EXISTS public.growth_decision_logs (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_decision_logs_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_decision_logs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS decision text,
+  ADD COLUMN IF NOT EXISTS rationale text,
+  ADD COLUMN IF NOT EXISTS decided_by uuid,
+  ADD COLUMN IF NOT EXISTS inputs jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_proactive_alerts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4263,6 +7700,13 @@ CREATE TABLE IF NOT EXISTS public.growth_proactive_alerts (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_proactive_alerts_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_proactive_alerts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS message text,
+  ADD COLUMN IF NOT EXISTS severity text DEFAULT 'info' NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+  ADD COLUMN IF NOT EXISTS acknowledged_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.growth_intelligence_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4273,6 +7717,11 @@ CREATE TABLE IF NOT EXISTS public.growth_intelligence_snapshots (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT growth_intelligence_snapshots_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.growth_intelligence_snapshots ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS data jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.thor_conversations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4290,6 +7739,18 @@ CREATE TABLE IF NOT EXISTS public.thor_conversations (
   correlation_id uuid,
   CONSTRAINT thor_conversations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.thor_conversations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'archived')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.thor_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4302,8 +7763,27 @@ CREATE TABLE IF NOT EXISTS public.thor_messages (
   output_tokens integer,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  provider_code text,
+  cost_cents numeric,
+  duration_ms integer,
+  prompt_version text,
+  tool_calls jsonb,
   CONSTRAINT thor_messages_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.thor_messages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS role text CHECK (role IN ('user', 'assistant', 'tool', 'system')),
+  ADD COLUMN IF NOT EXISTS content text,
+  ADD COLUMN IF NOT EXISTS model_code text,
+  ADD COLUMN IF NOT EXISTS input_tokens integer,
+  ADD COLUMN IF NOT EXISTS output_tokens integer,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS provider_code text,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric,
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS prompt_version text,
+  ADD COLUMN IF NOT EXISTS tool_calls jsonb;
 
 CREATE TABLE IF NOT EXISTS public.thor_tool_executions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4316,8 +7796,21 @@ CREATE TABLE IF NOT EXISTS public.thor_tool_executions (
   output_summary jsonb,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
+  duration_ms integer,
+  approval_request_id uuid,
   CONSTRAINT thor_tool_executions_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.thor_tool_executions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS tool_name text,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS status text CHECK (status IN ('succeeded', 'failed', 'denied')),
+  ADD COLUMN IF NOT EXISTS input_summary jsonb,
+  ADD COLUMN IF NOT EXISTS output_summary jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS duration_ms integer,
+  ADD COLUMN IF NOT EXISTS approval_request_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.thor_memory (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4336,6 +7829,19 @@ CREATE TABLE IF NOT EXISTS public.thor_memory (
   correlation_id uuid,
   CONSTRAINT thor_memory_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.thor_memory ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS memory_type text CHECK (memory_type IN ('fact', 'preference', 'context', 'summary')),
+  ADD COLUMN IF NOT EXISTS content text,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
 
 CREATE TABLE IF NOT EXISTS public.thor_memory_sources (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4347,6 +7853,12 @@ CREATE TABLE IF NOT EXISTS public.thor_memory_sources (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT thor_memory_sources_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.thor_memory_sources ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS memory_id uuid,
+  ADD COLUMN IF NOT EXISTS source_type text,
+  ADD COLUMN IF NOT EXISTS source_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 CREATE TABLE IF NOT EXISTS public.thor_feedback (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -4359,6 +7871,513 @@ CREATE TABLE IF NOT EXISTS public.thor_feedback (
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT thor_feedback_tenant_id_id_key UNIQUE (tenant_id, id)
 );
+ALTER TABLE public.thor_feedback ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS message_id uuid,
+  ADD COLUMN IF NOT EXISTS user_id uuid,
+  ADD COLUMN IF NOT EXISTS rating integer CHECK (rating IN (-1, 1)),
+  ADD COLUMN IF NOT EXISTS comment text,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.ai_feature_routes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid,
+  feature_code text NOT NULL,
+  model_id uuid NOT NULL,
+  priority integer NOT NULL DEFAULT 1,
+  quality text NOT NULL DEFAULT 'standard' CHECK (quality IN ('economy', 'standard', 'premium')),
+  max_latency_ms integer,
+  is_enabled boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.ai_feature_routes ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS feature_code text,
+  ADD COLUMN IF NOT EXISTS model_id uuid,
+  ADD COLUMN IF NOT EXISTS priority integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS quality text DEFAULT 'standard' NOT NULL CHECK (quality IN ('economy', 'standard', 'premium')),
+  ADD COLUMN IF NOT EXISTS max_latency_ms integer,
+  ADD COLUMN IF NOT EXISTS is_enabled boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.platform_action_capabilities (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  module_code text NOT NULL,
+  action_code text NOT NULL,
+  max_mode text NOT NULL DEFAULT 'approval' CHECK (max_mode IN ('automatic', 'approval', 'analysis', 'disabled')),
+  description text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.platform_action_capabilities ADD COLUMN IF NOT EXISTS module_code text,
+  ADD COLUMN IF NOT EXISTS action_code text,
+  ADD COLUMN IF NOT EXISTS max_mode text DEFAULT 'approval' NOT NULL CHECK (max_mode IN ('automatic', 'approval', 'analysis', 'disabled')),
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.tenant_growth_policies (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  module_code text NOT NULL,
+  action_code text NOT NULL,
+  mode text NOT NULL DEFAULT 'approval' CHECK (mode IN ('automatic', 'approval', 'analysis', 'disabled')),
+  growth_mode text NOT NULL DEFAULT 'assisted' CHECK (growth_mode IN ('assisted', 'autonomous', 'hybrid')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT tenant_growth_policies_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.tenant_growth_policies ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS module_code text,
+  ADD COLUMN IF NOT EXISTS action_code text,
+  ADD COLUMN IF NOT EXISTS mode text DEFAULT 'approval' NOT NULL CHECK (mode IN ('automatic', 'approval', 'analysis', 'disabled')),
+  ADD COLUMN IF NOT EXISTS growth_mode text DEFAULT 'assisted' NOT NULL CHECK (growth_mode IN ('assisted', 'autonomous', 'hybrid')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.approval_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  module_code text NOT NULL,
+  action_code text NOT NULL,
+  entity_type text,
+  entity_id uuid,
+  product_id uuid,
+  payload jsonb NOT NULL DEFAULT '{}',
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'expired', 'executed', 'failed')),
+  requested_by uuid,
+  requested_by_agent text,
+  decided_by uuid,
+  decided_at timestamptz,
+  decision_reason text,
+  execution_id uuid,
+  expires_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT approval_requests_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.approval_requests ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS module_code text,
+  ADD COLUMN IF NOT EXISTS action_code text,
+  ADD COLUMN IF NOT EXISTS entity_type text,
+  ADD COLUMN IF NOT EXISTS entity_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS payload jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'expired', 'executed', 'failed')),
+  ADD COLUMN IF NOT EXISTS requested_by uuid,
+  ADD COLUMN IF NOT EXISTS requested_by_agent text,
+  ADD COLUMN IF NOT EXISTS decided_by uuid,
+  ADD COLUMN IF NOT EXISTS decided_at timestamptz,
+  ADD COLUMN IF NOT EXISTS decision_reason text,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.builder_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid,
+  name text NOT NULL,
+  page_type text NOT NULL,
+  sections jsonb NOT NULL DEFAULT '[]',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid
+);
+ALTER TABLE public.builder_templates ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS page_type text,
+  ADD COLUMN IF NOT EXISTS sections jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.builder_pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  product_id uuid,
+  website_id uuid,
+  template_id uuid,
+  page_type text NOT NULL CHECK (page_type IN ('landing', 'product', 'feature', 'comparison', 'industry', 'seo', 'conversion')),
+  title text NOT NULL,
+  slug text NOT NULL,
+  sections jsonb NOT NULL DEFAULT '[]',
+  seo jsonb NOT NULL DEFAULT '{}',
+  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'review', 'approved', 'published', 'archived')),
+  connector_account_id uuid,
+  external_id text,
+  published_url text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT builder_pages_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.builder_pages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS website_id uuid,
+  ADD COLUMN IF NOT EXISTS template_id uuid,
+  ADD COLUMN IF NOT EXISTS page_type text CHECK (page_type IN ('landing', 'product', 'feature', 'comparison', 'industry', 'seo', 'conversion')),
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS slug text,
+  ADD COLUMN IF NOT EXISTS sections jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS seo jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'review', 'approved', 'published', 'archived')),
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS external_id text,
+  ADD COLUMN IF NOT EXISTS published_url text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.builder_page_versions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  page_id uuid NOT NULL,
+  version integer NOT NULL,
+  title text,
+  sections jsonb NOT NULL,
+  seo jsonb,
+  author_id uuid,
+  correlation_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT builder_page_versions_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.builder_page_versions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS page_id uuid,
+  ADD COLUMN IF NOT EXISTS version integer,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS sections jsonb,
+  ADD COLUMN IF NOT EXISTS seo jsonb,
+  ADD COLUMN IF NOT EXISTS author_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.social_listening_configs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  product_id uuid,
+  name text NOT NULL,
+  keywords text[],
+  negative_keywords text[],
+  industries text[],
+  countries text[],
+  languages text[],
+  personas text[],
+  sources text[],
+  frequency text NOT NULL DEFAULT 'daily' CHECK (frequency IN ('hourly', 'daily', 'weekly')),
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused')),
+  last_run_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT social_listening_configs_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.social_listening_configs ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS keywords text[],
+  ADD COLUMN IF NOT EXISTS negative_keywords text[],
+  ADD COLUMN IF NOT EXISTS industries text[],
+  ADD COLUMN IF NOT EXISTS countries text[],
+  ADD COLUMN IF NOT EXISTS languages text[],
+  ADD COLUMN IF NOT EXISTS personas text[],
+  ADD COLUMN IF NOT EXISTS sources text[],
+  ADD COLUMN IF NOT EXISTS frequency text DEFAULT 'daily' NOT NULL CHECK (frequency IN ('hourly', 'daily', 'weekly')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'paused')),
+  ADD COLUMN IF NOT EXISTS last_run_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.social_signals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  config_id uuid NOT NULL,
+  source text NOT NULL,
+  external_id text NOT NULL,
+  url text,
+  author_handle text,
+  title text,
+  content text,
+  published_at timestamptz,
+  language text,
+  intent text CHECK (intent IN ('software_request', 'recommendation_request', 'business_need', 'solution_search', 'problem', 'commercial_intent', 'discussion')),
+  score numeric,
+  confidence numeric,
+  dedup_hash text NOT NULL,
+  status text NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'qualified', 'assigned', 'dismissed', 'converted')),
+  assigned_to uuid,
+  evidence jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT social_signals_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.social_signals ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS config_id uuid,
+  ADD COLUMN IF NOT EXISTS source text,
+  ADD COLUMN IF NOT EXISTS external_id text,
+  ADD COLUMN IF NOT EXISTS url text,
+  ADD COLUMN IF NOT EXISTS author_handle text,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS content text,
+  ADD COLUMN IF NOT EXISTS published_at timestamptz,
+  ADD COLUMN IF NOT EXISTS language text,
+  ADD COLUMN IF NOT EXISTS intent text CHECK (intent IN ('software_request', 'recommendation_request', 'business_need', 'solution_search', 'problem', 'commercial_intent', 'discussion')),
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS confidence numeric,
+  ADD COLUMN IF NOT EXISTS dedup_hash text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'new' NOT NULL CHECK (status IN ('new', 'qualified', 'assigned', 'dismissed', 'converted')),
+  ADD COLUMN IF NOT EXISTS assigned_to uuid,
+  ADD COLUMN IF NOT EXISTS evidence jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.whatsapp_accounts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  connector_account_id uuid,
+  phone_number_id text NOT NULL,
+  waba_id text,
+  display_phone text,
+  status text NOT NULL DEFAULT 'configured' CHECK (status IN ('configured', 'connected', 'failed', 'disconnected')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT whatsapp_accounts_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.whatsapp_accounts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS connector_account_id uuid,
+  ADD COLUMN IF NOT EXISTS phone_number_id text,
+  ADD COLUMN IF NOT EXISTS waba_id text,
+  ADD COLUMN IF NOT EXISTS display_phone text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'configured' NOT NULL CHECK (status IN ('configured', 'connected', 'failed', 'disconnected')),
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.whatsapp_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  account_id uuid NOT NULL,
+  name text NOT NULL,
+  language text NOT NULL DEFAULT 'fr',
+  category text,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'paused')),
+  components jsonb NOT NULL DEFAULT '[]',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT whatsapp_templates_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.whatsapp_templates ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS language text DEFAULT 'fr' NOT NULL,
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'paused')),
+  ADD COLUMN IF NOT EXISTS components jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.whatsapp_contacts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  wa_id text NOT NULL,
+  prospect_contact_id uuid,
+  display_name text,
+  consent_status text NOT NULL DEFAULT 'unknown' CHECK (consent_status IN ('unknown', 'opted_in', 'opted_out')),
+  consent_source text,
+  consent_at timestamptz,
+  last_inbound_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT whatsapp_contacts_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.whatsapp_contacts ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS wa_id text,
+  ADD COLUMN IF NOT EXISTS prospect_contact_id uuid,
+  ADD COLUMN IF NOT EXISTS display_name text,
+  ADD COLUMN IF NOT EXISTS consent_status text DEFAULT 'unknown' NOT NULL CHECK (consent_status IN ('unknown', 'opted_in', 'opted_out')),
+  ADD COLUMN IF NOT EXISTS consent_source text,
+  ADD COLUMN IF NOT EXISTS consent_at timestamptz,
+  ADD COLUMN IF NOT EXISTS last_inbound_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.whatsapp_conversations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  account_id uuid NOT NULL,
+  contact_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'pending', 'closed')),
+  assigned_to uuid,
+  is_unread boolean NOT NULL DEFAULT false,
+  last_message_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT whatsapp_conversations_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.whatsapp_conversations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS contact_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'open' NOT NULL CHECK (status IN ('open', 'pending', 'closed')),
+  ADD COLUMN IF NOT EXISTS assigned_to uuid,
+  ADD COLUMN IF NOT EXISTS is_unread boolean DEFAULT false NOT NULL,
+  ADD COLUMN IF NOT EXISTS last_message_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.whatsapp_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  conversation_id uuid NOT NULL,
+  direction text NOT NULL CHECK (direction IN ('inbound', 'outbound')),
+  wa_message_id text,
+  message_type text NOT NULL DEFAULT 'text',
+  body text,
+  template_name text,
+  status text NOT NULL DEFAULT 'received' CHECK (status IN ('queued', 'sent', 'delivered', 'read', 'failed', 'received')),
+  error_message text,
+  sent_by uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT whatsapp_messages_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.whatsapp_messages ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS conversation_id uuid,
+  ADD COLUMN IF NOT EXISTS direction text CHECK (direction IN ('inbound', 'outbound')),
+  ADD COLUMN IF NOT EXISTS wa_message_id text,
+  ADD COLUMN IF NOT EXISTS message_type text DEFAULT 'text' NOT NULL,
+  ADD COLUMN IF NOT EXISTS body text,
+  ADD COLUMN IF NOT EXISTS template_name text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'received' NOT NULL CHECK (status IN ('queued', 'sent', 'delivered', 'read', 'failed', 'received')),
+  ADD COLUMN IF NOT EXISTS error_message text,
+  ADD COLUMN IF NOT EXISTS sent_by uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.whatsapp_webhook_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  account_id uuid,
+  idempotency_key text NOT NULL,
+  signature_valid boolean,
+  event_type text NOT NULL,
+  payload jsonb NOT NULL,
+  correlation_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT whatsapp_webhook_events_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.whatsapp_webhook_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS account_id uuid,
+  ADD COLUMN IF NOT EXISTS idempotency_key text,
+  ADD COLUMN IF NOT EXISTS signature_valid boolean,
+  ADD COLUMN IF NOT EXISTS event_type text,
+  ADD COLUMN IF NOT EXISTS payload jsonb,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
 -- ── Foreign keys (added after all tables exist: cycle-safe) ──
 DO $$ BEGIN ALTER TABLE public.user_profiles ADD CONSTRAINT user_profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4632,6 +8651,7 @@ DO $$ BEGIN ALTER TABLE public.scheduler_task_dependencies ADD CONSTRAINT schedu
 DO $$ BEGIN ALTER TABLE public.scheduler_task_dependencies ADD CONSTRAINT scheduler_task_dependencies_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_execution_runs ADD CONSTRAINT scheduler_execution_runs_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_execution_runs ADD CONSTRAINT scheduler_execution_runs_task_id_fkey FOREIGN KEY (tenant_id, task_id) REFERENCES public.scheduler_tasks(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.scheduler_execution_runs ADD CONSTRAINT scheduler_execution_runs_scheduler_id_fkey FOREIGN KEY (tenant_id, scheduler_id) REFERENCES public.tenant_schedulers(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_execution_steps ADD CONSTRAINT scheduler_execution_steps_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_execution_steps ADD CONSTRAINT scheduler_execution_steps_run_id_fkey FOREIGN KEY (tenant_id, run_id) REFERENCES public.scheduler_execution_runs(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_execution_metrics ADD CONSTRAINT scheduler_execution_metrics_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4772,6 +8792,7 @@ DO $$ BEGIN ALTER TABLE public.seo_projects ADD CONSTRAINT seo_projects_updated_
 DO $$ BEGIN ALTER TABLE public.seo_audits ADD CONSTRAINT seo_audits_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.seo_audits ADD CONSTRAINT seo_audits_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.seo_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.seo_audits ADD CONSTRAINT seo_audits_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.seo_audits ADD CONSTRAINT seo_audits_website_id_fkey FOREIGN KEY (tenant_id, website_id) REFERENCES public.websites(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.seo_audit_pages ADD CONSTRAINT seo_audit_pages_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.seo_audit_pages ADD CONSTRAINT seo_audit_pages_audit_id_fkey FOREIGN KEY (tenant_id, audit_id) REFERENCES public.seo_audits(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.seo_audit_pages ADD CONSTRAINT seo_audit_pages_page_id_fkey FOREIGN KEY (tenant_id, page_id) REFERENCES public.website_pages(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4785,6 +8806,7 @@ DO $$ BEGIN ALTER TABLE public.seo_recommendations ADD CONSTRAINT seo_recommenda
 DO $$ BEGIN ALTER TABLE public.seo_recommendations ADD CONSTRAINT seo_recommendations_issue_id_fkey FOREIGN KEY (tenant_id, issue_id) REFERENCES public.seo_issues(tenant_id, id) ON DELETE SET NULL (issue_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.seo_recommendations ADD CONSTRAINT seo_recommendations_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.seo_recommendations ADD CONSTRAINT seo_recommendations_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.seo_recommendations ADD CONSTRAINT seo_recommendations_audit_id_fkey FOREIGN KEY (tenant_id, audit_id) REFERENCES public.seo_audits(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.keyword_groups ADD CONSTRAINT keyword_groups_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.keyword_groups ADD CONSTRAINT keyword_groups_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.seo_projects(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.keyword_groups ADD CONSTRAINT keyword_groups_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4807,6 +8829,7 @@ DO $$ BEGIN ALTER TABLE public.seo_competitor_snapshots ADD CONSTRAINT seo_compe
 DO $$ BEGIN ALTER TABLE public.seo_competitor_snapshots ADD CONSTRAINT seo_competitor_snapshots_competitor_id_fkey FOREIGN KEY (tenant_id, competitor_id) REFERENCES public.product_competitors(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.geo_audits ADD CONSTRAINT geo_audits_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.geo_audits ADD CONSTRAINT geo_audits_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.geo_audits ADD CONSTRAINT geo_audits_website_id_fkey FOREIGN KEY (tenant_id, website_id) REFERENCES public.websites(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.geo_audit_pages ADD CONSTRAINT geo_audit_pages_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.geo_audit_pages ADD CONSTRAINT geo_audit_pages_audit_id_fkey FOREIGN KEY (tenant_id, audit_id) REFERENCES public.geo_audits(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.geo_audit_pages ADD CONSTRAINT geo_audit_pages_page_id_fkey FOREIGN KEY (tenant_id, page_id) REFERENCES public.website_pages(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4864,6 +8887,8 @@ DO $$ BEGIN ALTER TABLE public.generated_contents ADD CONSTRAINT generated_conte
 DO $$ BEGIN ALTER TABLE public.generated_contents ADD CONSTRAINT generated_contents_template_id_fkey FOREIGN KEY (tenant_id, template_id) REFERENCES public.content_templates(tenant_id, id) ON DELETE SET NULL (template_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.generated_contents ADD CONSTRAINT generated_contents_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.generated_contents ADD CONSTRAINT generated_contents_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.generated_contents ADD CONSTRAINT generated_contents_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.generated_contents ADD CONSTRAINT generated_contents_author_id_fkey FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.content_versions ADD CONSTRAINT content_versions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.content_versions ADD CONSTRAINT content_versions_content_id_fkey FOREIGN KEY (tenant_id, content_id) REFERENCES public.generated_contents(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.content_approvals ADD CONSTRAINT content_approvals_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4879,6 +8904,7 @@ DO $$ BEGIN ALTER TABLE public.content_publications ADD CONSTRAINT content_publi
 DO $$ BEGIN ALTER TABLE public.content_publications ADD CONSTRAINT content_publications_content_id_fkey FOREIGN KEY (tenant_id, content_id) REFERENCES public.generated_contents(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.content_publications ADD CONSTRAINT content_publications_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.content_publications ADD CONSTRAINT content_publications_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.content_publications ADD CONSTRAINT content_publications_connector_account_id_fkey FOREIGN KEY (tenant_id, connector_account_id) REFERENCES public.tenant_connector_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.publication_schedules ADD CONSTRAINT publication_schedules_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.publication_schedules ADD CONSTRAINT publication_schedules_content_id_fkey FOREIGN KEY (tenant_id, content_id) REFERENCES public.generated_contents(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.publication_schedules ADD CONSTRAINT publication_schedules_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4918,6 +8944,7 @@ DO $$ BEGIN ALTER TABLE public.video_assets ADD CONSTRAINT video_assets_created_
 DO $$ BEGIN ALTER TABLE public.video_assets ADD CONSTRAINT video_assets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.video_generation_jobs ADD CONSTRAINT video_generation_jobs_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.video_generation_jobs ADD CONSTRAINT video_generation_jobs_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.video_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.video_generation_jobs ADD CONSTRAINT video_generation_jobs_output_asset_id_fkey FOREIGN KEY (tenant_id, output_asset_id) REFERENCES public.video_assets(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.video_render_jobs ADD CONSTRAINT video_render_jobs_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.video_render_jobs ADD CONSTRAINT video_render_jobs_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.video_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.video_subtitles ADD CONSTRAINT video_subtitles_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -4948,34 +8975,50 @@ DO $$ BEGIN ALTER TABLE public.market_opportunities ADD CONSTRAINT market_opport
 DO $$ BEGIN ALTER TABLE public.market_opportunities ADD CONSTRAINT market_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.market_opportunities ADD CONSTRAINT market_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.market_opportunities ADD CONSTRAINT market_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.market_opportunities ADD CONSTRAINT market_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.market_opportunities ADD CONSTRAINT market_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.saas_opportunities ADD CONSTRAINT saas_opportunities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.saas_opportunities ADD CONSTRAINT saas_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.saas_opportunities ADD CONSTRAINT saas_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.saas_opportunities ADD CONSTRAINT saas_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.saas_opportunities ADD CONSTRAINT saas_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.saas_opportunities ADD CONSTRAINT saas_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.website_opportunities ADD CONSTRAINT website_opportunities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.website_opportunities ADD CONSTRAINT website_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.website_opportunities ADD CONSTRAINT website_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.website_opportunities ADD CONSTRAINT website_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.website_opportunities ADD CONSTRAINT website_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.website_opportunities ADD CONSTRAINT website_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.keyword_opportunities ADD CONSTRAINT keyword_opportunities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.keyword_opportunities ADD CONSTRAINT keyword_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.keyword_opportunities ADD CONSTRAINT keyword_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.keyword_opportunities ADD CONSTRAINT keyword_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.keyword_opportunities ADD CONSTRAINT keyword_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.keyword_opportunities ADD CONSTRAINT keyword_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.customer_opportunities ADD CONSTRAINT customer_opportunities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.customer_opportunities ADD CONSTRAINT customer_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.customer_opportunities ADD CONSTRAINT customer_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.customer_opportunities ADD CONSTRAINT customer_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.customer_opportunities ADD CONSTRAINT customer_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.customer_opportunities ADD CONSTRAINT customer_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.trend_opportunities ADD CONSTRAINT trend_opportunities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.trend_opportunities ADD CONSTRAINT trend_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.trend_opportunities ADD CONSTRAINT trend_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.trend_opportunities ADD CONSTRAINT trend_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.trend_opportunities ADD CONSTRAINT trend_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.trend_opportunities ADD CONSTRAINT trend_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.partnership_opportunities ADD CONSTRAINT partnership_opportunities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.partnership_opportunities ADD CONSTRAINT partnership_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.partnership_opportunities ADD CONSTRAINT partnership_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.partnership_opportunities ADD CONSTRAINT partnership_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.partnership_opportunities ADD CONSTRAINT partnership_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.partnership_opportunities ADD CONSTRAINT partnership_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.revenue_opportunities ADD CONSTRAINT revenue_opportunities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.revenue_opportunities ADD CONSTRAINT revenue_opportunities_project_id_fkey FOREIGN KEY (tenant_id, project_id) REFERENCES public.opportunity_search_projects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.revenue_opportunities ADD CONSTRAINT revenue_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.revenue_opportunities ADD CONSTRAINT revenue_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.revenue_opportunities ADD CONSTRAINT revenue_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.revenue_opportunities ADD CONSTRAINT revenue_opportunities_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.opportunity_evidence ADD CONSTRAINT opportunity_evidence_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.opportunity_evidence ADD CONSTRAINT opportunity_evidence_source_id_fkey FOREIGN KEY (tenant_id, source_id) REFERENCES public.opportunity_sources(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.opportunity_scores ADD CONSTRAINT opportunity_scores_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5007,6 +9050,7 @@ DO $$ BEGIN ALTER TABLE public.prospects ADD CONSTRAINT prospects_source_id_fkey
 DO $$ BEGIN ALTER TABLE public.prospects ADD CONSTRAINT prospects_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospects ADD CONSTRAINT prospects_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospects ADD CONSTRAINT prospects_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.prospects ADD CONSTRAINT prospects_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_contacts ADD CONSTRAINT prospect_contacts_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_contacts ADD CONSTRAINT prospect_contacts_prospect_id_fkey FOREIGN KEY (tenant_id, prospect_id) REFERENCES public.prospects(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_contacts ADD CONSTRAINT prospect_contacts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5028,6 +9072,7 @@ DO $$ BEGIN ALTER TABLE public.prospect_campaigns ADD CONSTRAINT prospect_campai
 DO $$ BEGIN ALTER TABLE public.prospect_campaigns ADD CONSTRAINT prospect_campaigns_mailbox_id_fkey FOREIGN KEY (tenant_id, mailbox_id) REFERENCES public.email_mailboxes(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_campaigns ADD CONSTRAINT prospect_campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_campaigns ADD CONSTRAINT prospect_campaigns_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.prospect_campaigns ADD CONSTRAINT prospect_campaigns_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_campaign_sequences ADD CONSTRAINT prospect_campaign_sequences_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_campaign_sequences ADD CONSTRAINT prospect_campaign_sequences_campaign_id_fkey FOREIGN KEY (tenant_id, campaign_id) REFERENCES public.prospect_campaigns(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.prospect_campaign_sequences ADD CONSTRAINT prospect_campaign_sequences_template_id_fkey FOREIGN KEY (tenant_id, template_id) REFERENCES public.prospect_templates(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5067,6 +9112,7 @@ DO $$ BEGIN ALTER TABLE public.crm_opportunities ADD CONSTRAINT crm_opportunitie
 DO $$ BEGIN ALTER TABLE public.crm_opportunities ADD CONSTRAINT crm_opportunities_owner_user_id_fkey FOREIGN KEY (owner_user_id) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.crm_opportunities ADD CONSTRAINT crm_opportunities_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.crm_opportunities ADD CONSTRAINT crm_opportunities_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.crm_opportunities ADD CONSTRAINT crm_opportunities_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.crm_activities ADD CONSTRAINT crm_activities_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.crm_activities ADD CONSTRAINT crm_activities_opportunity_id_fkey FOREIGN KEY (tenant_id, opportunity_id) REFERENCES public.crm_opportunities(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.crm_activities ADD CONSTRAINT crm_activities_prospect_id_fkey FOREIGN KEY (tenant_id, prospect_id) REFERENCES public.prospects(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5092,6 +9138,7 @@ DO $$ BEGIN ALTER TABLE public.email_mailboxes ADD CONSTRAINT email_mailboxes_te
 DO $$ BEGIN ALTER TABLE public.email_mailboxes ADD CONSTRAINT email_mailboxes_provider_account_id_fkey FOREIGN KEY (tenant_id, provider_account_id) REFERENCES public.email_provider_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_mailboxes ADD CONSTRAINT email_mailboxes_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_mailboxes ADD CONSTRAINT email_mailboxes_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.email_mailboxes ADD CONSTRAINT email_mailboxes_connector_account_id_fkey FOREIGN KEY (tenant_id, connector_account_id) REFERENCES public.tenant_connector_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_mailbox_permissions ADD CONSTRAINT email_mailbox_permissions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_mailbox_permissions ADD CONSTRAINT email_mailbox_permissions_mailbox_id_fkey FOREIGN KEY (tenant_id, mailbox_id) REFERENCES public.email_mailboxes(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_mailbox_permissions ADD CONSTRAINT email_mailbox_permissions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5109,6 +9156,8 @@ DO $$ BEGIN ALTER TABLE public.email_conversations ADD CONSTRAINT email_conversa
 DO $$ BEGIN ALTER TABLE public.email_conversations ADD CONSTRAINT email_conversations_campaign_id_fkey FOREIGN KEY (tenant_id, campaign_id) REFERENCES public.prospect_campaigns(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_conversations ADD CONSTRAINT email_conversations_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_conversations ADD CONSTRAINT email_conversations_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.email_conversations ADD CONSTRAINT email_conversations_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.email_conversations ADD CONSTRAINT email_conversations_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_conversation_participants ADD CONSTRAINT email_conversation_participants_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_conversation_participants ADD CONSTRAINT email_conversation_participants_conversation_id_fkey FOREIGN KEY (tenant_id, conversation_id) REFERENCES public.email_conversations(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_conversation_participants ADD CONSTRAINT email_conversation_participants_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5137,6 +9186,8 @@ DO $$ BEGIN ALTER TABLE public.email_reply_drafts ADD CONSTRAINT email_reply_dra
 DO $$ BEGIN ALTER TABLE public.email_reply_drafts ADD CONSTRAINT email_reply_drafts_author_id_fkey FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_reply_drafts ADD CONSTRAINT email_reply_drafts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_reply_drafts ADD CONSTRAINT email_reply_drafts_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.email_reply_drafts ADD CONSTRAINT email_reply_drafts_conversation_id_fkey FOREIGN KEY (tenant_id, conversation_id) REFERENCES public.email_conversations(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.email_reply_drafts ADD CONSTRAINT email_reply_drafts_sent_message_id_fkey FOREIGN KEY (tenant_id, sent_message_id) REFERENCES public.email_messages(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_suppression_events ADD CONSTRAINT email_suppression_events_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_suppression_events ADD CONSTRAINT email_suppression_events_source_message_id_fkey FOREIGN KEY (tenant_id, source_message_id) REFERENCES public.email_messages(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.email_thread_associations ADD CONSTRAINT email_thread_associations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5208,6 +9259,7 @@ DO $$ BEGIN ALTER TABLE public.thor_messages ADD CONSTRAINT thor_messages_tenant
 DO $$ BEGIN ALTER TABLE public.thor_messages ADD CONSTRAINT thor_messages_conversation_id_fkey FOREIGN KEY (tenant_id, conversation_id) REFERENCES public.thor_conversations(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.thor_tool_executions ADD CONSTRAINT thor_tool_executions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.thor_tool_executions ADD CONSTRAINT thor_tool_executions_message_id_fkey FOREIGN KEY (tenant_id, message_id) REFERENCES public.thor_messages(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.thor_tool_executions ADD CONSTRAINT thor_tool_executions_approval_request_id_fkey FOREIGN KEY (tenant_id, approval_request_id) REFERENCES public.approval_requests(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.thor_memory ADD CONSTRAINT thor_memory_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.thor_memory ADD CONSTRAINT thor_memory_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.thor_memory ADD CONSTRAINT thor_memory_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -5218,6 +9270,62 @@ DO $$ BEGIN ALTER TABLE public.thor_memory_sources ADD CONSTRAINT thor_memory_so
 DO $$ BEGIN ALTER TABLE public.thor_feedback ADD CONSTRAINT thor_feedback_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.thor_feedback ADD CONSTRAINT thor_feedback_message_id_fkey FOREIGN KEY (tenant_id, message_id) REFERENCES public.thor_messages(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.thor_feedback ADD CONSTRAINT thor_feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.ai_feature_routes ADD CONSTRAINT ai_feature_routes_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.ai_feature_routes ADD CONSTRAINT ai_feature_routes_model_id_fkey FOREIGN KEY (model_id) REFERENCES public.ai_models(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_growth_policies ADD CONSTRAINT tenant_growth_policies_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_growth_policies ADD CONSTRAINT tenant_growth_policies_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_growth_policies ADD CONSTRAINT tenant_growth_policies_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.approval_requests ADD CONSTRAINT approval_requests_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.approval_requests ADD CONSTRAINT approval_requests_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.approval_requests ADD CONSTRAINT approval_requests_requested_by_fkey FOREIGN KEY (requested_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.approval_requests ADD CONSTRAINT approval_requests_decided_by_fkey FOREIGN KEY (decided_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.approval_requests ADD CONSTRAINT approval_requests_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.approval_requests ADD CONSTRAINT approval_requests_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_templates ADD CONSTRAINT builder_templates_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_templates ADD CONSTRAINT builder_templates_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_templates ADD CONSTRAINT builder_templates_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_pages ADD CONSTRAINT builder_pages_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_pages ADD CONSTRAINT builder_pages_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_pages ADD CONSTRAINT builder_pages_website_id_fkey FOREIGN KEY (tenant_id, website_id) REFERENCES public.websites(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_pages ADD CONSTRAINT builder_pages_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.builder_templates(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_pages ADD CONSTRAINT builder_pages_connector_account_id_fkey FOREIGN KEY (tenant_id, connector_account_id) REFERENCES public.tenant_connector_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_pages ADD CONSTRAINT builder_pages_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_pages ADD CONSTRAINT builder_pages_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_page_versions ADD CONSTRAINT builder_page_versions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.builder_page_versions ADD CONSTRAINT builder_page_versions_page_id_fkey FOREIGN KEY (tenant_id, page_id) REFERENCES public.builder_pages(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_listening_configs ADD CONSTRAINT social_listening_configs_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_listening_configs ADD CONSTRAINT social_listening_configs_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_listening_configs ADD CONSTRAINT social_listening_configs_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_listening_configs ADD CONSTRAINT social_listening_configs_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_signals ADD CONSTRAINT social_signals_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_signals ADD CONSTRAINT social_signals_config_id_fkey FOREIGN KEY (tenant_id, config_id) REFERENCES public.social_listening_configs(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_signals ADD CONSTRAINT social_signals_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_signals ADD CONSTRAINT social_signals_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.social_signals ADD CONSTRAINT social_signals_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_accounts ADD CONSTRAINT whatsapp_accounts_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_accounts ADD CONSTRAINT whatsapp_accounts_connector_account_id_fkey FOREIGN KEY (tenant_id, connector_account_id) REFERENCES public.tenant_connector_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_accounts ADD CONSTRAINT whatsapp_accounts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_accounts ADD CONSTRAINT whatsapp_accounts_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_templates ADD CONSTRAINT whatsapp_templates_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_templates ADD CONSTRAINT whatsapp_templates_account_id_fkey FOREIGN KEY (tenant_id, account_id) REFERENCES public.whatsapp_accounts(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_templates ADD CONSTRAINT whatsapp_templates_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_templates ADD CONSTRAINT whatsapp_templates_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_contacts ADD CONSTRAINT whatsapp_contacts_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_contacts ADD CONSTRAINT whatsapp_contacts_prospect_contact_id_fkey FOREIGN KEY (tenant_id, prospect_contact_id) REFERENCES public.prospect_contacts(tenant_id, id) ON DELETE SET NULL (prospect_contact_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_contacts ADD CONSTRAINT whatsapp_contacts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_contacts ADD CONSTRAINT whatsapp_contacts_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_conversations ADD CONSTRAINT whatsapp_conversations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_conversations ADD CONSTRAINT whatsapp_conversations_account_id_fkey FOREIGN KEY (tenant_id, account_id) REFERENCES public.whatsapp_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_conversations ADD CONSTRAINT whatsapp_conversations_contact_id_fkey FOREIGN KEY (tenant_id, contact_id) REFERENCES public.whatsapp_contacts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_conversations ADD CONSTRAINT whatsapp_conversations_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_conversations ADD CONSTRAINT whatsapp_conversations_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_conversations ADD CONSTRAINT whatsapp_conversations_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_messages ADD CONSTRAINT whatsapp_messages_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_messages ADD CONSTRAINT whatsapp_messages_conversation_id_fkey FOREIGN KEY (tenant_id, conversation_id) REFERENCES public.whatsapp_conversations(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_messages ADD CONSTRAINT whatsapp_messages_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_messages ADD CONSTRAINT whatsapp_messages_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_webhook_events ADD CONSTRAINT whatsapp_webhook_events_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.whatsapp_webhook_events ADD CONSTRAINT whatsapp_webhook_events_account_id_fkey FOREIGN KEY (tenant_id, account_id) REFERENCES public.whatsapp_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ── Indexes ──
 CREATE INDEX IF NOT EXISTS ix_user_profiles_correlation ON public.user_profiles (correlation_id) WHERE correlation_id IS NOT NULL;
@@ -5537,6 +9645,7 @@ CREATE INDEX IF NOT EXISTS ix_scheduler_task_dependencies_tenant_created ON publ
 CREATE INDEX IF NOT EXISTS ix_scheduler_task_dependencies_correlation ON public.scheduler_task_dependencies (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS scheduler_execution_runs_tenant_id_execution_id_key ON public.scheduler_execution_runs (tenant_id, execution_id);
 CREATE INDEX IF NOT EXISTS ix_scheduler_execution_runs_task_id ON public.scheduler_execution_runs (tenant_id, task_id);
+CREATE INDEX IF NOT EXISTS ix_scheduler_execution_runs_scheduler_id ON public.scheduler_execution_runs (tenant_id, scheduler_id);
 CREATE INDEX IF NOT EXISTS ix_scheduler_execution_runs_tenant_created ON public.scheduler_execution_runs (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_scheduler_execution_runs_correlation ON public.scheduler_execution_runs (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_scheduler_execution_runs_status ON public.scheduler_execution_runs (tenant_id, status);
@@ -5760,6 +9869,7 @@ CREATE INDEX IF NOT EXISTS ix_seo_projects_correlation ON public.seo_projects (c
 CREATE INDEX IF NOT EXISTS ix_seo_projects_status ON public.seo_projects (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_seo_audits_project_id ON public.seo_audits (tenant_id, project_id);
 CREATE INDEX IF NOT EXISTS ix_seo_audits_requested_by ON public.seo_audits (requested_by);
+CREATE INDEX IF NOT EXISTS ix_seo_audits_website_id ON public.seo_audits (tenant_id, website_id);
 CREATE INDEX IF NOT EXISTS ix_seo_audits_tenant_created ON public.seo_audits (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_seo_audits_correlation ON public.seo_audits (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_seo_audits_status ON public.seo_audits (tenant_id, status);
@@ -5775,6 +9885,7 @@ CREATE INDEX IF NOT EXISTS ix_seo_issues_correlation ON public.seo_issues (corre
 CREATE INDEX IF NOT EXISTS ix_seo_issues_status ON public.seo_issues (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_seo_recommendations_project_id ON public.seo_recommendations (tenant_id, project_id);
 CREATE INDEX IF NOT EXISTS ix_seo_recommendations_issue_id ON public.seo_recommendations (tenant_id, issue_id);
+CREATE INDEX IF NOT EXISTS ix_seo_recommendations_audit_id ON public.seo_recommendations (tenant_id, audit_id);
 CREATE INDEX IF NOT EXISTS ix_seo_recommendations_tenant_created ON public.seo_recommendations (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_seo_recommendations_correlation ON public.seo_recommendations (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_seo_recommendations_status ON public.seo_recommendations (tenant_id, status);
@@ -5802,6 +9913,7 @@ CREATE INDEX IF NOT EXISTS ix_seo_competitor_snapshots_competitor_id ON public.s
 CREATE INDEX IF NOT EXISTS ix_seo_competitor_snapshots_tenant_created ON public.seo_competitor_snapshots (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_seo_competitor_snapshots_correlation ON public.seo_competitor_snapshots (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_geo_audits_product_id ON public.geo_audits (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_geo_audits_website_id ON public.geo_audits (tenant_id, website_id);
 CREATE INDEX IF NOT EXISTS ix_geo_audits_tenant_created ON public.geo_audits (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_geo_audits_correlation ON public.geo_audits (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_geo_audits_status ON public.geo_audits (tenant_id, status);
@@ -5867,6 +9979,8 @@ CREATE INDEX IF NOT EXISTS ix_content_templates_correlation ON public.content_te
 CREATE INDEX IF NOT EXISTS ix_generated_contents_project_id ON public.generated_contents (tenant_id, project_id);
 CREATE INDEX IF NOT EXISTS ix_generated_contents_category_id ON public.generated_contents (tenant_id, category_id);
 CREATE INDEX IF NOT EXISTS ix_generated_contents_template_id ON public.generated_contents (tenant_id, template_id);
+CREATE INDEX IF NOT EXISTS ix_generated_contents_product_id ON public.generated_contents (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_generated_contents_author_id ON public.generated_contents (author_id);
 CREATE INDEX IF NOT EXISTS ix_generated_contents_tenant_created ON public.generated_contents (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_generated_contents_correlation ON public.generated_contents (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_generated_contents_status ON public.generated_contents (tenant_id, status);
@@ -5887,6 +10001,7 @@ CREATE INDEX IF NOT EXISTS ix_content_generation_jobs_correlation ON public.cont
 CREATE INDEX IF NOT EXISTS ix_content_generation_jobs_status ON public.content_generation_jobs (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_content_generation_jobs_execution ON public.content_generation_jobs (execution_id) WHERE execution_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_content_publications_content_id ON public.content_publications (tenant_id, content_id);
+CREATE INDEX IF NOT EXISTS ix_content_publications_connector_account_id ON public.content_publications (tenant_id, connector_account_id);
 CREATE INDEX IF NOT EXISTS ix_content_publications_tenant_created ON public.content_publications (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_content_publications_correlation ON public.content_publications (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_content_publications_status ON public.content_publications (tenant_id, status);
@@ -5899,6 +10014,7 @@ CREATE INDEX IF NOT EXISTS ix_social_accounts_product_id ON public.social_accoun
 CREATE INDEX IF NOT EXISTS ix_social_accounts_connector_account_id ON public.social_accounts (tenant_id, connector_account_id);
 CREATE INDEX IF NOT EXISTS ix_social_accounts_tenant_created ON public.social_accounts (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_social_accounts_correlation ON public.social_accounts (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_social_accounts_status ON public.social_accounts (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_social_publications_social_account_id ON public.social_publications (tenant_id, social_account_id);
 CREATE INDEX IF NOT EXISTS ix_social_publications_content_id ON public.social_publications (tenant_id, content_id);
 CREATE INDEX IF NOT EXISTS ix_social_publications_tenant_created ON public.social_publications (tenant_id, created_at DESC);
@@ -5925,6 +10041,7 @@ CREATE INDEX IF NOT EXISTS ix_video_assets_project_id ON public.video_assets (te
 CREATE INDEX IF NOT EXISTS ix_video_assets_tenant_created ON public.video_assets (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_video_assets_correlation ON public.video_assets (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_video_generation_jobs_project_id ON public.video_generation_jobs (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_video_generation_jobs_output_asset_id ON public.video_generation_jobs (tenant_id, output_asset_id);
 CREATE INDEX IF NOT EXISTS ix_video_generation_jobs_tenant_created ON public.video_generation_jobs (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_video_generation_jobs_correlation ON public.video_generation_jobs (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_video_generation_jobs_status ON public.video_generation_jobs (tenant_id, status);
@@ -5958,34 +10075,50 @@ CREATE INDEX IF NOT EXISTS ix_opportunity_source_snapshots_source_id ON public.o
 CREATE INDEX IF NOT EXISTS ix_opportunity_source_snapshots_tenant_created ON public.opportunity_source_snapshots (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_opportunity_source_snapshots_correlation ON public.opportunity_source_snapshots (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_market_opportunities_project_id ON public.market_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_market_opportunities_product_id ON public.market_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_market_opportunities_source_id ON public.market_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_market_opportunities_tenant_created ON public.market_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_market_opportunities_correlation ON public.market_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_market_opportunities_status ON public.market_opportunities (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_saas_opportunities_project_id ON public.saas_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_saas_opportunities_product_id ON public.saas_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_saas_opportunities_source_id ON public.saas_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_saas_opportunities_tenant_created ON public.saas_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_saas_opportunities_correlation ON public.saas_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_saas_opportunities_status ON public.saas_opportunities (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_website_opportunities_project_id ON public.website_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_website_opportunities_product_id ON public.website_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_website_opportunities_source_id ON public.website_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_website_opportunities_tenant_created ON public.website_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_website_opportunities_correlation ON public.website_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_website_opportunities_status ON public.website_opportunities (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_keyword_opportunities_project_id ON public.keyword_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_keyword_opportunities_product_id ON public.keyword_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_keyword_opportunities_source_id ON public.keyword_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_keyword_opportunities_tenant_created ON public.keyword_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_keyword_opportunities_correlation ON public.keyword_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_keyword_opportunities_status ON public.keyword_opportunities (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_customer_opportunities_project_id ON public.customer_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_customer_opportunities_product_id ON public.customer_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_customer_opportunities_source_id ON public.customer_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_customer_opportunities_tenant_created ON public.customer_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_customer_opportunities_correlation ON public.customer_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_customer_opportunities_status ON public.customer_opportunities (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_trend_opportunities_project_id ON public.trend_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_trend_opportunities_product_id ON public.trend_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_trend_opportunities_source_id ON public.trend_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_trend_opportunities_tenant_created ON public.trend_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_trend_opportunities_correlation ON public.trend_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_trend_opportunities_status ON public.trend_opportunities (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_partnership_opportunities_project_id ON public.partnership_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_partnership_opportunities_product_id ON public.partnership_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_partnership_opportunities_source_id ON public.partnership_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_partnership_opportunities_tenant_created ON public.partnership_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_partnership_opportunities_correlation ON public.partnership_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_partnership_opportunities_status ON public.partnership_opportunities (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_revenue_opportunities_project_id ON public.revenue_opportunities (tenant_id, project_id);
+CREATE INDEX IF NOT EXISTS ix_revenue_opportunities_product_id ON public.revenue_opportunities (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_revenue_opportunities_source_id ON public.revenue_opportunities (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_revenue_opportunities_tenant_created ON public.revenue_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_revenue_opportunities_correlation ON public.revenue_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_revenue_opportunities_status ON public.revenue_opportunities (tenant_id, status);
@@ -6022,6 +10155,7 @@ CREATE INDEX IF NOT EXISTS ix_prospects_project_id ON public.prospects (tenant_i
 CREATE INDEX IF NOT EXISTS ix_prospects_company_id ON public.prospects (tenant_id, company_id);
 CREATE INDEX IF NOT EXISTS ix_prospects_source_id ON public.prospects (tenant_id, source_id);
 CREATE INDEX IF NOT EXISTS ix_prospects_owner_user_id ON public.prospects (owner_user_id);
+CREATE INDEX IF NOT EXISTS ix_prospects_product_id ON public.prospects (tenant_id, product_id);
 CREATE INDEX IF NOT EXISTS ix_prospects_tenant_created ON public.prospects (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_prospects_correlation ON public.prospects (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_prospects_status ON public.prospects (tenant_id, status);
@@ -6044,6 +10178,7 @@ CREATE INDEX IF NOT EXISTS ix_prospect_templates_correlation ON public.prospect_
 CREATE INDEX IF NOT EXISTS ix_prospect_campaigns_project_id ON public.prospect_campaigns (tenant_id, project_id);
 CREATE INDEX IF NOT EXISTS ix_prospect_campaigns_segment_id ON public.prospect_campaigns (tenant_id, segment_id);
 CREATE INDEX IF NOT EXISTS ix_prospect_campaigns_mailbox_id ON public.prospect_campaigns (tenant_id, mailbox_id);
+CREATE INDEX IF NOT EXISTS ix_prospect_campaigns_product_id ON public.prospect_campaigns (tenant_id, product_id);
 CREATE INDEX IF NOT EXISTS ix_prospect_campaigns_tenant_created ON public.prospect_campaigns (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_prospect_campaigns_correlation ON public.prospect_campaigns (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_prospect_campaigns_status ON public.prospect_campaigns (tenant_id, status);
@@ -6085,6 +10220,7 @@ CREATE INDEX IF NOT EXISTS ix_crm_pipeline_stages_correlation ON public.crm_pipe
 CREATE INDEX IF NOT EXISTS ix_crm_opportunities_prospect_id ON public.crm_opportunities (tenant_id, prospect_id);
 CREATE INDEX IF NOT EXISTS ix_crm_opportunities_stage_id ON public.crm_opportunities (tenant_id, stage_id);
 CREATE INDEX IF NOT EXISTS ix_crm_opportunities_owner_user_id ON public.crm_opportunities (owner_user_id);
+CREATE INDEX IF NOT EXISTS ix_crm_opportunities_product_id ON public.crm_opportunities (tenant_id, product_id);
 CREATE INDEX IF NOT EXISTS ix_crm_opportunities_tenant_created ON public.crm_opportunities (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_crm_opportunities_correlation ON public.crm_opportunities (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_crm_activities_opportunity_id ON public.crm_activities (tenant_id, opportunity_id);
@@ -6112,6 +10248,7 @@ CREATE INDEX IF NOT EXISTS ix_email_provider_accounts_correlation ON public.emai
 CREATE INDEX IF NOT EXISTS ix_email_provider_accounts_status ON public.email_provider_accounts (tenant_id, status);
 CREATE UNIQUE INDEX IF NOT EXISTS email_mailboxes_tenant_id_address_key ON public.email_mailboxes (tenant_id, address) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS ix_email_mailboxes_provider_account_id ON public.email_mailboxes (tenant_id, provider_account_id);
+CREATE INDEX IF NOT EXISTS ix_email_mailboxes_connector_account_id ON public.email_mailboxes (tenant_id, connector_account_id);
 CREATE INDEX IF NOT EXISTS ix_email_mailboxes_tenant_created ON public.email_mailboxes (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_email_mailboxes_correlation ON public.email_mailboxes (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_email_mailboxes_status ON public.email_mailboxes (tenant_id, status);
@@ -6128,10 +10265,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS email_webhook_events_tenant_id_idempotency_key
 CREATE INDEX IF NOT EXISTS ix_email_webhook_events_mailbox_id ON public.email_webhook_events (tenant_id, mailbox_id);
 CREATE INDEX IF NOT EXISTS ix_email_webhook_events_tenant_created ON public.email_webhook_events (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_email_webhook_events_correlation ON public.email_webhook_events (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_email_webhook_events_status ON public.email_webhook_events (tenant_id, status);
 CREATE UNIQUE INDEX IF NOT EXISTS email_conversations_tenant_id_mailbox_id_thread_id_key ON public.email_conversations (tenant_id, mailbox_id, thread_id) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS ix_email_conversations_mailbox_id ON public.email_conversations (tenant_id, mailbox_id);
 CREATE INDEX IF NOT EXISTS ix_email_conversations_prospect_id ON public.email_conversations (tenant_id, prospect_id);
 CREATE INDEX IF NOT EXISTS ix_email_conversations_campaign_id ON public.email_conversations (tenant_id, campaign_id);
+CREATE INDEX IF NOT EXISTS ix_email_conversations_assigned_to ON public.email_conversations (assigned_to);
+CREATE INDEX IF NOT EXISTS ix_email_conversations_product_id ON public.email_conversations (tenant_id, product_id);
 CREATE INDEX IF NOT EXISTS ix_email_conversations_tenant_created ON public.email_conversations (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_email_conversations_correlation ON public.email_conversations (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_email_conversations_status ON public.email_conversations (tenant_id, status);
@@ -6145,6 +10285,7 @@ CREATE INDEX IF NOT EXISTS ix_email_messages_prospect_id ON public.email_message
 CREATE INDEX IF NOT EXISTS ix_email_messages_campaign_id ON public.email_messages (tenant_id, campaign_id);
 CREATE INDEX IF NOT EXISTS ix_email_messages_tenant_created ON public.email_messages (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_email_messages_correlation ON public.email_messages (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_email_messages_status ON public.email_messages (tenant_id, status);
 CREATE INDEX IF NOT EXISTS ix_email_message_attachments_message_id ON public.email_message_attachments (tenant_id, message_id);
 CREATE INDEX IF NOT EXISTS ix_email_message_attachments_tenant_created ON public.email_message_attachments (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_email_message_attachments_correlation ON public.email_message_attachments (correlation_id) WHERE correlation_id IS NOT NULL;
@@ -6163,6 +10304,8 @@ CREATE INDEX IF NOT EXISTS ix_email_reply_suggestions_tenant_created ON public.e
 CREATE INDEX IF NOT EXISTS ix_email_reply_suggestions_correlation ON public.email_reply_suggestions (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_email_reply_drafts_message_id ON public.email_reply_drafts (tenant_id, message_id);
 CREATE INDEX IF NOT EXISTS ix_email_reply_drafts_author_id ON public.email_reply_drafts (author_id);
+CREATE INDEX IF NOT EXISTS ix_email_reply_drafts_conversation_id ON public.email_reply_drafts (tenant_id, conversation_id);
+CREATE INDEX IF NOT EXISTS ix_email_reply_drafts_sent_message_id ON public.email_reply_drafts (tenant_id, sent_message_id);
 CREATE INDEX IF NOT EXISTS ix_email_reply_drafts_tenant_created ON public.email_reply_drafts (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_email_reply_drafts_correlation ON public.email_reply_drafts (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_email_reply_drafts_status ON public.email_reply_drafts (tenant_id, status);
@@ -6251,6 +10394,7 @@ CREATE INDEX IF NOT EXISTS ix_thor_messages_conversation_id ON public.thor_messa
 CREATE INDEX IF NOT EXISTS ix_thor_messages_tenant_created ON public.thor_messages (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_thor_messages_correlation ON public.thor_messages (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_thor_tool_executions_message_id ON public.thor_tool_executions (tenant_id, message_id);
+CREATE INDEX IF NOT EXISTS ix_thor_tool_executions_approval_request_id ON public.thor_tool_executions (tenant_id, approval_request_id);
 CREATE INDEX IF NOT EXISTS ix_thor_tool_executions_tenant_created ON public.thor_tool_executions (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_thor_tool_executions_correlation ON public.thor_tool_executions (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_thor_tool_executions_status ON public.thor_tool_executions (tenant_id, status);
@@ -6266,6 +10410,75 @@ CREATE INDEX IF NOT EXISTS ix_thor_feedback_message_id ON public.thor_feedback (
 CREATE INDEX IF NOT EXISTS ix_thor_feedback_user_id ON public.thor_feedback (user_id);
 CREATE INDEX IF NOT EXISTS ix_thor_feedback_tenant_created ON public.thor_feedback (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_thor_feedback_correlation ON public.thor_feedback (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS ai_feature_routes_tenant_id_feature_code_model_id_key ON public.ai_feature_routes (tenant_id, feature_code, model_id) NULLS NOT DISTINCT;
+CREATE INDEX IF NOT EXISTS ix_ai_feature_routes_model_id ON public.ai_feature_routes (model_id);
+CREATE INDEX IF NOT EXISTS ix_ai_feature_routes_tenant_created ON public.ai_feature_routes (tenant_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS platform_action_capabilities_module_code_action_code_key ON public.platform_action_capabilities (module_code, action_code);
+CREATE UNIQUE INDEX IF NOT EXISTS tenant_growth_policies_tenant_id_module_code_action_code_key ON public.tenant_growth_policies (tenant_id, module_code, action_code) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_tenant_growth_policies_tenant_created ON public.tenant_growth_policies (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_tenant_growth_policies_correlation ON public.tenant_growth_policies (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_approval_requests_product_id ON public.approval_requests (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_approval_requests_requested_by ON public.approval_requests (requested_by);
+CREATE INDEX IF NOT EXISTS ix_approval_requests_decided_by ON public.approval_requests (decided_by);
+CREATE INDEX IF NOT EXISTS ix_approval_requests_tenant_created ON public.approval_requests (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_approval_requests_correlation ON public.approval_requests (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_approval_requests_status ON public.approval_requests (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_approval_requests_execution ON public.approval_requests (execution_id) WHERE execution_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_approval_requests_tenant_id_status ON public.approval_requests (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_builder_templates_tenant_created ON public.builder_templates (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_builder_templates_correlation ON public.builder_templates (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS builder_pages_tenant_id_website_id_slug_key ON public.builder_pages (tenant_id, website_id, slug) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_builder_pages_product_id ON public.builder_pages (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_builder_pages_website_id ON public.builder_pages (tenant_id, website_id);
+CREATE INDEX IF NOT EXISTS ix_builder_pages_template_id ON public.builder_pages (template_id);
+CREATE INDEX IF NOT EXISTS ix_builder_pages_connector_account_id ON public.builder_pages (tenant_id, connector_account_id);
+CREATE INDEX IF NOT EXISTS ix_builder_pages_tenant_created ON public.builder_pages (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_builder_pages_correlation ON public.builder_pages (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_builder_pages_status ON public.builder_pages (tenant_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS builder_page_versions_tenant_id_page_id_version_key ON public.builder_page_versions (tenant_id, page_id, version);
+CREATE INDEX IF NOT EXISTS ix_builder_page_versions_page_id ON public.builder_page_versions (tenant_id, page_id);
+CREATE INDEX IF NOT EXISTS ix_builder_page_versions_tenant_created ON public.builder_page_versions (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_builder_page_versions_correlation ON public.builder_page_versions (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_social_listening_configs_product_id ON public.social_listening_configs (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_social_listening_configs_tenant_created ON public.social_listening_configs (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_social_listening_configs_correlation ON public.social_listening_configs (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_social_listening_configs_status ON public.social_listening_configs (tenant_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS social_signals_tenant_id_dedup_hash_key ON public.social_signals (tenant_id, dedup_hash) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_social_signals_config_id ON public.social_signals (tenant_id, config_id);
+CREATE INDEX IF NOT EXISTS ix_social_signals_assigned_to ON public.social_signals (assigned_to);
+CREATE INDEX IF NOT EXISTS ix_social_signals_tenant_created ON public.social_signals (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_social_signals_correlation ON public.social_signals (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_social_signals_status ON public.social_signals (tenant_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS whatsapp_accounts_tenant_id_phone_number_id_key ON public.whatsapp_accounts (tenant_id, phone_number_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_accounts_connector_account_id ON public.whatsapp_accounts (tenant_id, connector_account_id);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_accounts_tenant_created ON public.whatsapp_accounts (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_accounts_correlation ON public.whatsapp_accounts (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_accounts_status ON public.whatsapp_accounts (tenant_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS whatsapp_templates_tenant_id_account_id_name_language_key ON public.whatsapp_templates (tenant_id, account_id, name, language) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_templates_account_id ON public.whatsapp_templates (tenant_id, account_id);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_templates_tenant_created ON public.whatsapp_templates (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_templates_correlation ON public.whatsapp_templates (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_templates_status ON public.whatsapp_templates (tenant_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS whatsapp_contacts_tenant_id_wa_id_key ON public.whatsapp_contacts (tenant_id, wa_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_contacts_prospect_contact_id ON public.whatsapp_contacts (tenant_id, prospect_contact_id);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_contacts_tenant_created ON public.whatsapp_contacts (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_contacts_correlation ON public.whatsapp_contacts (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS whatsapp_conversations_tenant_id_account_id_contact_id_key ON public.whatsapp_conversations (tenant_id, account_id, contact_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_conversations_account_id ON public.whatsapp_conversations (tenant_id, account_id);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_conversations_contact_id ON public.whatsapp_conversations (tenant_id, contact_id);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_conversations_assigned_to ON public.whatsapp_conversations (assigned_to);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_conversations_tenant_created ON public.whatsapp_conversations (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_conversations_correlation ON public.whatsapp_conversations (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_conversations_status ON public.whatsapp_conversations (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_messages_conversation_id ON public.whatsapp_messages (tenant_id, conversation_id);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_messages_tenant_created ON public.whatsapp_messages (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_messages_correlation ON public.whatsapp_messages (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_whatsapp_messages_status ON public.whatsapp_messages (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_messages_tenant_id_wa_message_id ON public.whatsapp_messages (tenant_id, wa_message_id);
+CREATE UNIQUE INDEX IF NOT EXISTS whatsapp_webhook_events_tenant_id_idempotency_key_key ON public.whatsapp_webhook_events (tenant_id, idempotency_key);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_webhook_events_account_id ON public.whatsapp_webhook_events (tenant_id, account_id);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_webhook_events_tenant_created ON public.whatsapp_webhook_events (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_whatsapp_webhook_events_correlation ON public.whatsapp_webhook_events (correlation_id) WHERE correlation_id IS NOT NULL;
 
 -- ── pgvector columns (only when the extension is available) ──
 DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN ALTER TABLE public.thor_memory ADD COLUMN IF NOT EXISTS embedding extensions.vector(1536); CREATE INDEX IF NOT EXISTS ix_thor_memory_embedding_hnsw ON public.thor_memory USING hnsw (embedding extensions.vector_cosine_ops); END IF; END $$;
@@ -6338,9 +10551,11 @@ COMMENT ON TABLE public.connector_global_configurations IS '[D. Connecteurs] con
 COMMENT ON COLUMN public.connector_global_configurations.client_secret_ref IS 'référence Supabase Vault';
 COMMENT ON TABLE public.tenant_connector_authorizations IS '[D. Connecteurs] tenant_connector_authorizations';
 COMMENT ON TABLE public.tenant_connector_accounts IS '[D. Connecteurs] tenant_connector_accounts';
+COMMENT ON COLUMN public.tenant_connector_accounts.settings IS 'non-secret provider settings (base_url, sender, site_url…)';
 COMMENT ON TABLE public.tenant_connector_credentials IS '[D. Connecteurs] tenant_connector_credentials';
 COMMENT ON COLUMN public.tenant_connector_credentials.vault_secret_id IS 'id Supabase Vault (chiffré au repos)';
 COMMENT ON COLUMN public.tenant_connector_credentials.masked_hint IS 'ex: ••••abcd';
+COMMENT ON COLUMN public.tenant_connector_credentials.ciphertext IS 'Fernet-encrypted by the backend (SECRETS_ENCRYPTION_KEY)';
 COMMENT ON TABLE public.tenant_connector_scopes IS '[D. Connecteurs] tenant_connector_scopes';
 COMMENT ON TABLE public.connector_health_checks IS '[D. Connecteurs] connector_health_checks';
 COMMENT ON TABLE public.connector_sync_runs IS '[D. Connecteurs] connector_sync_runs';
@@ -6359,6 +10574,7 @@ COMMENT ON TABLE public.product_competitors IS '[E. Produits et sites web] produ
 COMMENT ON TABLE public.product_integrations IS '[E. Produits et sites web] product_integrations';
 COMMENT ON TABLE public.product_business_context IS '[E. Produits et sites web] product_business_context';
 COMMENT ON COLUMN public.product_business_context.context IS 'synthèse structurée utilisée par les agents';
+COMMENT ON COLUMN public.product_business_context.facts IS '[{field,value,status: detected|confirmed|hypothesis|missing,source,evidence}]';
 COMMENT ON TABLE public.product_business_context_sources IS '[E. Produits et sites web] product_business_context_sources';
 COMMENT ON TABLE public.websites IS '[E. Produits et sites web] websites';
 COMMENT ON TABLE public.website_pages IS '[E. Produits et sites web] website_pages';
@@ -6366,6 +10582,7 @@ COMMENT ON TABLE public.website_technologies IS '[E. Produits et sites web] webs
 COMMENT ON TABLE public.website_scans IS '[E. Produits et sites web] website_scans';
 COMMENT ON TABLE public.website_scan_results IS '[E. Produits et sites web] website_scan_results';
 COMMENT ON TABLE public.tenant_schedulers IS '[M. Scheduler et workflows] tenant_schedulers';
+COMMENT ON COLUMN public.tenant_schedulers.frequency_value IS 'X hours | HH:MM | weekday HH:MM | day HH:MM | cron | event name';
 COMMENT ON TABLE public.scheduler_retry_policies IS '[M. Scheduler et workflows] scheduler_retry_policies';
 COMMENT ON TABLE public.scheduler_tasks IS '[M. Scheduler et workflows] scheduler_tasks';
 COMMENT ON COLUMN public.scheduler_tasks.task_type IS 'code tâche Celery / module';
@@ -6507,6 +10724,7 @@ COMMENT ON TABLE public.opportunity_followups IS '[J. Opportunity Hunter] opport
 COMMENT ON TABLE public.opportunity_outcomes IS '[J. Opportunity Hunter] opportunity_outcomes';
 COMMENT ON TABLE public.opportunity_alerts IS '[J. Opportunity Hunter] opportunity_alerts';
 COMMENT ON TABLE public.prospect_projects IS '[K. Smart Prospect et CRM] prospect_projects';
+COMMENT ON COLUMN public.prospect_projects.icp IS '{industries,company_sizes,countries,functions,technologies,needs}';
 COMMENT ON TABLE public.prospect_companies IS '[K. Smart Prospect et CRM] prospect_companies';
 COMMENT ON TABLE public.prospect_sources IS '[K. Smart Prospect et CRM] prospect_sources';
 COMMENT ON TABLE public.prospects IS '[K. Smart Prospect et CRM] prospects';
@@ -6574,6 +10792,25 @@ COMMENT ON TABLE public.thor_tool_executions IS '[O. THOR] thor_tool_executions'
 COMMENT ON TABLE public.thor_memory IS '[O. THOR] thor_memory';
 COMMENT ON TABLE public.thor_memory_sources IS '[O. THOR] thor_memory_sources';
 COMMENT ON TABLE public.thor_feedback IS '[O. THOR] thor_feedback';
+COMMENT ON TABLE public.ai_feature_routes IS '[S. Fournisseurs IA] ai_feature_routes';
+COMMENT ON COLUMN public.ai_feature_routes.tenant_id IS 'null = platform route';
+COMMENT ON COLUMN public.ai_feature_routes.feature_code IS 'content.generate, geo.query, email.classify, thor.chat…';
+COMMENT ON TABLE public.platform_action_capabilities IS '[C. Autorisations] platform_action_capabilities';
+COMMENT ON TABLE public.tenant_growth_policies IS '[C. Autorisations] tenant_growth_policies';
+COMMENT ON TABLE public.approval_requests IS '[C. Autorisations] approval_requests';
+COMMENT ON TABLE public.builder_templates IS '[H. Content] builder_templates';
+COMMENT ON TABLE public.builder_pages IS '[H. Content] builder_pages';
+COMMENT ON COLUMN public.builder_pages.sections IS '[{type,props}] rendered server-side to HTML';
+COMMENT ON TABLE public.builder_page_versions IS '[H. Content] builder_page_versions';
+COMMENT ON TABLE public.social_listening_configs IS '[J. Opportunity Hunter] social_listening_configs';
+COMMENT ON COLUMN public.social_listening_configs.sources IS 'hackernews, reddit, rss:<url>';
+COMMENT ON TABLE public.social_signals IS '[J. Opportunity Hunter] social_signals';
+COMMENT ON TABLE public.whatsapp_accounts IS '[L2. WhatsApp Center] whatsapp_accounts';
+COMMENT ON TABLE public.whatsapp_templates IS '[L2. WhatsApp Center] whatsapp_templates';
+COMMENT ON TABLE public.whatsapp_contacts IS '[L2. WhatsApp Center] whatsapp_contacts';
+COMMENT ON TABLE public.whatsapp_conversations IS '[L2. WhatsApp Center] whatsapp_conversations';
+COMMENT ON TABLE public.whatsapp_messages IS '[L2. WhatsApp Center] whatsapp_messages';
+COMMENT ON TABLE public.whatsapp_webhook_events IS '[L2. WhatsApp Center] whatsapp_webhook_events';
 
 -- >>> 0003_functions.sql
 -- Growth IA — Migration 0003 — security helpers & traceability trigger functions
@@ -7135,7 +11372,7 @@ CREATE TRIGGER trg_00_context BEFORE INSERT ON public.connector_global_configura
 DROP TRIGGER IF EXISTS trg_01_touch ON public.connector_global_configurations;
 CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.connector_global_configurations FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_90_history ON public.connector_global_configurations;
-CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.connector_global_configurations FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history('client_secret_ref');
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.connector_global_configurations FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history('client_secret_ref', 'client_secret_ciphertext');
 DROP TRIGGER IF EXISTS trg_00_context ON public.tenant_connector_authorizations;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.tenant_connector_authorizations FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
 DROP TRIGGER IF EXISTS trg_01_touch ON public.tenant_connector_authorizations;
@@ -7153,7 +11390,7 @@ CREATE TRIGGER trg_00_context BEFORE INSERT ON public.tenant_connector_credentia
 DROP TRIGGER IF EXISTS trg_01_touch ON public.tenant_connector_credentials;
 CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.tenant_connector_credentials FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_90_history ON public.tenant_connector_credentials;
-CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.tenant_connector_credentials FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history('vault_secret_id');
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.tenant_connector_credentials FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history('vault_secret_id', 'ciphertext');
 DROP TRIGGER IF EXISTS trg_00_context ON public.tenant_connector_scopes;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.tenant_connector_scopes FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
 DROP TRIGGER IF EXISTS trg_01_touch ON public.tenant_connector_scopes;
@@ -7167,7 +11404,10 @@ CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.connector_he
 DROP TRIGGER IF EXISTS trg_00_context ON public.connector_sync_runs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.connector_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.connector_sync_runs;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.connector_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.connector_sync_runs;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.connector_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.connector_sync_runs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.connector_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.connector_error_logs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.connector_error_logs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.connector_error_logs;
@@ -7267,7 +11507,10 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.website
 DROP TRIGGER IF EXISTS trg_00_context ON public.website_scans;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.website_scans FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.website_scans;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.website_scans FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.website_scans;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.website_scans FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.website_scans;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.website_scans FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.website_scan_results;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.website_scan_results FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.website_scan_results;
@@ -7297,11 +11540,17 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.schedul
 DROP TRIGGER IF EXISTS trg_00_context ON public.scheduler_execution_runs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.scheduler_execution_runs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.scheduler_execution_runs;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.scheduler_execution_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.scheduler_execution_runs;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.scheduler_execution_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.scheduler_execution_runs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.scheduler_execution_runs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.scheduler_execution_steps;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.scheduler_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.scheduler_execution_steps;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.scheduler_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.scheduler_execution_steps;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.scheduler_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.scheduler_execution_steps;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.scheduler_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.scheduler_execution_metrics;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.scheduler_execution_metrics FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.scheduler_execution_metrics;
@@ -7345,11 +11594,17 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.growth_
 DROP TRIGGER IF EXISTS trg_00_context ON public.growth_workflow_executions;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.growth_workflow_executions FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.growth_workflow_executions;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.growth_workflow_executions FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.growth_workflow_executions;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.growth_workflow_executions FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.growth_workflow_executions;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.growth_workflow_executions FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.growth_workflow_execution_steps;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.growth_workflow_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.growth_workflow_execution_steps;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.growth_workflow_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.growth_workflow_execution_steps;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.growth_workflow_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.growth_workflow_execution_steps;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.growth_workflow_execution_steps FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.tenant_reporting_snapshots;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.tenant_reporting_snapshots FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.tenant_reporting_snapshots;
@@ -7411,7 +11666,10 @@ CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.notification
 DROP TRIGGER IF EXISTS trg_00_context ON public.notification_deliveries;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.notification_deliveries FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.notification_deliveries;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.notification_deliveries FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.notification_deliveries;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.notification_deliveries FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.notification_deliveries;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.notification_deliveries FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.notification_attempts;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.notification_attempts FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.notification_attempts;
@@ -7491,7 +11749,7 @@ CREATE TRIGGER trg_00_context BEFORE INSERT ON public.ai_provider_configurations
 DROP TRIGGER IF EXISTS trg_01_touch ON public.ai_provider_configurations;
 CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.ai_provider_configurations FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_90_history ON public.ai_provider_configurations;
-CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.ai_provider_configurations FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history('api_key_ref');
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.ai_provider_configurations FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history('api_key_ref', 'api_key_ciphertext');
 DROP TRIGGER IF EXISTS trg_00_context ON public.ai_model_capabilities;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.ai_model_capabilities FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_touch ON public.ai_model_capabilities;
@@ -7573,7 +11831,10 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.seo_pro
 DROP TRIGGER IF EXISTS trg_00_context ON public.seo_audits;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.seo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.seo_audits;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.seo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.seo_audits;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.seo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.seo_audits;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.seo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.seo_audit_pages;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.seo_audit_pages FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.seo_audit_pages;
@@ -7623,7 +11884,10 @@ CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.seo_competit
 DROP TRIGGER IF EXISTS trg_00_context ON public.geo_audits;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.geo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.geo_audits;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.geo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.geo_audits;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.geo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.geo_audits;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.geo_audits FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.geo_audit_pages;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.geo_audit_pages FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.geo_audit_pages;
@@ -7649,7 +11913,10 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.ai_sear
 DROP TRIGGER IF EXISTS trg_00_context ON public.ai_search_runs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.ai_search_runs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.ai_search_runs;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.ai_search_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.ai_search_runs;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.ai_search_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.ai_search_runs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.ai_search_runs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.ai_search_responses;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.ai_search_responses FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.ai_search_responses;
@@ -7731,7 +11998,10 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.content
 DROP TRIGGER IF EXISTS trg_00_context ON public.content_generation_jobs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.content_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.content_generation_jobs;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.content_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.content_generation_jobs;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.content_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.content_generation_jobs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.content_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.content_publications;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.content_publications FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
 DROP TRIGGER IF EXISTS trg_01_touch ON public.content_publications;
@@ -7793,11 +12063,17 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.video_a
 DROP TRIGGER IF EXISTS trg_00_context ON public.video_generation_jobs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.video_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.video_generation_jobs;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.video_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.video_generation_jobs;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.video_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.video_generation_jobs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.video_generation_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.video_render_jobs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.video_render_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.video_render_jobs;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.video_render_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.video_render_jobs;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.video_render_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.video_render_jobs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.video_render_jobs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.video_subtitles;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.video_subtitles FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
 DROP TRIGGER IF EXISTS trg_01_touch ON public.video_subtitles;
@@ -8073,7 +12349,10 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.email_s
 DROP TRIGGER IF EXISTS trg_00_context ON public.email_webhook_events;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.email_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.email_webhook_events;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.email_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.email_webhook_events;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.email_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.email_webhook_events;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.email_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.email_conversations;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.email_conversations FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
 DROP TRIGGER IF EXISTS trg_01_touch ON public.email_conversations;
@@ -8133,7 +12412,10 @@ CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.email_t
 DROP TRIGGER IF EXISTS trg_00_context ON public.email_sync_runs;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.email_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.email_sync_runs;
-CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.email_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.email_sync_runs;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.email_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.email_sync_runs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.email_sync_runs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
 DROP TRIGGER IF EXISTS trg_00_context ON public.email_provider_errors;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.email_provider_errors FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.email_provider_errors;
@@ -8252,6 +12534,88 @@ DROP TRIGGER IF EXISTS trg_00_context ON public.thor_feedback;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.thor_feedback FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.thor_feedback;
 CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.thor_feedback FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_00_context ON public.ai_feature_routes;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.ai_feature_routes FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.ai_feature_routes;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.ai_feature_routes FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_00_context ON public.platform_action_capabilities;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.platform_action_capabilities FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.platform_action_capabilities;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.platform_action_capabilities FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_00_context ON public.tenant_growth_policies;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.tenant_growth_policies FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.tenant_growth_policies;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.tenant_growth_policies FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.tenant_growth_policies;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.tenant_growth_policies FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.approval_requests;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.approval_requests FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.approval_requests;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.approval_requests FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.approval_requests;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.approval_requests FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.builder_templates;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.builder_templates FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.builder_templates;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.builder_templates FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.builder_templates;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.builder_templates FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.builder_pages;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.builder_pages FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.builder_pages;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.builder_pages FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.builder_pages;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.builder_pages FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.builder_page_versions;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.builder_page_versions FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
+DROP TRIGGER IF EXISTS trg_01_append_only ON public.builder_page_versions;
+CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.builder_page_versions FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_00_context ON public.social_listening_configs;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.social_listening_configs FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.social_listening_configs;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.social_listening_configs FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.social_listening_configs;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.social_listening_configs FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.social_signals;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.social_signals FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.social_signals;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.social_signals FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.social_signals;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.social_signals FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.whatsapp_accounts;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.whatsapp_accounts FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.whatsapp_accounts;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.whatsapp_accounts FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.whatsapp_accounts;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.whatsapp_accounts FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.whatsapp_templates;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.whatsapp_templates FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.whatsapp_templates;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.whatsapp_templates FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.whatsapp_templates;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.whatsapp_templates FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.whatsapp_contacts;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.whatsapp_contacts FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.whatsapp_contacts;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.whatsapp_contacts FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.whatsapp_contacts;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.whatsapp_contacts FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.whatsapp_conversations;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.whatsapp_conversations FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.whatsapp_conversations;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.whatsapp_conversations FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.whatsapp_conversations;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.whatsapp_conversations FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.whatsapp_messages;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.whatsapp_messages FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.whatsapp_messages;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.whatsapp_messages FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.whatsapp_messages;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.whatsapp_messages FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.whatsapp_webhook_events;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.whatsapp_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
+DROP TRIGGER IF EXISTS trg_01_append_only ON public.whatsapp_webhook_events;
+CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.whatsapp_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
 
 -- >>> 0005_rls.sql
 -- GENERATED by database/schema/generate.py — DO NOT EDIT BY HAND
@@ -9034,19 +13398,19 @@ CREATE POLICY p_auth_read ON public.connector_health_checks FOR SELECT TO authen
 CREATE POLICY p_backend_read ON public.connector_health_checks FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.connector_health_checks FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- connector_sync_runs [log/member]
+-- connector_sync_runs [run/member]
 ALTER TABLE public.connector_sync_runs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.connector_sync_runs FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.connector_sync_runs FROM authenticated;
 GRANT SELECT ON public.connector_sync_runs TO authenticated;
-GRANT SELECT, INSERT ON public.connector_sync_runs TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.connector_sync_runs FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.connector_sync_runs TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.connector_sync_runs FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.connector_sync_runs;
 DROP POLICY IF EXISTS p_backend_read ON public.connector_sync_runs;
 DROP POLICY IF EXISTS p_backend_write ON public.connector_sync_runs;
 CREATE POLICY p_auth_read ON public.connector_sync_runs FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
 CREATE POLICY p_backend_read ON public.connector_sync_runs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.connector_sync_runs FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.connector_sync_runs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- connector_error_logs [log/member]
 ALTER TABLE public.connector_error_logs ENABLE ROW LEVEL SECURITY;
@@ -9272,19 +13636,19 @@ CREATE POLICY p_auth_read ON public.website_technologies FOR SELECT TO authentic
 CREATE POLICY p_backend_read ON public.website_technologies FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.website_technologies FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- website_scans [log/member]
+-- website_scans [run/member]
 ALTER TABLE public.website_scans ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.website_scans FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.website_scans FROM authenticated;
 GRANT SELECT ON public.website_scans TO authenticated;
-GRANT SELECT, INSERT ON public.website_scans TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.website_scans FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.website_scans TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.website_scans FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.website_scans;
 DROP POLICY IF EXISTS p_backend_read ON public.website_scans;
 DROP POLICY IF EXISTS p_backend_write ON public.website_scans;
 CREATE POLICY p_auth_read ON public.website_scans FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.website_scans FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.website_scans FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.website_scans FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- website_scan_results [log/member]
 ALTER TABLE public.website_scan_results ENABLE ROW LEVEL SECURITY;
@@ -9352,33 +13716,33 @@ CREATE POLICY p_auth_read ON public.scheduler_task_dependencies FOR SELECT TO au
 CREATE POLICY p_backend_read ON public.scheduler_task_dependencies FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.scheduler_task_dependencies FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- scheduler_execution_runs [log/member]
+-- scheduler_execution_runs [run/member]
 ALTER TABLE public.scheduler_execution_runs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.scheduler_execution_runs FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.scheduler_execution_runs FROM authenticated;
 GRANT SELECT ON public.scheduler_execution_runs TO authenticated;
-GRANT SELECT, INSERT ON public.scheduler_execution_runs TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.scheduler_execution_runs FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.scheduler_execution_runs TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.scheduler_execution_runs FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.scheduler_execution_runs;
 DROP POLICY IF EXISTS p_backend_read ON public.scheduler_execution_runs;
 DROP POLICY IF EXISTS p_backend_write ON public.scheduler_execution_runs;
 CREATE POLICY p_auth_read ON public.scheduler_execution_runs FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
 CREATE POLICY p_backend_read ON public.scheduler_execution_runs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.scheduler_execution_runs FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.scheduler_execution_runs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- scheduler_execution_steps [log/member]
+-- scheduler_execution_steps [run/member]
 ALTER TABLE public.scheduler_execution_steps ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.scheduler_execution_steps FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.scheduler_execution_steps FROM authenticated;
 GRANT SELECT ON public.scheduler_execution_steps TO authenticated;
-GRANT SELECT, INSERT ON public.scheduler_execution_steps TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.scheduler_execution_steps FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.scheduler_execution_steps TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.scheduler_execution_steps FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.scheduler_execution_steps;
 DROP POLICY IF EXISTS p_backend_read ON public.scheduler_execution_steps;
 DROP POLICY IF EXISTS p_backend_write ON public.scheduler_execution_steps;
 CREATE POLICY p_auth_read ON public.scheduler_execution_steps FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
 CREATE POLICY p_backend_read ON public.scheduler_execution_steps FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.scheduler_execution_steps FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.scheduler_execution_steps FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- scheduler_execution_metrics [log/member]
 ALTER TABLE public.scheduler_execution_metrics ENABLE ROW LEVEL SECURITY;
@@ -9472,33 +13836,33 @@ CREATE POLICY p_auth_read ON public.growth_workflow_nodes FOR SELECT TO authenti
 CREATE POLICY p_backend_read ON public.growth_workflow_nodes FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.growth_workflow_nodes FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- growth_workflow_executions [log/member]
+-- growth_workflow_executions [run/member]
 ALTER TABLE public.growth_workflow_executions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.growth_workflow_executions FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.growth_workflow_executions FROM authenticated;
 GRANT SELECT ON public.growth_workflow_executions TO authenticated;
-GRANT SELECT, INSERT ON public.growth_workflow_executions TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.growth_workflow_executions FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.growth_workflow_executions TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.growth_workflow_executions FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.growth_workflow_executions;
 DROP POLICY IF EXISTS p_backend_read ON public.growth_workflow_executions;
 DROP POLICY IF EXISTS p_backend_write ON public.growth_workflow_executions;
 CREATE POLICY p_auth_read ON public.growth_workflow_executions FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
 CREATE POLICY p_backend_read ON public.growth_workflow_executions FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.growth_workflow_executions FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.growth_workflow_executions FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- growth_workflow_execution_steps [log/member]
+-- growth_workflow_execution_steps [run/member]
 ALTER TABLE public.growth_workflow_execution_steps ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.growth_workflow_execution_steps FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.growth_workflow_execution_steps FROM authenticated;
 GRANT SELECT ON public.growth_workflow_execution_steps TO authenticated;
-GRANT SELECT, INSERT ON public.growth_workflow_execution_steps TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.growth_workflow_execution_steps FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.growth_workflow_execution_steps TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.growth_workflow_execution_steps FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.growth_workflow_execution_steps;
 DROP POLICY IF EXISTS p_backend_read ON public.growth_workflow_execution_steps;
 DROP POLICY IF EXISTS p_backend_write ON public.growth_workflow_execution_steps;
 CREATE POLICY p_auth_read ON public.growth_workflow_execution_steps FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
 CREATE POLICY p_backend_read ON public.growth_workflow_execution_steps FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.growth_workflow_execution_steps FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.growth_workflow_execution_steps FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- tenant_reporting_snapshots [log/member]
 ALTER TABLE public.tenant_reporting_snapshots ENABLE ROW LEVEL SECURITY;
@@ -9663,19 +14027,19 @@ CREATE POLICY p_auth_read ON public.notifications FOR SELECT TO authenticated US
 CREATE POLICY p_backend_read ON public.notifications FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.notifications FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- notification_deliveries [log/admin]
+-- notification_deliveries [run/admin]
 ALTER TABLE public.notification_deliveries ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.notification_deliveries FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.notification_deliveries FROM authenticated;
 GRANT SELECT ON public.notification_deliveries TO authenticated;
-GRANT SELECT, INSERT ON public.notification_deliveries TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.notification_deliveries FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.notification_deliveries TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.notification_deliveries FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.notification_deliveries;
 DROP POLICY IF EXISTS p_backend_read ON public.notification_deliveries;
 DROP POLICY IF EXISTS p_backend_write ON public.notification_deliveries;
 CREATE POLICY p_auth_read ON public.notification_deliveries FOR SELECT TO authenticated USING ((app.is_tenant_admin(tenant_id)) OR app.is_platform_admin());
 CREATE POLICY p_backend_read ON public.notification_deliveries FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.notification_deliveries FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.notification_deliveries FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- notification_attempts [log/admin]
 ALTER TABLE public.notification_attempts ENABLE ROW LEVEL SECURITY;
@@ -10175,19 +14539,19 @@ CREATE POLICY p_auth_read ON public.seo_projects FOR SELECT TO authenticated USI
 CREATE POLICY p_backend_read ON public.seo_projects FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.seo_projects FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- seo_audits [log/member]
+-- seo_audits [run/member]
 ALTER TABLE public.seo_audits ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.seo_audits FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.seo_audits FROM authenticated;
 GRANT SELECT ON public.seo_audits TO authenticated;
-GRANT SELECT, INSERT ON public.seo_audits TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.seo_audits FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.seo_audits TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.seo_audits FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.seo_audits;
 DROP POLICY IF EXISTS p_backend_read ON public.seo_audits;
 DROP POLICY IF EXISTS p_backend_write ON public.seo_audits;
 CREATE POLICY p_auth_read ON public.seo_audits FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.seo_audits FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.seo_audits FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.seo_audits FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- seo_audit_pages [log/member]
 ALTER TABLE public.seo_audit_pages ENABLE ROW LEVEL SECURITY;
@@ -10310,19 +14674,19 @@ CREATE POLICY p_auth_read ON public.seo_competitor_snapshots FOR SELECT TO authe
 CREATE POLICY p_backend_read ON public.seo_competitor_snapshots FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.seo_competitor_snapshots FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- geo_audits [log/member]
+-- geo_audits [run/member]
 ALTER TABLE public.geo_audits ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.geo_audits FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.geo_audits FROM authenticated;
 GRANT SELECT ON public.geo_audits TO authenticated;
-GRANT SELECT, INSERT ON public.geo_audits TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.geo_audits FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.geo_audits TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.geo_audits FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.geo_audits;
 DROP POLICY IF EXISTS p_backend_read ON public.geo_audits;
 DROP POLICY IF EXISTS p_backend_write ON public.geo_audits;
 CREATE POLICY p_auth_read ON public.geo_audits FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.geo_audits FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.geo_audits FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.geo_audits FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- geo_audit_pages [log/member]
 ALTER TABLE public.geo_audit_pages ENABLE ROW LEVEL SECURITY;
@@ -10392,19 +14756,19 @@ CREATE POLICY p_auth_read ON public.ai_search_queries FOR SELECT TO authenticate
 CREATE POLICY p_backend_read ON public.ai_search_queries FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.ai_search_queries FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- ai_search_runs [log/member]
+-- ai_search_runs [run/member]
 ALTER TABLE public.ai_search_runs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.ai_search_runs FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.ai_search_runs FROM authenticated;
 GRANT SELECT ON public.ai_search_runs TO authenticated;
-GRANT SELECT, INSERT ON public.ai_search_runs TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.ai_search_runs FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.ai_search_runs TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.ai_search_runs FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.ai_search_runs;
 DROP POLICY IF EXISTS p_backend_read ON public.ai_search_runs;
 DROP POLICY IF EXISTS p_backend_write ON public.ai_search_runs;
 CREATE POLICY p_auth_read ON public.ai_search_runs FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.ai_search_runs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.ai_search_runs FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.ai_search_runs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- ai_search_responses [log/member]
 ALTER TABLE public.ai_search_responses ENABLE ROW LEVEL SECURITY;
@@ -10607,19 +14971,19 @@ CREATE POLICY p_auth_read ON public.content_media FOR SELECT TO authenticated US
 CREATE POLICY p_backend_read ON public.content_media FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.content_media FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- content_generation_jobs [log/member]
+-- content_generation_jobs [run/member]
 ALTER TABLE public.content_generation_jobs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.content_generation_jobs FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.content_generation_jobs FROM authenticated;
 GRANT SELECT ON public.content_generation_jobs TO authenticated;
-GRANT SELECT, INSERT ON public.content_generation_jobs TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.content_generation_jobs FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.content_generation_jobs TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.content_generation_jobs FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.content_generation_jobs;
 DROP POLICY IF EXISTS p_backend_read ON public.content_generation_jobs;
 DROP POLICY IF EXISTS p_backend_write ON public.content_generation_jobs;
 CREATE POLICY p_auth_read ON public.content_generation_jobs FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.content_generation_jobs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.content_generation_jobs FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.content_generation_jobs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- content_publications [biz/member]
 ALTER TABLE public.content_publications ENABLE ROW LEVEL SECURITY;
@@ -10752,33 +15116,33 @@ CREATE POLICY p_auth_read ON public.video_assets FOR SELECT TO authenticated USI
 CREATE POLICY p_backend_read ON public.video_assets FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.video_assets FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- video_generation_jobs [log/member]
+-- video_generation_jobs [run/member]
 ALTER TABLE public.video_generation_jobs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.video_generation_jobs FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.video_generation_jobs FROM authenticated;
 GRANT SELECT ON public.video_generation_jobs TO authenticated;
-GRANT SELECT, INSERT ON public.video_generation_jobs TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.video_generation_jobs FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.video_generation_jobs TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.video_generation_jobs FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.video_generation_jobs;
 DROP POLICY IF EXISTS p_backend_read ON public.video_generation_jobs;
 DROP POLICY IF EXISTS p_backend_write ON public.video_generation_jobs;
 CREATE POLICY p_auth_read ON public.video_generation_jobs FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.video_generation_jobs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.video_generation_jobs FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.video_generation_jobs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- video_render_jobs [log/member]
+-- video_render_jobs [run/member]
 ALTER TABLE public.video_render_jobs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.video_render_jobs FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.video_render_jobs FROM authenticated;
 GRANT SELECT ON public.video_render_jobs TO authenticated;
-GRANT SELECT, INSERT ON public.video_render_jobs TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.video_render_jobs FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.video_render_jobs TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.video_render_jobs FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.video_render_jobs;
 DROP POLICY IF EXISTS p_backend_read ON public.video_render_jobs;
 DROP POLICY IF EXISTS p_backend_write ON public.video_render_jobs;
 CREATE POLICY p_auth_read ON public.video_render_jobs FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.video_render_jobs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.video_render_jobs FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.video_render_jobs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- video_subtitles [biz/member]
 ALTER TABLE public.video_subtitles ENABLE ROW LEVEL SECURITY;
@@ -11444,19 +15808,19 @@ CREATE POLICY p_auth_read ON public.email_sync_cursors FOR SELECT TO authenticat
 CREATE POLICY p_backend_read ON public.email_sync_cursors FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.email_sync_cursors FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- email_webhook_events [log/admin]
+-- email_webhook_events [run/admin]
 ALTER TABLE public.email_webhook_events ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.email_webhook_events FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.email_webhook_events FROM authenticated;
 GRANT SELECT ON public.email_webhook_events TO authenticated;
-GRANT SELECT, INSERT ON public.email_webhook_events TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.email_webhook_events FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.email_webhook_events TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.email_webhook_events FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.email_webhook_events;
 DROP POLICY IF EXISTS p_backend_read ON public.email_webhook_events;
 DROP POLICY IF EXISTS p_backend_write ON public.email_webhook_events;
 CREATE POLICY p_auth_read ON public.email_webhook_events FOR SELECT TO authenticated USING (app.is_tenant_admin(tenant_id));
 CREATE POLICY p_backend_read ON public.email_webhook_events FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.email_webhook_events FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.email_webhook_events FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- email_conversations [biz/member]
 ALTER TABLE public.email_conversations ENABLE ROW LEVEL SECURITY;
@@ -11606,19 +15970,19 @@ CREATE POLICY p_auth_read ON public.email_thread_associations FOR SELECT TO auth
 CREATE POLICY p_backend_read ON public.email_thread_associations FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.email_thread_associations FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
--- email_sync_runs [log/member]
+-- email_sync_runs [run/member]
 ALTER TABLE public.email_sync_runs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.email_sync_runs FROM anon;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.email_sync_runs FROM authenticated;
 GRANT SELECT ON public.email_sync_runs TO authenticated;
-GRANT SELECT, INSERT ON public.email_sync_runs TO app_backend;
-REVOKE UPDATE, DELETE, TRUNCATE ON public.email_sync_runs FROM app_backend;
+GRANT SELECT, INSERT, UPDATE ON public.email_sync_runs TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.email_sync_runs FROM app_backend;
 DROP POLICY IF EXISTS p_auth_read ON public.email_sync_runs;
 DROP POLICY IF EXISTS p_backend_read ON public.email_sync_runs;
 DROP POLICY IF EXISTS p_backend_write ON public.email_sync_runs;
 CREATE POLICY p_auth_read ON public.email_sync_runs FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.email_sync_runs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
-CREATE POLICY p_backend_write ON public.email_sync_runs FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+CREATE POLICY p_backend_write ON public.email_sync_runs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 -- email_provider_errors [log/member]
 ALTER TABLE public.email_provider_errors ENABLE ROW LEVEL SECURITY;
@@ -11960,6 +16324,203 @@ DROP POLICY IF EXISTS p_backend_write ON public.thor_feedback;
 CREATE POLICY p_auth_read ON public.thor_feedback FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
 CREATE POLICY p_backend_read ON public.thor_feedback FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.thor_feedback FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- ai_feature_routes [ref/pilot]
+ALTER TABLE public.ai_feature_routes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.ai_feature_routes FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.ai_feature_routes FROM authenticated;
+GRANT SELECT ON public.ai_feature_routes TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ai_feature_routes TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.ai_feature_routes;
+DROP POLICY IF EXISTS p_backend_read ON public.ai_feature_routes;
+DROP POLICY IF EXISTS p_backend_write ON public.ai_feature_routes;
+CREATE POLICY p_auth_read ON public.ai_feature_routes FOR SELECT TO authenticated USING ((false) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.ai_feature_routes FOR SELECT TO app_backend USING (tenant_id IS NULL OR tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.ai_feature_routes FOR ALL TO app_backend USING (tenant_id IS NULL OR tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id IS NULL OR tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- platform_action_capabilities [ref/global]
+ALTER TABLE public.platform_action_capabilities ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.platform_action_capabilities FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.platform_action_capabilities FROM authenticated;
+GRANT SELECT ON public.platform_action_capabilities TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.platform_action_capabilities TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.platform_action_capabilities;
+DROP POLICY IF EXISTS p_backend_read ON public.platform_action_capabilities;
+DROP POLICY IF EXISTS p_backend_write ON public.platform_action_capabilities;
+CREATE POLICY p_auth_read ON public.platform_action_capabilities FOR SELECT TO authenticated USING (true);
+CREATE POLICY p_backend_read ON public.platform_action_capabilities FOR SELECT TO app_backend USING (true);
+CREATE POLICY p_backend_write ON public.platform_action_capabilities FOR ALL TO app_backend USING (true) WITH CHECK (true);
+
+-- tenant_growth_policies [conf/member]
+ALTER TABLE public.tenant_growth_policies ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.tenant_growth_policies FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.tenant_growth_policies FROM authenticated;
+GRANT SELECT ON public.tenant_growth_policies TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.tenant_growth_policies TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.tenant_growth_policies;
+DROP POLICY IF EXISTS p_backend_read ON public.tenant_growth_policies;
+DROP POLICY IF EXISTS p_backend_write ON public.tenant_growth_policies;
+CREATE POLICY p_auth_read ON public.tenant_growth_policies FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.tenant_growth_policies FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.tenant_growth_policies FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- approval_requests [biz/member]
+ALTER TABLE public.approval_requests ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.approval_requests FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.approval_requests FROM authenticated;
+GRANT SELECT ON public.approval_requests TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.approval_requests TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.approval_requests;
+DROP POLICY IF EXISTS p_backend_read ON public.approval_requests;
+DROP POLICY IF EXISTS p_backend_write ON public.approval_requests;
+CREATE POLICY p_auth_read ON public.approval_requests FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.approval_requests FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.approval_requests FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- builder_templates [gbiz/member_or_shared]
+ALTER TABLE public.builder_templates ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.builder_templates FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.builder_templates FROM authenticated;
+GRANT SELECT ON public.builder_templates TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.builder_templates TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.builder_templates;
+DROP POLICY IF EXISTS p_backend_read ON public.builder_templates;
+DROP POLICY IF EXISTS p_backend_write ON public.builder_templates;
+CREATE POLICY p_auth_read ON public.builder_templates FOR SELECT TO authenticated USING ((tenant_id IS NULL OR app.is_tenant_member(tenant_id)));
+CREATE POLICY p_backend_read ON public.builder_templates FOR SELECT TO app_backend USING (tenant_id IS NULL OR tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.builder_templates FOR ALL TO app_backend USING (tenant_id IS NULL OR tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id IS NULL OR tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- builder_pages [biz/member]
+ALTER TABLE public.builder_pages ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.builder_pages FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.builder_pages FROM authenticated;
+GRANT SELECT ON public.builder_pages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.builder_pages TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.builder_pages;
+DROP POLICY IF EXISTS p_backend_read ON public.builder_pages;
+DROP POLICY IF EXISTS p_backend_write ON public.builder_pages;
+CREATE POLICY p_auth_read ON public.builder_pages FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
+CREATE POLICY p_backend_read ON public.builder_pages FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.builder_pages FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- builder_page_versions [log/member]
+ALTER TABLE public.builder_page_versions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.builder_page_versions FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.builder_page_versions FROM authenticated;
+GRANT SELECT ON public.builder_page_versions TO authenticated;
+GRANT SELECT, INSERT ON public.builder_page_versions TO app_backend;
+REVOKE UPDATE, DELETE, TRUNCATE ON public.builder_page_versions FROM app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.builder_page_versions;
+DROP POLICY IF EXISTS p_backend_read ON public.builder_page_versions;
+DROP POLICY IF EXISTS p_backend_write ON public.builder_page_versions;
+CREATE POLICY p_auth_read ON public.builder_page_versions FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
+CREATE POLICY p_backend_read ON public.builder_page_versions FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.builder_page_versions FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- social_listening_configs [biz/member]
+ALTER TABLE public.social_listening_configs ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.social_listening_configs FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.social_listening_configs FROM authenticated;
+GRANT SELECT ON public.social_listening_configs TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.social_listening_configs TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.social_listening_configs;
+DROP POLICY IF EXISTS p_backend_read ON public.social_listening_configs;
+DROP POLICY IF EXISTS p_backend_write ON public.social_listening_configs;
+CREATE POLICY p_auth_read ON public.social_listening_configs FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
+CREATE POLICY p_backend_read ON public.social_listening_configs FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.social_listening_configs FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- social_signals [biz/member]
+ALTER TABLE public.social_signals ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.social_signals FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.social_signals FROM authenticated;
+GRANT SELECT ON public.social_signals TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.social_signals TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.social_signals;
+DROP POLICY IF EXISTS p_backend_read ON public.social_signals;
+DROP POLICY IF EXISTS p_backend_write ON public.social_signals;
+CREATE POLICY p_auth_read ON public.social_signals FOR SELECT TO authenticated USING (app.is_tenant_member(tenant_id));
+CREATE POLICY p_backend_read ON public.social_signals FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.social_signals FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- whatsapp_accounts [biz/member]
+ALTER TABLE public.whatsapp_accounts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.whatsapp_accounts FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.whatsapp_accounts FROM authenticated;
+GRANT SELECT ON public.whatsapp_accounts TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.whatsapp_accounts TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.whatsapp_accounts;
+DROP POLICY IF EXISTS p_backend_read ON public.whatsapp_accounts;
+DROP POLICY IF EXISTS p_backend_write ON public.whatsapp_accounts;
+CREATE POLICY p_auth_read ON public.whatsapp_accounts FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.whatsapp_accounts FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.whatsapp_accounts FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- whatsapp_templates [conf/member]
+ALTER TABLE public.whatsapp_templates ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.whatsapp_templates FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.whatsapp_templates FROM authenticated;
+GRANT SELECT ON public.whatsapp_templates TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.whatsapp_templates TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.whatsapp_templates;
+DROP POLICY IF EXISTS p_backend_read ON public.whatsapp_templates;
+DROP POLICY IF EXISTS p_backend_write ON public.whatsapp_templates;
+CREATE POLICY p_auth_read ON public.whatsapp_templates FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.whatsapp_templates FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.whatsapp_templates FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- whatsapp_contacts [biz/member]
+ALTER TABLE public.whatsapp_contacts ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.whatsapp_contacts FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.whatsapp_contacts FROM authenticated;
+GRANT SELECT ON public.whatsapp_contacts TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.whatsapp_contacts TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.whatsapp_contacts;
+DROP POLICY IF EXISTS p_backend_read ON public.whatsapp_contacts;
+DROP POLICY IF EXISTS p_backend_write ON public.whatsapp_contacts;
+CREATE POLICY p_auth_read ON public.whatsapp_contacts FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.whatsapp_contacts FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.whatsapp_contacts FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- whatsapp_conversations [biz/member]
+ALTER TABLE public.whatsapp_conversations ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.whatsapp_conversations FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.whatsapp_conversations FROM authenticated;
+GRANT SELECT ON public.whatsapp_conversations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.whatsapp_conversations TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.whatsapp_conversations;
+DROP POLICY IF EXISTS p_backend_read ON public.whatsapp_conversations;
+DROP POLICY IF EXISTS p_backend_write ON public.whatsapp_conversations;
+CREATE POLICY p_auth_read ON public.whatsapp_conversations FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.whatsapp_conversations FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.whatsapp_conversations FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- whatsapp_messages [biz/member]
+ALTER TABLE public.whatsapp_messages ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.whatsapp_messages FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.whatsapp_messages FROM authenticated;
+GRANT SELECT ON public.whatsapp_messages TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.whatsapp_messages TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.whatsapp_messages;
+DROP POLICY IF EXISTS p_backend_read ON public.whatsapp_messages;
+DROP POLICY IF EXISTS p_backend_write ON public.whatsapp_messages;
+CREATE POLICY p_auth_read ON public.whatsapp_messages FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.whatsapp_messages FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.whatsapp_messages FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- whatsapp_webhook_events [log/admin]
+ALTER TABLE public.whatsapp_webhook_events ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.whatsapp_webhook_events FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.whatsapp_webhook_events FROM authenticated;
+GRANT SELECT ON public.whatsapp_webhook_events TO authenticated;
+GRANT SELECT, INSERT ON public.whatsapp_webhook_events TO app_backend;
+REVOKE UPDATE, DELETE, TRUNCATE ON public.whatsapp_webhook_events FROM app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.whatsapp_webhook_events;
+DROP POLICY IF EXISTS p_backend_read ON public.whatsapp_webhook_events;
+DROP POLICY IF EXISTS p_backend_write ON public.whatsapp_webhook_events;
+CREATE POLICY p_auth_read ON public.whatsapp_webhook_events FOR SELECT TO authenticated USING ((app.is_tenant_admin(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.whatsapp_webhook_events FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.whatsapp_webhook_events FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 
 -- >>> 0006_partitions_and_seeds.sql

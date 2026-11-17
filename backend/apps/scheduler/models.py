@@ -25,6 +25,17 @@ class TenantScheduler(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    category = models.TextField(default='reporting', choices=[('seo', 'seo'), ('geo', 'geo'), ('articles', 'articles'), ('pages', 'pages'), ('social', 'social'), ('videos', 'videos'), ('opportunities', 'opportunities'), ('social_monitoring', 'social_monitoring'), ('prospects', 'prospects'), ('crm', 'crm'), ('reporting', 'reporting'), ('intelligence', 'intelligence'), ('agents', 'agents')])
+    frequency_type = models.TextField(default='daily', choices=[('hourly', 'hourly'), ('every_x_hours', 'every_x_hours'), ('daily', 'daily'), ('weekly', 'weekly'), ('monthly', 'monthly'), ('cron', 'cron'), ('event', 'event'), ('conditional', 'conditional')])
+    frequency_value = models.TextField(null=True, blank=True, help_text='X hours | HH:MM | weekday HH:MM | day HH:MM | cron | event name')
+    params = models.JSONField(default=dict)
+    agent_code = models.TextField(null=True, blank=True)
+    mode = models.TextField(default='approval', choices=[('automatic', 'automatic'), ('approval', 'approval'), ('analysis', 'analysis')])
+    budget_cents = models.BigIntegerField(null=True, blank=True)
+    quota_limit = models.IntegerField(null=True, blank=True)
+    next_run_at = models.DateTimeField(null=True, blank=True)
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    last_status = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -111,11 +122,11 @@ class SchedulerTaskDependency(models.Model):
 
 
 class SchedulerExecutionRun(models.Model):
-    """scheduler_execution_runs [log]"""
+    """scheduler_execution_runs [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
-    task = models.ForeignKey('scheduler.SchedulerTask', on_delete=models.DO_NOTHING, db_column='task_id', related_name='+', db_constraint=False)
+    task = models.ForeignKey('scheduler.SchedulerTask', on_delete=models.DO_NOTHING, db_column='task_id', related_name='+', null=True, blank=True, db_constraint=False)
     execution_id = models.UUIDField()
     celery_task_id = models.TextField(null=True, blank=True)
     status = models.TextField(choices=[('queued', 'queued'), ('running', 'running'), ('succeeded', 'succeeded'), ('failed', 'failed'), ('cancelled', 'cancelled'), ('retrying', 'retrying'), ('dead_letter', 'dead_letter')])
@@ -127,17 +138,21 @@ class SchedulerExecutionRun(models.Model):
     triggered_by = models.TextField(default='schedule', choices=[('schedule', 'schedule'), ('manual', 'manual'), ('dependency', 'dependency'), ('retry', 'retry')])
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    scheduler = models.ForeignKey('scheduler.TenantScheduler', on_delete=models.DO_NOTHING, db_column='scheduler_id', related_name='+', null=True, blank=True, db_constraint=False)
+    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    result = models.JSONField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'scheduler_execution_runs'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
 class SchedulerExecutionStep(models.Model):
-    """scheduler_execution_steps [log]"""
+    """scheduler_execution_steps [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -149,12 +164,13 @@ class SchedulerExecutionStep(models.Model):
     output_summary = models.JSONField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
         db_table = 'scheduler_execution_steps'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
@@ -329,46 +345,55 @@ class GrowthWorkflowNode(models.Model):
 
 
 class GrowthWorkflowExecution(models.Model):
-    """growth_workflow_executions [log]"""
+    """growth_workflow_executions [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
     workflow = models.ForeignKey('scheduler.GrowthWorkflowDefinition', on_delete=models.DO_NOTHING, db_column='workflow_id', related_name='+', db_constraint=False)
     workflow_execution_id = models.UUIDField()
-    status = models.TextField(choices=[('queued', 'queued'), ('running', 'running'), ('succeeded', 'succeeded'), ('failed', 'failed'), ('cancelled', 'cancelled'), ('waiting_approval', 'waiting_approval')])
+    status = models.TextField(choices=[('queued', 'queued'), ('running', 'running'), ('succeeded', 'succeeded'), ('failed', 'failed'), ('cancelled', 'cancelled'), ('waiting_approval', 'waiting_approval'), ('paused', 'paused')])
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     triggered_by = models.UUIDField(null=True, blank=True)
     error_message = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    input = models.JSONField(default=dict)
+    context = models.JSONField(default=dict)
+    current_node = models.TextField(null=True, blank=True)
+    cancel_requested = models.BooleanField(default=False)
 
     class Meta:
         managed = False
         db_table = 'growth_workflow_executions'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
 class GrowthWorkflowExecutionStep(models.Model):
-    """growth_workflow_execution_steps [log]"""
+    """growth_workflow_execution_steps [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
     execution = models.ForeignKey('scheduler.GrowthWorkflowExecution', on_delete=models.DO_NOTHING, db_column='execution_id', related_name='+', db_constraint=False)
     node_key = models.TextField()
-    status = models.TextField(choices=[('pending', 'pending'), ('running', 'running'), ('succeeded', 'succeeded'), ('failed', 'failed'), ('skipped', 'skipped')])
+    status = models.TextField(choices=[('pending', 'pending'), ('running', 'running'), ('succeeded', 'succeeded'), ('failed', 'failed'), ('skipped', 'skipped'), ('waiting_approval', 'waiting_approval'), ('cancelled', 'cancelled'), ('retrying', 'retrying')])
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     output_summary = models.JSONField(null=True, blank=True)
     error_message = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    attempt = models.IntegerField(default=1)
+    idempotency_key = models.TextField(null=True, blank=True)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'growth_workflow_execution_steps'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()

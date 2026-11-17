@@ -25,7 +25,7 @@ jobs:
         run: |
           infrastructure/scripts/db_local.sh
           infrastructure/scripts/db_local.sh --tests 2>&1 | tee sql-tests.log
-          grep -q "ALL SQL TESTS PASSED" sql-tests.log
+          grep -q "ALL SQL TESTS PASSED" sql-tests.log && grep -q "ALL PROMPT2 SQL TESTS PASSED" sql-tests.log
 
   backend:
     name: Backend lint, types, security, tests

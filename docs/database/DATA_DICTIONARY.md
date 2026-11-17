@@ -963,6 +963,71 @@ Unique: `(tenant_id, period)`
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
 
+### `platform_action_capabilities`
+
+ — kind `ref`, RLS read `global`, app `permissions`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| module_code | text |  |  |  |  |
+| action_code | text |  |  |  |  |
+| max_mode | text |  | 'approval' | in(automatic, approval, analysis, disabled) |  |
+| description | text | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+
+Unique: `(module_code, action_code)`
+
+### `tenant_growth_policies`
+
+ — kind `conf`, RLS read `member`, app `permissions`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| module_code | text |  |  |  |  |
+| action_code | text |  |  |  |  |
+| mode | text |  | 'approval' | in(automatic, approval, analysis, disabled) |  |
+| growth_mode | text |  | 'assisted' | in(assisted, autonomous, hybrid) |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, module_code, action_code)`
+
+### `approval_requests`
+
+ — kind `biz`, RLS read `member`, app `permissions`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| module_code | text |  |  |  |  |
+| action_code | text |  |  |  |  |
+| entity_type | text | yes |  |  |  |
+| entity_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| payload | jsonb |  | '{}' |  |  |
+| status | text |  | 'pending' | in(pending, approved, rejected, expired, executed, failed) |  |
+| requested_by | uuid | yes |  | → auth.users (setnull) |  |
+| requested_by_agent | text | yes |  |  |  |
+| decided_by | uuid | yes |  | → auth.users (setnull) |  |
+| decided_at | timestamptz | yes |  |  |  |
+| decision_reason | text | yes |  |  |  |
+| execution_id | uuid | yes |  |  |  |
+| expires_at | timestamptz | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
 ## D. Connecteurs
 
 ### `connector_providers`
@@ -973,12 +1038,14 @@ Unique: `(tenant_id, period)`
 |---|---|---|---|---|---|
 | code | text |  |  | unique |  |
 | name | text |  |  |  |  |
-| category | text |  |  | in(analytics, crm, email, social, seo, cms, ads, storage, ai, other) |  |
-| auth_type | text |  |  | in(oauth2, api_key, basic, none, webhook) |  |
+| category | text |  |  | in(analytics, crm, email, social, seo, cms, ads, storage, ai, messaging, payments, video, other) |  |
+| auth_type | text |  |  | in(oauth2, api_key, basic, none, webhook, smtp, imap, app_password) |  |
 | docs_url | text | yes |  |  |  |
 | is_enabled | boolean |  | true |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
+| capabilities | text[] | yes |  |  |  |
+| docs_status | text |  | 'available' | in(available, pending_approval, not_implemented) |  |
 
 ### `connector_capabilities`
 
@@ -1014,6 +1081,7 @@ Unique: `(provider_id, code)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| client_secret_ciphertext | text | yes |  | **secret** |  |
 
 ### `tenant_connector_authorizations`
 
@@ -1047,7 +1115,7 @@ Unique: `(tenant_id, provider_id)`
 | product_id | uuid | yes |  | → products (restrict) |  |
 | external_account_id | text | yes |  |  |  |
 | display_name | text |  |  |  |  |
-| status | text |  | 'pending' | in(pending, connected, error, disconnected, revoked) |  |
+| status | text |  | 'configured' | in(pending, not_configured, configured, authorized, connected, tested, degraded, expired, failed, pending_approval, error, disconnected, revoked) |  |
 | connected_by | uuid | yes |  | → auth.users (setnull) |  |
 | connected_at | timestamptz | yes |  |  |  |
 | last_sync_at | timestamptz | yes |  |  |  |
@@ -1058,6 +1126,11 @@ Unique: `(tenant_id, provider_id)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| settings | jsonb |  | '{}' |  | non-secret provider settings (base_url, sender, site_url…) |
+| last_test_at | timestamptz | yes |  |  |  |
+| last_test_status | text | yes |  |  |  |
+| last_error | text | yes |  |  |  |
+| expires_at | timestamptz | yes |  |  |  |
 
 ### `tenant_connector_credentials`
 
@@ -1079,6 +1152,7 @@ Unique: `(tenant_id, provider_id)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| ciphertext | text | yes |  | **secret** | Fernet-encrypted by the backend (SECRETS_ENCRYPTION_KEY) |
 
 ### `tenant_connector_scopes`
 
@@ -1117,7 +1191,7 @@ Unique: `(tenant_id, account_id, scope)`
 
 ### `connector_sync_runs`
 
- — kind `log`, RLS read `member`, app `integrations`
+ — kind `run`, RLS read `member`, app `integrations`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -1132,6 +1206,7 @@ Unique: `(tenant_id, account_id, scope)`
 | error_message | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
 
 ### `connector_error_logs`
 
@@ -1219,6 +1294,16 @@ Unique: `(tenant_id, account_id, scope)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_type | text |  | 'saas' | in(saas, website, ecommerce, marketplace, app, service, other) |  |
+| url | text | yes |  |  |  |
+| languages | text[] | yes |  |  |  |
+| target_countries | text[] | yes |  |  |  |
+| markets | text[] | yes |  |  |  |
+| industries | text[] | yes |  |  |  |
+| features | jsonb |  | '[]' |  |  |
+| pricing | jsonb |  | '{}' |  |  |
+| icp | jsonb |  | '{}' |  |  |
+| sales_channels | text[] | yes |  |  |  |
 
 ### `product_domains`
 
@@ -1382,6 +1467,8 @@ Unique: `(tenant_id, product_id, connector_account_id)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| facts | jsonb |  | '[]' |  | [{field,value,status: detected|confirmed|hypothesis|missing,source,evidence}] |
+| last_analysis_at | timestamptz | yes |  |  |  |
 
 ### `product_business_context_sources`
 
@@ -1474,7 +1561,7 @@ Unique: `(tenant_id, website_id, name)`
 
 ### `website_scans`
 
- — kind `log`, RLS read `member`, app `websites`
+ — kind `run`, RLS read `member`, app `websites`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -1489,6 +1576,7 @@ Unique: `(tenant_id, website_id, name)`
 | requested_by | uuid | yes |  | → auth.users (setnull) |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
 
 ### `website_scan_results`
 
@@ -1526,6 +1614,17 @@ Unique: `(tenant_id, website_id, name)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| category | text |  | 'reporting' | in(seo, geo, articles, pages, social, videos, opportunities, social_monitoring, prospects, crm, reporting, intelligence, agents) |  |
+| frequency_type | text |  | 'daily' | in(hourly, every_x_hours, daily, weekly, monthly, cron, event, conditional) |  |
+| frequency_value | text | yes |  |  | X hours | HH:MM | weekday HH:MM | day HH:MM | cron | event name |
+| params | jsonb |  | '{}' |  |  |
+| agent_code | text | yes |  |  |  |
+| mode | text |  | 'approval' | in(automatic, approval, analysis) |  |
+| budget_cents | bigint | yes |  |  |  |
+| quota_limit | integer | yes |  |  |  |
+| next_run_at | timestamptz | yes |  |  |  |
+| last_run_at | timestamptz | yes |  |  |  |
+| last_status | text | yes |  |  |  |
 
 ### `scheduler_retry_policies`
 
@@ -1591,12 +1690,12 @@ Unique: `(tenant_id, task_id, depends_on_task_id)`
 
 ### `scheduler_execution_runs`
 
- — kind `log`, RLS read `member`, app `scheduler`
+ — kind `run`, RLS read `member`, app `scheduler`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
 | tenant_id | uuid |  |  | → tenants (restrict) |  |
-| task_id | uuid |  |  | → scheduler_tasks (restrict) |  |
+| task_id | uuid | yes |  | → scheduler_tasks (restrict) |  |
 | execution_id | uuid |  |  | unique |  |
 | celery_task_id | text | yes |  |  |  |
 | status | text |  |  | in(queued, running, succeeded, failed, cancelled, retrying, dead_letter) |  |
@@ -1608,10 +1707,14 @@ Unique: `(tenant_id, task_id, depends_on_task_id)`
 | triggered_by | text |  | 'schedule' | in(schedule, manual, dependency, retry) |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| scheduler_id | uuid | yes |  | → tenant_schedulers (restrict) |  |
+| cost_cents | numeric | yes |  |  |  |
+| result | jsonb | yes |  |  |  |
 
 ### `scheduler_execution_steps`
 
- — kind `log`, RLS read `member`, app `scheduler`
+ — kind `run`, RLS read `member`, app `scheduler`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -1624,6 +1727,7 @@ Unique: `(tenant_id, task_id, depends_on_task_id)`
 | output_summary | jsonb | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
 
 ### `scheduler_execution_metrics`
 
@@ -1763,37 +1867,46 @@ Unique: `(tenant_id, workflow_id, node_key)`
 
 ### `growth_workflow_executions`
 
- — kind `log`, RLS read `member`, app `scheduler`
+ — kind `run`, RLS read `member`, app `scheduler`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
 | tenant_id | uuid |  |  | → tenants (restrict) |  |
 | workflow_id | uuid |  |  | → growth_workflow_definitions (restrict) |  |
 | workflow_execution_id | uuid |  |  | unique |  |
-| status | text |  |  | in(queued, running, succeeded, failed, cancelled, waiting_approval) |  |
+| status | text |  |  | in(queued, running, succeeded, failed, cancelled, waiting_approval, paused) |  |
 | started_at | timestamptz | yes |  |  |  |
 | completed_at | timestamptz | yes |  |  |  |
 | triggered_by | uuid | yes |  | → auth.users (setnull) |  |
 | error_message | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| input | jsonb |  | '{}' |  |  |
+| context | jsonb |  | '{}' |  |  |
+| current_node | text | yes |  |  |  |
+| cancel_requested | boolean |  | false |  |  |
 
 ### `growth_workflow_execution_steps`
 
- — kind `log`, RLS read `member`, app `scheduler`
+ — kind `run`, RLS read `member`, app `scheduler`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
 | tenant_id | uuid |  |  | → tenants (restrict) |  |
 | execution_id | uuid |  |  | → growth_workflow_executions (cascade) |  |
 | node_key | text |  |  |  |  |
-| status | text |  |  | in(pending, running, succeeded, failed, skipped) |  |
+| status | text |  |  | in(pending, running, succeeded, failed, skipped, waiting_approval, cancelled, retrying) |  |
 | started_at | timestamptz | yes |  |  |  |
 | completed_at | timestamptz | yes |  |  |  |
 | output_summary | jsonb | yes |  |  |  |
 | error_message | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| attempt | integer |  | 1 |  |  |
+| idempotency_key | text | yes |  |  |  |
+| next_retry_at | timestamptz | yes |  |  |  |
 
 ## P. Reporting
 
@@ -2005,7 +2118,7 @@ Unique: `(tenant_id, user_id, category, channel)`
 
 ### `notification_deliveries`
 
- — kind `log`, RLS read `admin`, app `notifications`
+ — kind `run`, RLS read `admin`, app `notifications`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -2016,6 +2129,7 @@ Unique: `(tenant_id, user_id, category, channel)`
 | provider | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
 
 ### `notification_attempts`
 
@@ -2276,6 +2390,7 @@ Unique: `(tenant_id, user_id, category, channel)`
 | is_enabled | boolean |  | true |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
+| api_style | text |  | 'openai' | in(openai, anthropic, gemini, cohere, azure_openai, ollama) |  |
 
 ### `ai_models`
 
@@ -2311,6 +2426,12 @@ Unique: `(tenant_id, user_id, category, channel)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| api_key_ciphertext | text | yes |  | **secret** |  |
+| base_url | text | yes |  |  |  |
+| priority | integer |  | 100 |  |  |
+| monthly_budget_cents | bigint | yes |  |  |  |
+| last_test_at | timestamptz | yes |  |  |  |
+| last_test_status | text | yes |  |  |  |
 
 Unique: `(tenant_id, provider_id)`
 
@@ -2372,6 +2493,11 @@ Unique: `(tenant_id, code)`
 | output_summary | jsonb | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| provider_code | text | yes |  |  |  |
+| model_code | text | yes |  |  |  |
+| feature_code | text | yes |  |  |  |
+| prompt_version | text | yes |  |  |  |
+| user_id | uuid | yes |  |  |  |
 
 ### `ai_usage_events`
 
@@ -2416,6 +2542,24 @@ Unique: `(tenant_id, code)`
 | trigger_on | text[] | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
+
+### `ai_feature_routes`
+
+ — kind `ref`, RLS read `pilot`, app `ai_providers`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid | yes |  | → tenants (cascade) | null = platform route |
+| feature_code | text |  |  |  | content.generate, geo.query, email.classify, thor.chat… |
+| model_id | uuid |  |  | → ai_models (restrict) |  |
+| priority | integer |  | 1 |  |  |
+| quality | text |  | 'standard' | in(economy, standard, premium) |  |
+| max_latency_ms | integer | yes |  |  |  |
+| is_enabled | boolean |  | true |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+
+Unique: `(tenant_id, feature_code, model_id)`
 
 ## Traçabilité
 
@@ -2655,7 +2799,7 @@ Unique: `(entity_type, entity_id, version_number)`
 
 ### `seo_audits`
 
- — kind `log`, RLS read `member`, app `seo`
+ — kind `run`, RLS read `member`, app `seo`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -2670,6 +2814,13 @@ Unique: `(entity_type, entity_id, version_number)`
 | requested_by | uuid | yes |  | → auth.users (setnull) |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| website_id | uuid | yes |  | → websites (restrict) |  |
+| audit_type | text |  | 'full' | in(full, technical, onpage, keywords, competitors, backlinks, content_gap) |  |
+| pages_limit | integer |  | 50 |  |  |
+| issues_count | integer |  | 0 |  |  |
+| summary | jsonb |  | '{}' |  |  |
+| error_message | text | yes |  |  |  |
 
 ### `seo_audit_pages`
 
@@ -2685,6 +2836,8 @@ Unique: `(entity_type, entity_id, version_number)`
 | data | jsonb |  | '{}' |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| status_code | integer | yes |  |  |  |
+| load_ms | integer | yes |  |  |  |
 
 ### `seo_issues`
 
@@ -2706,6 +2859,10 @@ Unique: `(entity_type, entity_id, version_number)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| category | text | yes |  |  |  |
+| page_url | text | yes |  |  |  |
+| details | jsonb |  | '{}' |  |  |
+| impact | text | yes |  | in(low, medium, high) |  |
 
 ### `seo_recommendations`
 
@@ -2728,6 +2885,11 @@ Unique: `(entity_type, entity_id, version_number)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| audit_id | uuid | yes |  | → seo_audits (restrict) |  |
+| category | text | yes |  |  |  |
+| difficulty | text | yes |  | in(low, medium, high) |  |
+| estimated_impact | text | yes |  |  |  |
+| details | jsonb |  | '{}' |  |  |
 
 ### `keyword_groups`
 
@@ -2844,7 +3006,7 @@ Unique: `(tenant_id, project_id, keyword)`
 
 ### `geo_audits`
 
- — kind `log`, RLS read `member`, app `geo`
+ — kind `run`, RLS read `member`, app `geo`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -2857,6 +3019,10 @@ Unique: `(tenant_id, project_id, keyword)`
 | completed_at | timestamptz | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| website_id | uuid | yes |  | → websites (restrict) |  |
+| summary | jsonb |  | '{}' |  |  |
+| error_message | text | yes |  |  |  |
 
 ### `geo_audit_pages`
 
@@ -2885,6 +3051,7 @@ Unique: `(tenant_id, project_id, keyword)`
 | operator | text | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
+| purpose | text |  | 'crawl' | in(crawl, search, training, user_fetch) |  |
 
 ### `ai_crawler_checks`
 
@@ -2932,10 +3099,12 @@ Unique: `(tenant_id, project_id, keyword)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| engines | text[] | yes |  |  |  |
+| competitor_names | text[] | yes |  |  |  |
 
 ### `ai_search_runs`
 
- — kind `log`, RLS read `member`, app `geo`
+ — kind `run`, RLS read `member`, app `geo`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -2946,6 +3115,13 @@ Unique: `(tenant_id, project_id, keyword)`
 | status | text |  |  | in(succeeded, failed) |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| provider_code | text | yes |  |  |  |
+| model_code | text | yes |  |  |  |
+| method | text |  | 'api_answer' | in(api_answer, api_search, manual_import) |  |
+| cost_cents | numeric | yes |  |  |  |
+| duration_ms | integer | yes |  |  |  |
+| error_message | text | yes |  |  |  |
 
 ### `ai_search_responses`
 
@@ -3146,7 +3322,7 @@ Unique: `(tenant_id, project_id, keyword)`
 | category_id | uuid | yes |  | → content_categories (setnull) |  |
 | template_id | uuid | yes |  | → content_templates (setnull) |  |
 | title | text |  |  |  |  |
-| content_type | text |  |  | in(article, page, email, social_post, ad, video_script, other) |  |
+| content_type | text |  |  | in(article, guide, tutorial, comparison, faq, case_study, product_page, feature_page, landing_page, industry_page, linkedin_post, facebook_post, instagram_post, x_post, newsletter, video_script, page, email, social_post, ad, other) |  |
 | body | text | yes |  |  |  |
 | language | text |  | 'fr' |  |  |
 | status | text |  | 'draft' | in(draft, review, approved, published, archived) |  |
@@ -3158,6 +3334,24 @@ Unique: `(tenant_id, project_id, keyword)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| keyword | text | yes |  |  |  |
+| campaign | text | yes |  |  |  |
+| objective | text | yes |  |  |  |
+| channel | text | yes |  |  |  |
+| domain | text | yes |  |  |  |
+| author_id | uuid | yes |  | → auth.users (setnull) |  |
+| agent_code | text | yes |  |  |  |
+| prompt_template_code | text | yes |  |  |  |
+| prompt_version | text | yes |  |  |  |
+| model_code | text | yes |  |  |  |
+| provider_code | text | yes |  |  |  |
+| cost_cents | numeric | yes |  |  |  |
+| seo_score | numeric | yes |  |  |  |
+| geo_score | numeric | yes |  |  |  |
+| sources | jsonb |  | '[]' |  |  |
+| scheduled_at | timestamptz | yes |  |  |  |
+| published_url | text | yes |  |  |  |
 
 ### `content_versions`
 
@@ -3173,6 +3367,10 @@ Unique: `(tenant_id, project_id, keyword)`
 | change_note | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| source | text |  | 'manual' | in(ai, manual, restore, translation, optimization) |  |
+| model_code | text | yes |  |  |  |
+| prompt_version | text | yes |  |  |  |
+| author_id | uuid | yes |  |  |  |
 
 Unique: `(tenant_id, content_id, version)`
 
@@ -3212,7 +3410,7 @@ Unique: `(tenant_id, content_id, version)`
 
 ### `content_generation_jobs`
 
- — kind `log`, RLS read `member`, app `content`
+ — kind `run`, RLS read `member`, app `content`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -3224,6 +3422,7 @@ Unique: `(tenant_id, content_id, version)`
 | error_message | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
 
 ### `content_publications`
 
@@ -3244,6 +3443,9 @@ Unique: `(tenant_id, content_id, version)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| connector_account_id | uuid | yes |  | → tenant_connector_accounts (restrict) |  |
+| external_id | text | yes |  |  |  |
+| error_message | text | yes |  |  |  |
 
 ### `publication_schedules`
 
@@ -3264,6 +3466,71 @@ Unique: `(tenant_id, content_id, version)`
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
 
+### `builder_templates`
+
+ — kind `gbiz`, RLS read `member_or_shared`, app `content`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid | yes |  | → tenants (cascade) |  |
+| name | text |  |  |  |  |
+| page_type | text |  |  |  |  |
+| sections | jsonb |  | '[]' |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+### `builder_pages`
+
+ — kind `biz`, RLS read `member`, app `content`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| website_id | uuid | yes |  | → websites (restrict) |  |
+| template_id | uuid | yes |  | → builder_templates (setnull) |  |
+| page_type | text |  |  | in(landing, product, feature, comparison, industry, seo, conversion) |  |
+| title | text |  |  |  |  |
+| slug | text |  |  |  |  |
+| sections | jsonb |  | '[]' |  | [{type,props}] rendered server-side to HTML |
+| seo | jsonb |  | '{}' |  |  |
+| status | text |  | 'draft' | in(draft, review, approved, published, archived) |  |
+| connector_account_id | uuid | yes |  | → tenant_connector_accounts (restrict) |  |
+| external_id | text | yes |  |  |  |
+| published_url | text | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, website_id, slug)`
+
+### `builder_page_versions`
+
+ — kind `log`, RLS read `member`, app `content`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| page_id | uuid |  |  | → builder_pages (restrict) |  |
+| version | integer |  |  |  |  |
+| title | text | yes |  |  |  |
+| sections | jsonb |  |  |  |  |
+| seo | jsonb | yes |  |  |  |
+| author_id | uuid | yes |  |  |  |
+| correlation_id | uuid | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+
+Unique: `(tenant_id, page_id, version)`
+
 ## I. Social et vidéos
 
 ### `social_accounts`
@@ -3275,7 +3542,7 @@ Unique: `(tenant_id, content_id, version)`
 | tenant_id | uuid |  |  | → tenants (restrict) |  |
 | product_id | uuid | yes |  | → products (restrict) |  |
 | connector_account_id | uuid | yes |  | → tenant_connector_accounts (restrict) |  |
-| platform | text |  |  | in(linkedin, x, facebook, instagram, tiktok, youtube, other) |  |
+| platform | text |  |  | in(linkedin, x, facebook, instagram, tiktok, youtube, pinterest, reddit, other) |  |
 | handle | text |  |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3284,6 +3551,7 @@ Unique: `(tenant_id, content_id, version)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| status | text |  | 'configured' | in(configured, connected, expired, failed, disconnected) |  |
 
 Unique: `(tenant_id, platform, handle)`
 
@@ -3298,7 +3566,7 @@ Unique: `(tenant_id, platform, handle)`
 | content_id | uuid | yes |  | → generated_contents (restrict) |  |
 | body | text | yes |  |  |  |
 | external_post_id | text | yes |  |  |  |
-| status | text |  |  | in(draft, scheduled, published, failed) |  |
+| status | text |  |  | in(draft, approved, scheduled, publishing, published, failed, cancelled) |  |
 | published_at | timestamptz | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3307,6 +3575,11 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| scheduled_at | timestamptz | yes |  |  |  |
+| media | jsonb |  | '[]' |  |  |
+| attempts | integer |  | 0 |  |  |
+| error_message | text | yes |  |  |  |
+| published_url | text | yes |  |  |  |
 
 ### `social_publication_metrics`
 
@@ -3340,6 +3613,7 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| format | text |  | 'short' | in(short, long) |  |
 
 ### `video_scripts`
 
@@ -3413,10 +3687,14 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| source | text |  | 'uploaded' | in(uploaded, generated, rendered) |  |
+| mime_type | text | yes |  |  |  |
+| size_bytes | bigint | yes |  |  |  |
+| duration_seconds | numeric | yes |  |  |  |
 
 ### `video_generation_jobs`
 
- — kind `log`, RLS read `member`, app `social`
+ — kind `run`, RLS read `member`, app `social`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -3427,10 +3705,14 @@ Unique: `(tenant_id, platform, handle)`
 | error_message | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| provider_code | text | yes |  |  |  |
+| cost_cents | numeric | yes |  |  |  |
+| output_asset_id | uuid | yes |  | → video_assets (restrict) |  |
 
 ### `video_render_jobs`
 
- — kind `log`, RLS read `member`, app `social`
+ — kind `run`, RLS read `member`, app `social`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -3441,6 +3723,7 @@ Unique: `(tenant_id, platform, handle)`
 | output_storage_path | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
 
 ### `video_subtitles`
 
@@ -3514,6 +3797,8 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| hunters | text[] | yes |  |  |  |
+| config | jsonb |  | '{}' |  |  |
 
 ### `opportunity_search_queries`
 
@@ -3576,7 +3861,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3585,6 +3870,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `saas_opportunities`
 
@@ -3597,7 +3891,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3606,6 +3900,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `website_opportunities`
 
@@ -3618,7 +3921,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3627,6 +3930,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `keyword_opportunities`
 
@@ -3639,7 +3951,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3648,6 +3960,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `customer_opportunities`
 
@@ -3660,7 +3981,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3669,6 +3990,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `trend_opportunities`
 
@@ -3681,7 +4011,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3690,6 +4020,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `partnership_opportunities`
 
@@ -3702,7 +4041,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3711,6 +4050,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `revenue_opportunities`
 
@@ -3723,7 +4071,7 @@ Unique: `(tenant_id, platform, handle)`
 | title | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | score | numeric | yes |  |  |  |
-| status | text |  | 'new' | in(new, qualified, in_progress, won, lost, dismissed) |  |
+| status | text |  | 'new' | in(new, detected, under_analysis, qualified, approved, in_progress, won, rejected, archived, lost, dismissed) |  |
 | data | jsonb |  | '{}' |  |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3732,6 +4080,15 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| source_id | uuid | yes |  | → opportunity_sources (restrict) |  |
+| hunter | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| potential | numeric | yes |  |  |  |
+| difficulty | numeric | yes |  |  |  |
+| recommendation | text | yes |  |  |  |
+| dedup_hash | text | yes |  |  |  |
+| detected_at | timestamptz |  | now() |  |  |
 
 ### `opportunity_evidence`
 
@@ -3846,6 +4203,66 @@ Unique: `(tenant_id, platform, handle)`
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
 
+### `social_listening_configs`
+
+ — kind `biz`, RLS read `member`, app `opportunities`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| name | text |  |  |  |  |
+| keywords | text[] | yes |  |  |  |
+| negative_keywords | text[] | yes |  |  |  |
+| industries | text[] | yes |  |  |  |
+| countries | text[] | yes |  |  |  |
+| languages | text[] | yes |  |  |  |
+| personas | text[] | yes |  |  |  |
+| sources | text[] | yes |  |  | hackernews, reddit, rss:<url> |
+| frequency | text |  | 'daily' | in(hourly, daily, weekly) |  |
+| status | text |  | 'active' | in(active, paused) |  |
+| last_run_at | timestamptz | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+### `social_signals`
+
+ — kind `biz`, RLS read `member`, app `opportunities`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| config_id | uuid |  |  | → social_listening_configs (restrict) |  |
+| source | text |  |  |  |  |
+| external_id | text |  |  |  |  |
+| url | text | yes |  |  |  |
+| author_handle | text | yes |  |  |  |
+| title | text | yes |  |  |  |
+| content | text | yes |  |  |  |
+| published_at | timestamptz | yes |  |  |  |
+| language | text | yes |  |  |  |
+| intent | text | yes |  | in(software_request, recommendation_request, business_need, solution_search, problem, commercial_intent, discussion) |  |
+| score | numeric | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| dedup_hash | text |  |  |  |  |
+| status | text |  | 'new' | in(new, qualified, assigned, dismissed, converted) |  |
+| assigned_to | uuid | yes |  | → auth.users (setnull) |  |
+| evidence | jsonb |  | '{}' |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, dedup_hash)`
+
 ## K. Smart Prospect et CRM
 
 ### `prospect_projects`
@@ -3865,6 +4282,7 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| icp | jsonb |  | '{}' |  | {industries,company_sizes,countries,functions,technologies,needs} |
 
 ### `prospect_companies`
 
@@ -3886,6 +4304,9 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| size_employees | integer | yes |  |  |  |
+| technologies | text[] | yes |  |  |  |
+| source | text | yes |  |  |  |
 
 ### `prospect_sources`
 
@@ -3914,7 +4335,7 @@ Unique: `(tenant_id, platform, handle)`
 | project_id | uuid | yes |  | → prospect_projects (restrict) |  |
 | company_id | uuid | yes |  | → prospect_companies (restrict) |  |
 | source_id | uuid | yes |  | → prospect_sources (restrict) |  |
-| status | text |  | 'new' | in(new, enriched, qualified, contacted, replied, converted, disqualified, unsubscribed) |  |
+| status | text |  | 'new' | in(new, new_lead, enriched, contacted, qualified, interested, demo_requested, meeting_scheduled, proposal_sent, negotiation, customer, lost, replied, converted, disqualified, unsubscribed) |  |
 | owner_user_id | uuid | yes |  | → auth.users (setnull) |  |
 | created_at | timestamptz |  | now() |  |  |
 | updated_at | timestamptz |  | now() |  |  |
@@ -3923,6 +4344,12 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| score | numeric | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| need_detected | text | yes |  |  |  |
+| source_detail | text | yes |  |  |  |
+| last_activity_at | timestamptz | yes |  |  |  |
 
 ### `prospect_contacts`
 
@@ -4031,6 +4458,9 @@ Unique: `(tenant_id, platform, handle)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| channel | text |  | 'email' | in(email, whatsapp) |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| settings | jsonb |  | '{}' |  |  |
 
 ### `prospect_campaign_sequences`
 
@@ -4093,6 +4523,9 @@ Unique: `(tenant_id, campaign_id, contact_id)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| channel | text |  | 'email' | in(email, whatsapp) |  |
+| error_message | text | yes |  |  |  |
+| provider_message_id | text | yes |  |  |  |
 
 ### `prospect_message_events`
 
@@ -4199,6 +4632,7 @@ Unique: `(tenant_id, email)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
 
 ### `crm_activities`
 
@@ -4209,11 +4643,14 @@ Unique: `(tenant_id, email)`
 | tenant_id | uuid |  |  | → tenants (restrict) |  |
 | opportunity_id | uuid | yes |  | → crm_opportunities (restrict) |  |
 | prospect_id | uuid | yes |  | → prospects (restrict) |  |
-| activity_type | text |  |  | in(call, email, meeting, note, task) |  |
+| activity_type | text |  |  | in(call, email, meeting, note, task, whatsapp, status_change, thor_action) |  |
 | summary | text |  |  |  |  |
 | occurred_at | timestamptz |  | now() |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| channel | text | yes |  |  |  |
+| actor_type | text |  | 'user' | in(user, thor, system, prospect) |  |
+| entity_ref | jsonb |  | '{}' |  |  |
 
 ### `crm_meetings`
 
@@ -4325,6 +4762,11 @@ Unique: `(tenant_id, email)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| connector_account_id | uuid | yes |  | → tenant_connector_accounts (restrict) |  |
+| receive_mode | text |  | 'none' | in(none, webhook, gmail, graph, imap) |  |
+| send_enabled | boolean |  | true |  |  |
+| last_sync_at | timestamptz | yes |  |  |  |
+| sync_error | text | yes |  |  |  |
 
 Unique: `(tenant_id, address)`
 
@@ -4371,7 +4813,7 @@ Unique: `(tenant_id, mailbox_id)`
 
 ### `email_webhook_events`
 
- — kind `log`, RLS read `admin`, app `email_center`
+ — kind `run`, RLS read `admin`, app `email_center`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -4384,6 +4826,10 @@ Unique: `(tenant_id, mailbox_id)`
 | processed_at | timestamptz | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| signature_valid | boolean | yes |  |  |  |
+| status | text |  | 'received' | in(received, processed, rejected, failed, duplicate) |  |
+| error_message | text | yes |  |  |  |
 
 ### `email_conversations`
 
@@ -4406,6 +4852,12 @@ Unique: `(tenant_id, mailbox_id)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| labels | text[] | yes |  |  |  |
+| is_unread | boolean |  | false |  |  |
+| assigned_to | uuid | yes |  | → auth.users (setnull) |  |
+| product_id | uuid | yes |  | → products (restrict) |  |
+| last_inbound_at | timestamptz | yes |  |  |  |
+| last_outbound_at | timestamptz | yes |  |  |  |
 
 Unique: `(tenant_id, mailbox_id, thread_id)`
 
@@ -4459,6 +4911,13 @@ Unique: `(tenant_id, mailbox_id, thread_id)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| status | text |  | 'received' | in(draft, queued, sent, accepted, delivered, deferred, bounced, failed, received) |  |
+| is_read | boolean |  | false |  |  |
+| classification | text | yes |  |  |  |
+| provider_thread_id | text | yes |  |  |  |
+| headers | jsonb |  | '{}' |  |  |
+| sent_by | uuid | yes |  |  |  |
+| error_message | text | yes |  |  |  |
 
 Unique: `(tenant_id, mailbox_id, message_id_header)`
 
@@ -4481,6 +4940,8 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| verification_status | text |  | 'pending' | in(pending, clean, rejected, infected, not_scanned) |  |
+| sha256 | text | yes |  |  |  |
 
 ### `email_message_events`
 
@@ -4518,11 +4979,19 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 |---|---|---|---|---|---|
 | tenant_id | uuid |  |  | → tenants (restrict) |  |
 | message_id | uuid |  |  | → email_messages (restrict) |  |
-| category | text |  |  | in(interested, not_interested, out_of_office, unsubscribe, question, bounce, other) |  |
+| category | text |  |  | in(interested, demo_requested, pricing_request, information_request, meeting_request, negotiation, not_interested, unsubscribe, out_of_office, automatic_reply, human_review_required, question, bounce, other) |  |
 | confidence | numeric | yes |  |  |  |
 | model_code | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| summary | text | yes |  |  |  |
+| intents | jsonb |  | '[]' |  |  |
+| questions | jsonb |  | '[]' |  |  |
+| objections | jsonb |  | '[]' |  |  |
+| next_action | text | yes |  |  |  |
+| provider_code | text | yes |  |  |  |
+| cost_cents | numeric | yes |  |  |  |
+| method | text |  | 'rules' | in(rules, ai) |  |
 
 ### `email_reply_suggestions`
 
@@ -4555,6 +5024,10 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| conversation_id | uuid | yes |  | → email_conversations (restrict) |  |
+| sent_message_id | uuid | yes |  | → email_messages (restrict) |  |
+| generated_by | text |  | 'thor' | in(thor, user) |  |
+| model_code | text | yes |  |  |  |
 
 ### `email_suppression_events`
 
@@ -4589,7 +5062,7 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 
 ### `email_sync_runs`
 
- — kind `log`, RLS read `member`, app `email_center`
+ — kind `run`, RLS read `member`, app `email_center`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
@@ -4601,6 +5074,7 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | error_message | text | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
 
 ### `email_provider_errors`
 
@@ -4664,6 +5138,9 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| rule_code | text | yes |  |  |  |
+| sources | jsonb |  | '[]' |  |  |
+| nature | text |  | 'fact' | in(fact, hypothesis) |  |
 
 ### `growth_opportunities`
 
@@ -4851,6 +5328,16 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| rule_code | text | yes |  |  |  |
+| dedup_key | text | yes |  |  |  |
+| sources | jsonb |  | '[]' |  |  |
+| justification | text | yes |  |  |  |
+| confidence | numeric | yes |  |  |  |
+| impact | text | yes |  |  |  |
+| difficulty | text | yes |  |  |  |
+| risks | jsonb |  | '[]' |  |  |
+| actions | jsonb |  | '[]' |  |  |
+| nature | text |  | 'recommendation' | in(fact, hypothesis, recommendation) |  |
 
 ### `growth_recommendation_feedback`
 
@@ -4942,6 +5429,11 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | output_tokens | integer | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| provider_code | text | yes |  |  |  |
+| cost_cents | numeric | yes |  |  |  |
+| duration_ms | integer | yes |  |  |  |
+| prompt_version | text | yes |  |  |  |
+| tool_calls | jsonb | yes |  |  |  |
 
 ### `thor_tool_executions`
 
@@ -4958,6 +5450,8 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | output_summary | jsonb | yes |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+| duration_ms | integer | yes |  |  |  |
+| approval_request_id | uuid | yes |  | → approval_requests (restrict) |  |
 
 ### `thor_memory`
 
@@ -5004,6 +5498,139 @@ Unique: `(tenant_id, mailbox_id, message_id_header)`
 | user_id | uuid | yes |  | → auth.users (setnull) |  |
 | rating | integer | yes |  | in(-1, 1) |  |
 | comment | text | yes |  |  |  |
+| correlation_id | uuid | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+
+## L2. WhatsApp Center
+
+### `whatsapp_accounts`
+
+ — kind `biz`, RLS read `member`, app `whatsapp`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| connector_account_id | uuid | yes |  | → tenant_connector_accounts (restrict) |  |
+| phone_number_id | text |  |  |  |  |
+| waba_id | text | yes |  |  |  |
+| display_phone | text | yes |  |  |  |
+| status | text |  | 'configured' | in(configured, connected, failed, disconnected) |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, phone_number_id)`
+
+### `whatsapp_templates`
+
+ — kind `conf`, RLS read `member`, app `whatsapp`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| account_id | uuid |  |  | → whatsapp_accounts (cascade) |  |
+| name | text |  |  |  |  |
+| language | text |  | 'fr' |  |  |
+| category | text | yes |  |  |  |
+| status | text |  | 'pending' | in(pending, approved, rejected, paused) |  |
+| components | jsonb |  | '[]' |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, account_id, name, language)`
+
+### `whatsapp_contacts`
+
+ — kind `biz`, RLS read `member`, app `whatsapp`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| wa_id | text |  |  |  |  |
+| prospect_contact_id | uuid | yes |  | → prospect_contacts (setnull) |  |
+| display_name | text | yes |  |  |  |
+| consent_status | text |  | 'unknown' | in(unknown, opted_in, opted_out) |  |
+| consent_source | text | yes |  |  |  |
+| consent_at | timestamptz | yes |  |  |  |
+| last_inbound_at | timestamptz | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, wa_id)`
+
+### `whatsapp_conversations`
+
+ — kind `biz`, RLS read `member`, app `whatsapp`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| account_id | uuid |  |  | → whatsapp_accounts (restrict) |  |
+| contact_id | uuid |  |  | → whatsapp_contacts (restrict) |  |
+| status | text |  | 'open' | in(open, pending, closed) |  |
+| assigned_to | uuid | yes |  | → auth.users (setnull) |  |
+| is_unread | boolean |  | false |  |  |
+| last_message_at | timestamptz | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, account_id, contact_id)`
+
+### `whatsapp_messages`
+
+ — kind `biz`, RLS read `member`, app `whatsapp`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| conversation_id | uuid |  |  | → whatsapp_conversations (restrict) |  |
+| direction | text |  |  | in(inbound, outbound) |  |
+| wa_message_id | text | yes |  |  |  |
+| message_type | text |  | 'text' |  |  |
+| body | text | yes |  |  |  |
+| template_name | text | yes |  |  |  |
+| status | text |  | 'received' | in(queued, sent, delivered, read, failed, received) |  |
+| error_message | text | yes |  |  |  |
+| sent_by | uuid | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+### `whatsapp_webhook_events`
+
+ — kind `log`, RLS read `admin`, app `whatsapp`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| account_id | uuid | yes |  | → whatsapp_accounts (restrict) |  |
+| idempotency_key | text |  |  | unique |  |
+| signature_valid | boolean | yes |  |  |  |
+| event_type | text |  |  |  |  |
+| payload | jsonb |  |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
 

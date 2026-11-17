@@ -24,6 +24,8 @@ class OpportunitySearchProject(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    hunters = ArrayField(models.TextField(), null=True, blank=True)
+    config = models.JSONField(default=dict)
 
     class Meta:
         managed = False
@@ -110,7 +112,7 @@ class MarketOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -119,6 +121,15 @@ class MarketOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -137,7 +148,7 @@ class SaasOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -146,6 +157,15 @@ class SaasOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -164,7 +184,7 @@ class WebsiteOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -173,6 +193,15 @@ class WebsiteOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -191,7 +220,7 @@ class KeywordOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -200,6 +229,15 @@ class KeywordOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -218,7 +256,7 @@ class CustomerOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -227,6 +265,15 @@ class CustomerOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -245,7 +292,7 @@ class TrendOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -254,6 +301,15 @@ class TrendOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -272,7 +328,7 @@ class PartnershipOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -281,6 +337,15 @@ class PartnershipOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -299,7 +364,7 @@ class RevenueOpportunity(models.Model):
     title = models.TextField()
     description = models.TextField(null=True, blank=True)
     score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('in_progress', 'in_progress'), ('won', 'won'), ('lost', 'lost'), ('dismissed', 'dismissed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('detected', 'detected'), ('under_analysis', 'under_analysis'), ('qualified', 'qualified'), ('approved', 'approved'), ('in_progress', 'in_progress'), ('won', 'won'), ('rejected', 'rejected'), ('archived', 'archived'), ('lost', 'lost'), ('dismissed', 'dismissed')])
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -308,6 +373,15 @@ class RevenueOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    source = models.ForeignKey('opportunities.OpportunitySource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
+    hunter = models.TextField(null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    potential = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    difficulty = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    recommendation = models.TextField(null=True, blank=True)
+    dedup_hash = models.TextField(null=True, blank=True)
+    detected_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
@@ -469,4 +543,74 @@ class OpportunityAlert(models.Model):
         db_table = 'opportunity_alerts'
 
     TRACE_KIND = 'log'
+    SECRET_FIELDS = ()
+
+
+class SocialListeningConfig(models.Model):
+    """social_listening_configs [biz]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    name = models.TextField()
+    keywords = ArrayField(models.TextField(), null=True, blank=True)
+    negative_keywords = ArrayField(models.TextField(), null=True, blank=True)
+    industries = ArrayField(models.TextField(), null=True, blank=True)
+    countries = ArrayField(models.TextField(), null=True, blank=True)
+    languages = ArrayField(models.TextField(), null=True, blank=True)
+    personas = ArrayField(models.TextField(), null=True, blank=True)
+    sources = ArrayField(models.TextField(), null=True, blank=True, help_text='hackernews, reddit, rss:<url>')
+    frequency = models.TextField(default='daily', choices=[('hourly', 'hourly'), ('daily', 'daily'), ('weekly', 'weekly')])
+    status = models.TextField(default='active', choices=[('active', 'active'), ('paused', 'paused')])
+    last_run_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'social_listening_configs'
+
+    TRACE_KIND = 'biz'
+    SECRET_FIELDS = ()
+
+
+class SocialSignal(models.Model):
+    """social_signals [biz]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    config = models.ForeignKey('opportunities.SocialListeningConfig', on_delete=models.DO_NOTHING, db_column='config_id', related_name='+', db_constraint=False)
+    source = models.TextField()
+    external_id = models.TextField()
+    url = models.TextField(null=True, blank=True)
+    author_handle = models.TextField(null=True, blank=True)
+    title = models.TextField(null=True, blank=True)
+    content = models.TextField(null=True, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+    language = models.TextField(null=True, blank=True)
+    intent = models.TextField(null=True, blank=True, choices=[('software_request', 'software_request'), ('recommendation_request', 'recommendation_request'), ('business_need', 'business_need'), ('solution_search', 'solution_search'), ('problem', 'problem'), ('commercial_intent', 'commercial_intent'), ('discussion', 'discussion')])
+    score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    dedup_hash = models.TextField()
+    status = models.TextField(default='new', choices=[('new', 'new'), ('qualified', 'qualified'), ('assigned', 'assigned'), ('dismissed', 'dismissed'), ('converted', 'converted')])
+    assigned_to = models.UUIDField(null=True, blank=True)
+    evidence = models.JSONField(default=dict)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'social_signals'
+
+    TRACE_KIND = 'biz'
     SECRET_FIELDS = ()

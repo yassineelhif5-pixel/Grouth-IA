@@ -70,6 +70,8 @@ erDiagram
     tenant_ai_budgets { uuid id }
     authorization_audit_logs { uuid id }
     tenant_license_requests { uuid id }
+    platform_action_capabilities { uuid id }
+    tenant_growth_policies { uuid id }
     ai_agents_registry ||--o{ tenant_agent_permissions : agent_id
     ai_agents_registry ||--o{ tenant_agent_product_scopes : agent_id
     ai_agents_registry ||--o{ tenant_agent_quotas : agent_id
@@ -79,6 +81,7 @@ erDiagram
     platform_modules ||--o{ ai_agents_registry : module_id
     platform_modules ||--o{ platform_module_features : module_id
     platform_modules ||--o{ tenant_module_authorizations : module_id
+    products ||--o{ approval_requests : product_id
     products ||--o{ tenant_agent_product_scopes : product_id
     products ||--o{ tenant_usage_events : product_id
 ```
@@ -148,6 +151,7 @@ erDiagram
     scheduler_tasks ||--o{ scheduler_task_dependencies : depends_on_task_id
     scheduler_tasks ||--o{ scheduler_task_dependencies : task_id
     tenant_roles ||--o{ scheduler_approval_policies : approver_role_id
+    tenant_schedulers ||--o{ scheduler_execution_runs : scheduler_id
     tenant_schedulers ||--o{ scheduler_tasks : scheduler_id
 ```
 
@@ -213,6 +217,7 @@ erDiagram
     ai_models ||--o{ ai_execution_logs : model_id
     ai_models ||--o{ ai_fallback_policies : fallback_model_id
     ai_models ||--o{ ai_fallback_policies : primary_model_id
+    ai_models ||--o{ ai_feature_routes : model_id
     ai_models ||--o{ ai_model_capabilities : model_id
     ai_models ||--o{ ai_usage_events : model_id
     ai_prompt_templates ||--o{ ai_execution_logs : prompt_template_id
@@ -247,6 +252,7 @@ erDiagram
     seo_audit_pages ||--o{ seo_issues : audit_page_id
     seo_audits ||--o{ seo_audit_pages : audit_id
     seo_audits ||--o{ seo_issues : audit_id
+    seo_audits ||--o{ seo_recommendations : audit_id
     seo_issues ||--o{ seo_recommendations : issue_id
     seo_keywords ||--o{ keyword_rankings : keyword_id
     seo_projects ||--o{ backlinks : project_id
@@ -257,6 +263,7 @@ erDiagram
     seo_projects ||--o{ seo_recommendations : project_id
     website_pages ||--o{ page_metrics : page_id
     website_pages ||--o{ seo_audit_pages : page_id
+    websites ||--o{ seo_audits : website_id
     websites ||--o{ seo_projects : website_id
 ```
 
@@ -283,6 +290,7 @@ erDiagram
     website_pages ||--o{ geo_audit_pages : page_id
     websites ||--o{ ai_crawler_checks : website_id
     websites ||--o{ ai_crawler_visits : website_id
+    websites ||--o{ geo_audits : website_id
 ```
 
 ## H. Content
@@ -291,6 +299,9 @@ erDiagram
 erDiagram
     content_tags { uuid id }
     content_templates { uuid id }
+    builder_templates { uuid id }
+    builder_pages ||--o{ builder_page_versions : page_id
+    builder_templates ||--o{ builder_pages : template_id
     content_categories ||--o{ content_categories : parent_id
     content_categories ||--o{ generated_contents : category_id
     content_projects ||--o{ generated_contents : project_id
@@ -301,7 +312,12 @@ erDiagram
     generated_contents ||--o{ content_publications : content_id
     generated_contents ||--o{ content_versions : content_id
     generated_contents ||--o{ publication_schedules : content_id
+    products ||--o{ builder_pages : product_id
     products ||--o{ content_projects : product_id
+    products ||--o{ generated_contents : product_id
+    tenant_connector_accounts ||--o{ builder_pages : connector_account_id
+    tenant_connector_accounts ||--o{ content_publications : connector_account_id
+    websites ||--o{ builder_pages : website_id
 ```
 
 ## I. Social et vidéos
@@ -315,6 +331,7 @@ erDiagram
     social_accounts ||--o{ video_publications : social_account_id
     social_publications ||--o{ social_publication_metrics : publication_id
     tenant_connector_accounts ||--o{ social_accounts : connector_account_id
+    video_assets ||--o{ video_generation_jobs : output_asset_id
     video_projects ||--o{ video_assets : project_id
     video_projects ||--o{ video_generation_jobs : project_id
     video_projects ||--o{ video_publications : project_id
@@ -347,9 +364,27 @@ erDiagram
     opportunity_search_projects ||--o{ saas_opportunities : project_id
     opportunity_search_projects ||--o{ trend_opportunities : project_id
     opportunity_search_projects ||--o{ website_opportunities : project_id
+    opportunity_sources ||--o{ customer_opportunities : source_id
+    opportunity_sources ||--o{ keyword_opportunities : source_id
+    opportunity_sources ||--o{ market_opportunities : source_id
     opportunity_sources ||--o{ opportunity_evidence : source_id
     opportunity_sources ||--o{ opportunity_source_snapshots : source_id
+    opportunity_sources ||--o{ partnership_opportunities : source_id
+    opportunity_sources ||--o{ revenue_opportunities : source_id
+    opportunity_sources ||--o{ saas_opportunities : source_id
+    opportunity_sources ||--o{ trend_opportunities : source_id
+    opportunity_sources ||--o{ website_opportunities : source_id
+    products ||--o{ customer_opportunities : product_id
+    products ||--o{ keyword_opportunities : product_id
+    products ||--o{ market_opportunities : product_id
     products ||--o{ opportunity_search_projects : product_id
+    products ||--o{ partnership_opportunities : product_id
+    products ||--o{ revenue_opportunities : product_id
+    products ||--o{ saas_opportunities : product_id
+    products ||--o{ social_listening_configs : product_id
+    products ||--o{ trend_opportunities : product_id
+    products ||--o{ website_opportunities : product_id
+    social_listening_configs ||--o{ social_signals : config_id
 ```
 
 ## K. Smart Prospect et CRM
@@ -368,7 +403,10 @@ erDiagram
     email_conversations ||--o{ prospect_conversations : email_conversation_id
     email_mailboxes ||--o{ prospect_campaigns : mailbox_id
     email_messages ||--o{ prospect_messages : email_message_id
+    products ||--o{ crm_opportunities : product_id
+    products ||--o{ prospect_campaigns : product_id
     products ||--o{ prospect_projects : product_id
+    products ||--o{ prospects : product_id
     prospect_campaign_recipients ||--o{ prospect_messages : recipient_id
     prospect_campaign_sequences ||--o{ prospect_messages : sequence_id
     prospect_campaigns ||--o{ prospect_campaign_metrics : campaign_id
@@ -400,6 +438,7 @@ erDiagram
     email_conversations ||--o{ email_commercial_assignments : conversation_id
     email_conversations ||--o{ email_conversation_participants : conversation_id
     email_conversations ||--o{ email_messages : conversation_id
+    email_conversations ||--o{ email_reply_drafts : conversation_id
     email_conversations ||--o{ email_thread_associations : conversation_id
     email_mailboxes ||--o{ email_conversations : mailbox_id
     email_mailboxes ||--o{ email_mailbox_permissions : mailbox_id
@@ -413,13 +452,16 @@ erDiagram
     email_messages ||--o{ email_message_events : message_id
     email_messages ||--o{ email_reply_classifications : message_id
     email_messages ||--o{ email_reply_drafts : message_id
+    email_messages ||--o{ email_reply_drafts : sent_message_id
     email_messages ||--o{ email_reply_suggestions : message_id
     email_messages ||--o{ email_suppression_events : source_message_id
     email_provider_accounts ||--o{ email_mailboxes : provider_account_id
+    products ||--o{ email_conversations : product_id
     prospect_campaigns ||--o{ email_conversations : campaign_id
     prospect_campaigns ||--o{ email_messages : campaign_id
     prospects ||--o{ email_conversations : prospect_id
     prospects ||--o{ email_messages : prospect_id
+    tenant_connector_accounts ||--o{ email_mailboxes : connector_account_id
     tenant_connector_accounts ||--o{ email_provider_accounts : connector_account_id
 ```
 
@@ -450,11 +492,25 @@ erDiagram
 
 ```mermaid
 erDiagram
+    approval_requests ||--o{ thor_tool_executions : approval_request_id
     products ||--o{ thor_conversations : product_id
     products ||--o{ thor_memory : product_id
     thor_conversations ||--o{ thor_messages : conversation_id
     thor_memory ||--o{ thor_memory_sources : memory_id
     thor_messages ||--o{ thor_feedback : message_id
     thor_messages ||--o{ thor_tool_executions : message_id
+```
+
+## L2. WhatsApp Center
+
+```mermaid
+erDiagram
+    prospect_contacts ||--o{ whatsapp_contacts : prospect_contact_id
+    tenant_connector_accounts ||--o{ whatsapp_accounts : connector_account_id
+    whatsapp_accounts ||--o{ whatsapp_conversations : account_id
+    whatsapp_accounts ||--o{ whatsapp_templates : account_id
+    whatsapp_accounts ||--o{ whatsapp_webhook_events : account_id
+    whatsapp_contacts ||--o{ whatsapp_conversations : contact_id
+    whatsapp_conversations ||--o{ whatsapp_messages : conversation_id
 ```
 

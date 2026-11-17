@@ -46,6 +46,11 @@ class ThorMessage(models.Model):
     output_tokens = models.IntegerField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    provider_code = models.TextField(null=True, blank=True)
+    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    duration_ms = models.IntegerField(null=True, blank=True)
+    prompt_version = models.TextField(null=True, blank=True)
+    tool_calls = models.JSONField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -68,6 +73,8 @@ class ThorToolExecution(models.Model):
     output_summary = models.JSONField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    duration_ms = models.IntegerField(null=True, blank=True)
+    approval_request = models.ForeignKey('permissions.ApprovalRequest', on_delete=models.DO_NOTHING, db_column='approval_request_id', related_name='+', null=True, blank=True, db_constraint=False)
 
     class Meta:
         managed = False

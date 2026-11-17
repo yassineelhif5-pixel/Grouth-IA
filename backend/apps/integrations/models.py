@@ -14,12 +14,14 @@ class ConnectorProvider(models.Model):
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     code = models.TextField()
     name = models.TextField()
-    category = models.TextField(choices=[('analytics', 'analytics'), ('crm', 'crm'), ('email', 'email'), ('social', 'social'), ('seo', 'seo'), ('cms', 'cms'), ('ads', 'ads'), ('storage', 'storage'), ('ai', 'ai'), ('other', 'other')])
-    auth_type = models.TextField(choices=[('oauth2', 'oauth2'), ('api_key', 'api_key'), ('basic', 'basic'), ('none', 'none'), ('webhook', 'webhook')])
+    category = models.TextField(choices=[('analytics', 'analytics'), ('crm', 'crm'), ('email', 'email'), ('social', 'social'), ('seo', 'seo'), ('cms', 'cms'), ('ads', 'ads'), ('storage', 'storage'), ('ai', 'ai'), ('messaging', 'messaging'), ('payments', 'payments'), ('video', 'video'), ('other', 'other')])
+    auth_type = models.TextField(choices=[('oauth2', 'oauth2'), ('api_key', 'api_key'), ('basic', 'basic'), ('none', 'none'), ('webhook', 'webhook'), ('smtp', 'smtp'), ('imap', 'imap'), ('app_password', 'app_password')])
     docs_url = models.TextField(null=True, blank=True)
     is_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
+    capabilities = ArrayField(models.TextField(), null=True, blank=True)
+    docs_status = models.TextField(default='available', choices=[('available', 'available'), ('pending_approval', 'pending_approval'), ('not_implemented', 'not_implemented')])
 
     class Meta:
         managed = False
@@ -65,13 +67,14 @@ class ConnectorGlobalConfiguration(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    client_secret_ciphertext = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'connector_global_configurations'
 
     TRACE_KIND = 'gbiz'
-    SECRET_FIELDS = ('client_secret_ref',)
+    SECRET_FIELDS = ('client_secret_ref', 'client_secret_ciphertext')
 
 
 class TenantConnectorAuthorization(models.Model):
@@ -108,7 +111,7 @@ class TenantConnectorAccount(models.Model):
     product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
     external_account_id = models.TextField(null=True, blank=True)
     display_name = models.TextField()
-    status = models.TextField(default='pending', choices=[('pending', 'pending'), ('connected', 'connected'), ('error', 'error'), ('disconnected', 'disconnected'), ('revoked', 'revoked')])
+    status = models.TextField(default='configured', choices=[('pending', 'pending'), ('not_configured', 'not_configured'), ('configured', 'configured'), ('authorized', 'authorized'), ('connected', 'connected'), ('tested', 'tested'), ('degraded', 'degraded'), ('expired', 'expired'), ('failed', 'failed'), ('pending_approval', 'pending_approval'), ('error', 'error'), ('disconnected', 'disconnected'), ('revoked', 'revoked')])
     connected_by = models.UUIDField(null=True, blank=True)
     connected_at = models.DateTimeField(null=True, blank=True)
     last_sync_at = models.DateTimeField(null=True, blank=True)
@@ -119,6 +122,11 @@ class TenantConnectorAccount(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    settings = models.JSONField(default=dict, help_text='non-secret provider settings (base_url, sender, site_url…)')
+    last_test_at = models.DateTimeField(null=True, blank=True)
+    last_test_status = models.TextField(null=True, blank=True)
+    last_error = models.TextField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -146,13 +154,14 @@ class TenantConnectorCredential(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    ciphertext = models.TextField(null=True, blank=True, help_text='Fernet-encrypted by the backend (SECRETS_ENCRYPTION_KEY)')
 
     class Meta:
         managed = False
         db_table = 'tenant_connector_credentials'
 
     TRACE_KIND = 'conf'
-    SECRET_FIELDS = ('vault_secret_id',)
+    SECRET_FIELDS = ('vault_secret_id', 'ciphertext')
 
 
 class TenantConnectorScope(models.Model):
@@ -201,7 +210,7 @@ class ConnectorHealthCheck(models.Model):
 
 
 class ConnectorSyncRun(models.Model):
-    """connector_sync_runs [log]"""
+    """connector_sync_runs [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -215,12 +224,13 @@ class ConnectorSyncRun(models.Model):
     error_message = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
         db_table = 'connector_sync_runs'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 

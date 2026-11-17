@@ -9,7 +9,7 @@ from django.utils import timezone as _tz  # noqa: F401
 
 
 class GeoAudit(models.Model):
-    """geo_audits [log]"""
+    """geo_audits [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -21,12 +21,16 @@ class GeoAudit(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    website = models.ForeignKey('websites.Website', on_delete=models.DO_NOTHING, db_column='website_id', related_name='+', null=True, blank=True, db_constraint=False)
+    summary = models.JSONField(default=dict)
+    error_message = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'geo_audits'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
@@ -61,6 +65,7 @@ class AiCrawlerRegistry(models.Model):
     operator = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
+    purpose = models.TextField(default='crawl', choices=[('crawl', 'crawl'), ('search', 'search'), ('training', 'training'), ('user_fetch', 'user_fetch')])
 
     class Meta:
         managed = False
@@ -126,6 +131,8 @@ class AiSearchQuery(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    engines = ArrayField(models.TextField(), null=True, blank=True)
+    competitor_names = ArrayField(models.TextField(), null=True, blank=True)
 
     class Meta:
         managed = False
@@ -136,7 +143,7 @@ class AiSearchQuery(models.Model):
 
 
 class AiSearchRun(models.Model):
-    """ai_search_runs [log]"""
+    """ai_search_runs [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -146,12 +153,19 @@ class AiSearchRun(models.Model):
     status = models.TextField(choices=[('succeeded', 'succeeded'), ('failed', 'failed')])
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    provider_code = models.TextField(null=True, blank=True)
+    model_code = models.TextField(null=True, blank=True)
+    method = models.TextField(default='api_answer', choices=[('api_answer', 'api_answer'), ('api_search', 'api_search'), ('manual_import', 'manual_import')])
+    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    duration_ms = models.IntegerField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'ai_search_runs'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 

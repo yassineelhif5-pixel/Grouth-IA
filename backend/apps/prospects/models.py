@@ -23,6 +23,7 @@ class ProspectProject(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    icp = models.JSONField(default=dict, help_text='{industries,company_sizes,countries,functions,technologies,needs}')
 
     class Meta:
         managed = False
@@ -50,6 +51,9 @@ class ProspectCompany(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    size_employees = models.IntegerField(null=True, blank=True)
+    technologies = ArrayField(models.TextField(), null=True, blank=True)
+    source = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -90,7 +94,7 @@ class Prospect(models.Model):
     project = models.ForeignKey('prospects.ProspectProject', on_delete=models.DO_NOTHING, db_column='project_id', related_name='+', null=True, blank=True, db_constraint=False)
     company = models.ForeignKey('prospects.ProspectCompany', on_delete=models.DO_NOTHING, db_column='company_id', related_name='+', null=True, blank=True, db_constraint=False)
     source = models.ForeignKey('prospects.ProspectSource', on_delete=models.DO_NOTHING, db_column='source_id', related_name='+', null=True, blank=True, db_constraint=False)
-    status = models.TextField(default='new', choices=[('new', 'new'), ('enriched', 'enriched'), ('qualified', 'qualified'), ('contacted', 'contacted'), ('replied', 'replied'), ('converted', 'converted'), ('disqualified', 'disqualified'), ('unsubscribed', 'unsubscribed')])
+    status = models.TextField(default='new', choices=[('new', 'new'), ('new_lead', 'new_lead'), ('enriched', 'enriched'), ('contacted', 'contacted'), ('qualified', 'qualified'), ('interested', 'interested'), ('demo_requested', 'demo_requested'), ('meeting_scheduled', 'meeting_scheduled'), ('proposal_sent', 'proposal_sent'), ('negotiation', 'negotiation'), ('customer', 'customer'), ('lost', 'lost'), ('replied', 'replied'), ('converted', 'converted'), ('disqualified', 'disqualified'), ('unsubscribed', 'unsubscribed')])
     owner_user_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -99,6 +103,12 @@ class Prospect(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    score = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    need_detected = models.TextField(null=True, blank=True)
+    source_detail = models.TextField(null=True, blank=True)
+    last_activity_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -243,6 +253,9 @@ class ProspectCampaign(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    channel = models.TextField(default='email', choices=[('email', 'email'), ('whatsapp', 'whatsapp')])
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    settings = models.JSONField(default=dict)
 
     class Meta:
         managed = False
@@ -319,6 +332,9 @@ class ProspectMessage(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    channel = models.TextField(default='email', choices=[('email', 'email'), ('whatsapp', 'whatsapp')])
+    error_message = models.TextField(null=True, blank=True)
+    provider_message_id = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -459,6 +475,7 @@ class CrmOpportunity(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
 
     class Meta:
         managed = False
@@ -475,11 +492,14 @@ class CrmActivity(models.Model):
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
     opportunity = models.ForeignKey('prospects.CrmOpportunity', on_delete=models.DO_NOTHING, db_column='opportunity_id', related_name='+', null=True, blank=True, db_constraint=False)
     prospect = models.ForeignKey('prospects.Prospect', on_delete=models.DO_NOTHING, db_column='prospect_id', related_name='+', null=True, blank=True, db_constraint=False)
-    activity_type = models.TextField(choices=[('call', 'call'), ('email', 'email'), ('meeting', 'meeting'), ('note', 'note'), ('task', 'task')])
+    activity_type = models.TextField(choices=[('call', 'call'), ('email', 'email'), ('meeting', 'meeting'), ('note', 'note'), ('task', 'task'), ('whatsapp', 'whatsapp'), ('status_change', 'status_change'), ('thor_action', 'thor_action')])
     summary = models.TextField()
     occurred_at = models.DateTimeField(default=_tz.now)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    channel = models.TextField(null=True, blank=True)
+    actor_type = models.TextField(default='user', choices=[('user', 'user'), ('thor', 'thor'), ('system', 'system'), ('prospect', 'prospect')])
+    entity_ref = models.JSONField(default=dict)
 
     class Meta:
         managed = False

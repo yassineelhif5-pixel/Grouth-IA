@@ -90,7 +90,7 @@ class WebsiteTechnology(models.Model):
 
 
 class WebsiteScan(models.Model):
-    """website_scans [log]"""
+    """website_scans [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -104,12 +104,13 @@ class WebsiteScan(models.Model):
     requested_by = models.UUIDField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
         db_table = 'website_scans'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 

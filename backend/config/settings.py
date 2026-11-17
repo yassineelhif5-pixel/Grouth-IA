@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     "apps.history", "apps.observability", "apps.system_health", "apps.ai_providers",
     # Growth IA — business modules (schema ready, features in later prompts)
     "apps.seo", "apps.geo", "apps.content", "apps.social", "apps.opportunities",
-    "apps.prospects", "apps.email_center", "apps.intelligence", "apps.thor",
+    "apps.prospects", "apps.email_center", "apps.whatsapp", "apps.intelligence", "apps.thor",
 ]
 
 MIDDLEWARE = [

@@ -18,6 +18,7 @@ from dsl import REGISTRY, Column, Table  # noqa: E402
 import spec_platform  # noqa: E402,F401
 import spec_core  # noqa: E402,F401
 import spec_modules  # noqa: E402,F401
+import spec_v2  # noqa: E402,F401
 
 T = {t.name: t for t in REGISTRY}
 assert len(T) == len(REGISTRY), "duplicate table names"
@@ -85,6 +86,29 @@ def sql_tables() -> str:
         out.append(f"CREATE TABLE IF NOT EXISTS public.{t.name} (\n{body}\n){part};")
         if t.partition:
             out.append(f"CREATE TABLE IF NOT EXISTS public.{t.name}_default PARTITION OF public.{t.name} DEFAULT;")
+        # additive evolution: every column is (re)declared idempotently so new columns reach existing databases
+        adds = []
+        for c in t.columns:
+            if c.dsl_type == "vec":
+                continue
+            a = f"ADD COLUMN IF NOT EXISTS {c.name} {c.sqltype}"
+            if c.default is not None:
+                a += f" DEFAULT {c.default}"
+            if c.not_null and c.default is not None:
+                a += " NOT NULL"
+            if c.check_in and not c.recheck:
+                a += f" CHECK ({c.name} IN ({', '.join(q(v, c) for v in c.check_in)}))"
+            adds.append(a)
+        out.append(f"ALTER TABLE public.{t.name} " + ",\n  ".join(adds) + ";")
+        for c in t.columns:
+            if c.recheck:
+                cn = short(f"{t.name}_{c.name}_check")
+                out.append(f"ALTER TABLE public.{t.name} DROP CONSTRAINT IF EXISTS {cn}, ADD CONSTRAINT {cn} "
+                           f"CHECK ({c.name} IN ({', '.join(q(v, c) for v in c.check_in)}));")
+            if c.relax_not_null:
+                out.append(f"ALTER TABLE public.{t.name} ALTER COLUMN {c.name} DROP NOT NULL;")
+            if getattr(c, "reset_default", False):
+                out.append(f"ALTER TABLE public.{t.name} ALTER COLUMN {c.name} SET DEFAULT {c.default};")
         out.append("")
 
         # uniques
@@ -179,6 +203,12 @@ def sql_triggers() -> str:
         if t.append_only:
             out.append(f"DROP TRIGGER IF EXISTS trg_01_append_only ON public.{n};")
             out.append(f"CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.{n} FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();")
+        elif t.no_delete:
+            out.append(f"DROP TRIGGER IF EXISTS trg_01_append_only ON public.{n};")
+            out.append(f"DROP TRIGGER IF EXISTS trg_01_no_delete ON public.{n};")
+            out.append(f"CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.{n} FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();")
+            out.append(f"DROP TRIGGER IF EXISTS trg_01_touch ON public.{n};")
+            out.append(f"CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.{n} FOR EACH ROW EXECUTE FUNCTION app.tg_touch();")
         elif "updated_at" in names:
             out.append(f"DROP TRIGGER IF EXISTS trg_01_touch ON public.{n};")
             out.append(f"CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.{n} FOR EACH ROW EXECUTE FUNCTION app.tg_touch();")
@@ -226,6 +256,9 @@ def sql_rls() -> str:
         if t.append_only:
             out.append(f"GRANT SELECT, INSERT ON public.{n} TO app_backend;")
             out.append(f"REVOKE UPDATE, DELETE, TRUNCATE ON public.{n} FROM app_backend;")
+        elif t.no_delete:
+            out.append(f"GRANT SELECT, INSERT, UPDATE ON public.{n} TO app_backend;")
+            out.append(f"REVOKE DELETE, TRUNCATE ON public.{n} FROM app_backend;")
         else:
             out.append(f"GRANT SELECT, INSERT, UPDATE, DELETE ON public.{n} TO app_backend;")
         for pol in ("p_auth_read", "p_backend_read", "p_backend_write"):
@@ -373,7 +406,8 @@ def docs() -> dict[str, str]:
            "| biz / conf | tenant data, soft-delete, versioned in `entity_history` |",
            "| log | tenant append-only events (UPDATE/DELETE blocked) |",
            "| ref | global reference data |", "| gbiz | global versioned data |",
-           "| glog | global append-only log (tenant_id nullable) |"]
+           "| glog | global append-only log (tenant_id nullable) |",
+           "| run | tenant execution record: status transitions allowed, DELETE forbidden |"]
     dd = ["# Data dictionary", "", HEADER.replace("-- ", "> "),
           "Generic columns: `id` uuid PK; `tenant_id` isolation key; `created_at/updated_at` timestamptz UTC; "
           "`created_by/updated_by` → auth.users; `deleted_at` soft delete; `version_number` optimistic version "

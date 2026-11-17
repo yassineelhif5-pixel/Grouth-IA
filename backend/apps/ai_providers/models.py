@@ -18,6 +18,7 @@ class AiProvider(models.Model):
     is_enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
+    api_style = models.TextField(default='openai', choices=[('openai', 'openai'), ('anthropic', 'anthropic'), ('gemini', 'gemini'), ('cohere', 'cohere'), ('azure_openai', 'azure_openai'), ('ollama', 'ollama')])
 
     class Meta:
         managed = False
@@ -65,13 +66,19 @@ class AiProviderConfiguration(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    api_key_ciphertext = models.TextField(null=True, blank=True)
+    base_url = models.TextField(null=True, blank=True)
+    priority = models.IntegerField(default=100)
+    monthly_budget_cents = models.BigIntegerField(null=True, blank=True)
+    last_test_at = models.DateTimeField(null=True, blank=True)
+    last_test_status = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'ai_provider_configurations'
 
     TRACE_KIND = 'gbiz'
-    SECRET_FIELDS = ('api_key_ref',)
+    SECRET_FIELDS = ('api_key_ref', 'api_key_ciphertext')
 
 
 class AiModelCapability(models.Model):
@@ -138,6 +145,11 @@ class AiExecutionLog(models.Model):
     output_summary = models.JSONField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    provider_code = models.TextField(null=True, blank=True)
+    model_code = models.TextField(null=True, blank=True)
+    feature_code = models.TextField(null=True, blank=True)
+    prompt_version = models.TextField(null=True, blank=True)
+    user_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -204,6 +216,28 @@ class AiFallbackPolicy(models.Model):
     class Meta:
         managed = False
         db_table = 'ai_fallback_policies'
+
+    TRACE_KIND = 'ref'
+    SECRET_FIELDS = ()
+
+
+class AiFeatureRoute(models.Model):
+    """ai_feature_routes [ref]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', null=True, blank=True, help_text='null = platform route', db_constraint=False)
+    feature_code = models.TextField(help_text='content.generate, geo.query, email.classify, thor.chat…')
+    model = models.ForeignKey('ai_providers.AiModel', on_delete=models.DO_NOTHING, db_column='model_id', related_name='+', db_constraint=False)
+    priority = models.IntegerField(default=1)
+    quality = models.TextField(default='standard', choices=[('economy', 'economy'), ('standard', 'standard'), ('premium', 'premium')])
+    max_latency_ms = models.IntegerField(null=True, blank=True)
+    is_enabled = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+
+    class Meta:
+        managed = False
+        db_table = 'ai_feature_routes'
 
     TRACE_KIND = 'ref'
     SECRET_FIELDS = ()

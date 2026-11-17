@@ -50,6 +50,11 @@ class EmailMailboxe(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    connector_account = models.ForeignKey('integrations.TenantConnectorAccount', on_delete=models.DO_NOTHING, db_column='connector_account_id', related_name='+', null=True, blank=True, db_constraint=False)
+    receive_mode = models.TextField(default='none', choices=[('none', 'none'), ('webhook', 'webhook'), ('gmail', 'gmail'), ('graph', 'graph'), ('imap', 'imap')])
+    send_enabled = models.BooleanField(default=True)
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    sync_error = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -109,7 +114,7 @@ class EmailSyncCursor(models.Model):
 
 
 class EmailWebhookEvent(models.Model):
-    """email_webhook_events [log]"""
+    """email_webhook_events [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -121,12 +126,16 @@ class EmailWebhookEvent(models.Model):
     processed_at = models.DateTimeField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    signature_valid = models.BooleanField(null=True, blank=True)
+    status = models.TextField(default='received', choices=[('received', 'received'), ('processed', 'processed'), ('rejected', 'rejected'), ('failed', 'failed'), ('duplicate', 'duplicate')])
+    error_message = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
         db_table = 'email_webhook_events'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
@@ -149,6 +158,12 @@ class EmailConversation(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    labels = ArrayField(models.TextField(), null=True, blank=True)
+    is_unread = models.BooleanField(default=False)
+    assigned_to = models.UUIDField(null=True, blank=True)
+    product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
+    last_inbound_at = models.DateTimeField(null=True, blank=True)
+    last_outbound_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -212,6 +227,13 @@ class EmailMessage(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    status = models.TextField(default='received', choices=[('draft', 'draft'), ('queued', 'queued'), ('sent', 'sent'), ('accepted', 'accepted'), ('delivered', 'delivered'), ('deferred', 'deferred'), ('bounced', 'bounced'), ('failed', 'failed'), ('received', 'received')])
+    is_read = models.BooleanField(default=False)
+    classification = models.TextField(null=True, blank=True)
+    provider_thread_id = models.TextField(null=True, blank=True)
+    headers = models.JSONField(default=dict)
+    sent_by = models.UUIDField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -238,6 +260,8 @@ class EmailMessageAttachment(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    verification_status = models.TextField(default='pending', choices=[('pending', 'pending'), ('clean', 'clean'), ('rejected', 'rejected'), ('infected', 'infected'), ('not_scanned', 'not_scanned')])
+    sha256 = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -293,11 +317,19 @@ class EmailReplyClassification(models.Model):
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
     message = models.ForeignKey('email_center.EmailMessage', on_delete=models.DO_NOTHING, db_column='message_id', related_name='+', db_constraint=False)
-    category = models.TextField(choices=[('interested', 'interested'), ('not_interested', 'not_interested'), ('out_of_office', 'out_of_office'), ('unsubscribe', 'unsubscribe'), ('question', 'question'), ('bounce', 'bounce'), ('other', 'other')])
+    category = models.TextField(choices=[('interested', 'interested'), ('demo_requested', 'demo_requested'), ('pricing_request', 'pricing_request'), ('information_request', 'information_request'), ('meeting_request', 'meeting_request'), ('negotiation', 'negotiation'), ('not_interested', 'not_interested'), ('unsubscribe', 'unsubscribe'), ('out_of_office', 'out_of_office'), ('automatic_reply', 'automatic_reply'), ('human_review_required', 'human_review_required'), ('question', 'question'), ('bounce', 'bounce'), ('other', 'other')])
     confidence = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
     model_code = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    summary = models.TextField(null=True, blank=True)
+    intents = models.JSONField(default=list)
+    questions = models.JSONField(default=list)
+    objections = models.JSONField(default=list)
+    next_action = models.TextField(null=True, blank=True)
+    provider_code = models.TextField(null=True, blank=True)
+    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    method = models.TextField(default='rules', choices=[('rules', 'rules'), ('ai', 'ai')])
 
     class Meta:
         managed = False
@@ -342,6 +374,10 @@ class EmailReplyDraft(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    conversation = models.ForeignKey('email_center.EmailConversation', on_delete=models.DO_NOTHING, db_column='conversation_id', related_name='+', null=True, blank=True, db_constraint=False)
+    sent_message = models.ForeignKey('email_center.EmailMessage', on_delete=models.DO_NOTHING, db_column='sent_message_id', related_name='+', null=True, blank=True, db_constraint=False)
+    generated_by = models.TextField(default='thor', choices=[('thor', 'thor'), ('user', 'user')])
+    model_code = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -395,7 +431,7 @@ class EmailThreadAssociation(models.Model):
 
 
 class EmailSyncRun(models.Model):
-    """email_sync_runs [log]"""
+    """email_sync_runs [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -406,12 +442,13 @@ class EmailSyncRun(models.Model):
     error_message = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
         db_table = 'email_sync_runs'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 

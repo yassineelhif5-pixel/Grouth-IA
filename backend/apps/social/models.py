@@ -15,7 +15,7 @@ class SocialAccount(models.Model):
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
     product = models.ForeignKey('products.Product', on_delete=models.DO_NOTHING, db_column='product_id', related_name='+', null=True, blank=True, db_constraint=False)
     connector_account = models.ForeignKey('integrations.TenantConnectorAccount', on_delete=models.DO_NOTHING, db_column='connector_account_id', related_name='+', null=True, blank=True, db_constraint=False)
-    platform = models.TextField(choices=[('linkedin', 'linkedin'), ('x', 'x'), ('facebook', 'facebook'), ('instagram', 'instagram'), ('tiktok', 'tiktok'), ('youtube', 'youtube'), ('other', 'other')])
+    platform = models.TextField(choices=[('linkedin', 'linkedin'), ('x', 'x'), ('facebook', 'facebook'), ('instagram', 'instagram'), ('tiktok', 'tiktok'), ('youtube', 'youtube'), ('pinterest', 'pinterest'), ('reddit', 'reddit'), ('other', 'other')])
     handle = models.TextField()
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -24,6 +24,7 @@ class SocialAccount(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    status = models.TextField(default='configured', choices=[('configured', 'configured'), ('connected', 'connected'), ('expired', 'expired'), ('failed', 'failed'), ('disconnected', 'disconnected')])
 
     class Meta:
         managed = False
@@ -42,7 +43,7 @@ class SocialPublication(models.Model):
     content = models.ForeignKey('content.GeneratedContent', on_delete=models.DO_NOTHING, db_column='content_id', related_name='+', null=True, blank=True, db_constraint=False)
     body = models.TextField(null=True, blank=True)
     external_post_id = models.TextField(null=True, blank=True)
-    status = models.TextField(choices=[('draft', 'draft'), ('scheduled', 'scheduled'), ('published', 'published'), ('failed', 'failed')])
+    status = models.TextField(choices=[('draft', 'draft'), ('approved', 'approved'), ('scheduled', 'scheduled'), ('publishing', 'publishing'), ('published', 'published'), ('failed', 'failed'), ('cancelled', 'cancelled')])
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
@@ -51,6 +52,11 @@ class SocialPublication(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    media = models.JSONField(default=list)
+    attempts = models.IntegerField(default=0)
+    error_message = models.TextField(null=True, blank=True)
+    published_url = models.TextField(null=True, blank=True)
 
     class Meta:
         managed = False
@@ -96,6 +102,7 @@ class VideoProject(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    format = models.TextField(default='short', choices=[('short', 'short'), ('long', 'long')])
 
     class Meta:
         managed = False
@@ -193,6 +200,10 @@ class VideoAsset(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    source = models.TextField(default='uploaded', choices=[('uploaded', 'uploaded'), ('generated', 'generated'), ('rendered', 'rendered')])
+    mime_type = models.TextField(null=True, blank=True)
+    size_bytes = models.BigIntegerField(null=True, blank=True)
+    duration_seconds = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
 
     class Meta:
         managed = False
@@ -203,7 +214,7 @@ class VideoAsset(models.Model):
 
 
 class VideoGenerationJob(models.Model):
-    """video_generation_jobs [log]"""
+    """video_generation_jobs [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -213,17 +224,21 @@ class VideoGenerationJob(models.Model):
     error_message = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    provider_code = models.TextField(null=True, blank=True)
+    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True)
+    output_asset = models.ForeignKey('social.VideoAsset', on_delete=models.DO_NOTHING, db_column='output_asset_id', related_name='+', null=True, blank=True, db_constraint=False)
 
     class Meta:
         managed = False
         db_table = 'video_generation_jobs'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
 class VideoRenderJob(models.Model):
-    """video_render_jobs [log]"""
+    """video_render_jobs [run]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
@@ -233,12 +248,13 @@ class VideoRenderJob(models.Model):
     output_storage_path = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
 
     class Meta:
         managed = False
         db_table = 'video_render_jobs'
 
-    TRACE_KIND = 'log'
+    TRACE_KIND = 'run'
     SECRET_FIELDS = ()
 
 
