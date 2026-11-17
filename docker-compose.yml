@@ -1,0 +1,55 @@
+# Growth IA — local / single-host stack. Database, Auth and Storage are provided by Supabase.
+x-backend: &backend
+  build: { context: ., dockerfile: backend/Dockerfile }
+  env_file: .env
+  environment:
+    REDIS_URL: redis://redis:6379/0
+    CELERY_BROKER_URL: redis://redis:6379/1
+  depends_on:
+    redis: { condition: service_healthy }
+  restart: unless-stopped
+
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes: ["redis-data:/data"]
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 10s, timeout: 3s, retries: 5 }
+    restart: unless-stopped
+
+  migrate:
+    <<: *backend
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    environment:
+      DB_ROLE: ""          # migrations run as the owner role; runtime uses app_backend (RLS)
+      REDIS_URL: redis://redis:6379/0
+    restart: "no"
+
+  backend:
+    <<: *backend
+    ports: ["8000:8000"]
+    depends_on:
+      redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+    healthcheck: { test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/v1/health/live')"], interval: 30s, timeout: 5s, retries: 3 }
+
+  worker:
+    <<: *backend
+    command: ["celery", "-A", "config", "worker", "-Q", "default,health,notifications,maintenance,integrations", "--loglevel=INFO", "--concurrency=4"]
+
+  beat:
+    <<: *backend
+    command: ["celery", "-A", "config", "beat", "--loglevel=INFO"]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+    ports: ["8080:8080"]
+    depends_on: [backend]
+    restart: unless-stopped
+
+volumes:
+  redis-data:
