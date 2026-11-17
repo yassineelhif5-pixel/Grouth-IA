@@ -278,7 +278,7 @@ def dj_field(t: Table, c: Column) -> str | None:
     if c.default is not None:
         d = c.default
         if d == "now()":
-            kw.append("default=timezone.now")
+            kw.append("default=_tz.now")
         elif d in ("true", "false"):
             kw.append(f"default={d == 'true'}")
         elif d.startswith("'"):
@@ -322,14 +322,14 @@ def django_models() -> dict[str, str]:
     files = {}
     for app, tables in by_app.items():
         lines = [HEADER.replace("--", "#"), '"""Unmanaged models mapping the SQL schema (source: database/schema)."""',
-                 "import uuid", "", "from django.contrib.postgres.fields import ArrayField  # noqa: F401",
-                 "from django.db import models", "from django.utils import timezone  # noqa: F401", ""]
+                 "import uuid as _uuid", "", "from django.contrib.postgres.fields import ArrayField  # noqa: F401",
+                 "from django.db import models", "from django.utils import timezone as _tz  # noqa: F401", ""]
         for t in tables:
             lines.append("")
             lines.append(f"class {model_name(t.name)}(models.Model):")
             lines.append(f'    """{(t.comment or t.name)} [{t.kind}]"""')
             lines.append("")
-            lines.append("    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)")
+            lines.append("    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)")
             for c in t.columns:
                 f = dj_field(t, c)
                 if f:
