@@ -1,6 +1,6 @@
 # Stratégie d'index
 
-Générée automatiquement par `generate.py` (≈ 1 700 index) :
+Générée automatiquement par `generate.py` (1 550 index sur les tables, ≈ 1 700 avec les partitions) :
 
 | Index | Règle |
 |---|---|
