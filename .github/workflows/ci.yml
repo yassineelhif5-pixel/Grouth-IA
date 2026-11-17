@@ -24,7 +24,7 @@ jobs:
       - name: Apply migrations twice (idempotency) + SQL tests
         run: |
           infrastructure/scripts/db_local.sh
-          infrastructure/scripts/db_local.sh --tests | tee sql-tests.log
+          infrastructure/scripts/db_local.sh --tests 2>&1 | tee sql-tests.log
           grep -q "ALL SQL TESTS PASSED" sql-tests.log
 
   backend:

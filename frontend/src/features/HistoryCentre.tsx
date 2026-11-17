@@ -86,7 +86,7 @@ function EventDrawer({ event, onClose, tenantId, scope, onTrace }: { event: Audi
     queryKey: ["versions", event?.entity_type, event?.entity_id],
     enabled: !!event?.entity_type && !!event.entity_id && scope === "tenant",
     retry: false,
-    queryFn: () => api<EntityVersion[]>(`/history/entities/${event!.entity_type}/${event!.entity_id}/versions`, { tenantId }),
+    queryFn: () => api<EntityVersion[]>(`/history/entities/${event?.entity_type ?? ""}/${event?.entity_id ?? ""}/versions`, { tenantId }),
   });
   if (!event) return null;
   const diff = diffObjects(event.before_data, event.after_data);
@@ -102,7 +102,7 @@ function EventDrawer({ event, onClose, tenantId, scope, onTrace }: { event: Audi
               <Table.Tr key={k}><Table.Th w={160}>{t(k)}</Table.Th><Table.Td>{v}</Table.Td></Table.Tr>
             ))}
             <Table.Tr><Table.Th>{t("history.correlation")}</Table.Th><Table.Td>
-              <Group gap="xs"><Code>{event.correlation_id}</Code>{event.correlation_id && <Button size="compact-xs" variant="light" onClick={() => onTrace(event.correlation_id!)}>{t("history.trace")}</Button>}</Group>
+              <Group gap="xs"><Code>{event.correlation_id}</Code>{event.correlation_id && <Button size="compact-xs" variant="light" onClick={() => event.correlation_id && onTrace(event.correlation_id)}>{t("history.trace")}</Button>}</Group>
             </Table.Td></Table.Tr>
           </Table.Tbody>
         </Table>
