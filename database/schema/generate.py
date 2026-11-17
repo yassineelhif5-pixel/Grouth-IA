@@ -314,7 +314,7 @@ def dj_field(t: Table, c: Column) -> str | None:
     kw = []
     if not c.not_null:
         kw += ["null=True", "blank=True"]
-    if c.default is not None:
+    if c.default is not None and c.default.upper() != "NULL":
         d = c.default
         if d == "now()":
             kw.append("default=_tz.now")
