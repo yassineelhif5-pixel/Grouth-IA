@@ -117,9 +117,12 @@ CORS_EXPOSE_HEADERS = ["x-request-id", "x-correlation-id"]
 
 # ── Redis / Celery ──
 REDIS_URL = env("REDIS_URL", "redis://localhost:6379/0")
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL,
-                      "KEY_PREFIX": "growth"}}
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", REDIS_URL)
+if REDIS_URL.startswith("memory"):  # local development without Redis (single process, tasks run inline)
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "KEY_PREFIX": "growth"}}
+else:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL,
+                          "KEY_PREFIX": "growth"}}
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", "memory://" if REDIS_URL.startswith("memory") else REDIS_URL)
 CELERY_RESULT_BACKEND = None  # business state is persisted in PostgreSQL (execution_logs), never only in Redis
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
