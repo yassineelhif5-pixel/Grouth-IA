@@ -17,23 +17,22 @@
 
 | Suite | Où | Résultat |
 |---|---|---|
-| SQL sécurité & traçabilité (45 assertions : RLS, isolation A/B, historique, secrets, immutabilité, FK composites, DEMO, quotas, rétention, licences) | PostgreSQL local (émulation Supabase) | **45/45 réussis** |
-| Même suite | **Projet Supabase réel** (transaction annulée, aucune donnée laissée) | **réussie** |
-| Idempotence (migrations appliquées 2 fois) | local | réussie |
-| Python unitaires (contexte, corrélation, redaction) | local | **9/9 réussis** |
-| Syntaxe Python (181 fichiers) / TypeScript (25 fichiers) | local | 0 erreur |
-| Django intégration (8 tests API : JWT, isolation, versioning, quotas, PILOTE, persistance) | CI GitHub Actions | **écrits, non exécutés ici** |
-| Frontend vitest (2 fichiers) + lint + typecheck + build | CI GitHub Actions | **écrits, non exécutés ici** |
+| SQL sécurité & traçabilité (45 assertions : RLS, isolation A/B, historique, secrets, immutabilité, FK composites, DEMO, quotas, rétention, licences) | PostgreSQL 16 local + **PostgreSQL 17 en CI** | **45/45 réussis** |
+| Même suite | **Projet Supabase réel** (transaction annulée, 0 donnée laissée) | **réussie** |
+| Idempotence (toutes les migrations appliquées 2 fois) | CI | réussie |
+| Backend : 9 tests unitaires + 8 tests d'intégration API (JWT, inscription DEMO unique, en-tête tenant non fiable, isolation produits/historique, versioning & conflit de version, quota DEMO 3 schedulers, suppression/restauration, console PILOTE + suspension auditée, persistance après « redémarrage ») | CI GitHub Actions (Django 5.2 + PostgreSQL 17 + Redis) | **17/17 réussis**, couverture 91 % |
+| Backend : ruff, bandit, pip-audit, `manage.py migrate` | CI | réussis (0 vulnérabilité connue) |
+| Frontend : eslint, typecheck strict, vitest (6 tests), build Vite, npm audit | CI | **réussis** (0 vulnérabilité) |
+| Build Docker backend + frontend | CI | réussi |
 
-Tests échoués : 0 parmi les tests exécutés.
+Tests échoués : **0**. Le pipeline CI complet est vert sur `main`.
 
-## Éléments bloqués / non vérifiés
-- **Django et React n'ont pas été exécutés** dans cette session (installation pip/npm impossible). Le code est complet et vérifié syntaxiquement ; la CI (`.github/workflows/ci.yml`) l'installe, le lance et le teste. → À vérifier au premier run de la CI ; des corrections mineures peuvent être nécessaires.
-- Docker non construit ici (même raison) — build inclus dans la CI.
+## Éléments bloqués / à compléter
 - E-mail : envoi via SMTP configurable ; sans `EMAIL_HOST`, les livraisons sont enregistrées en échec `not_configured` (jamais perdues silencieusement).
 - Connecteurs : catalogue, autorisations, comptes, santé et audit en place ; les intégrations propres à chaque fournisseur (OAuth Google, HubSpot…) restent à implémenter dans les prochains modules.
-- Clés Supabase (`anon`, `service_role`, secret JWT) non renseignées : à placer dans `.env` (voir `.env.example`).
+- Clés Supabase (`anon`, `service_role`, secret JWT) et SMTP non renseignées : à placer dans `.env` (voir `.env.example`). L'application n'a donc pas encore été déployée sur un serveur.
 - Premier compte PILOTE à désigner (voir `docs/deployment/DEPLOYMENT.md`).
+- Tests navigateur de bout en bout (Playwright) et tests MFA/SSO réels avec Supabase Auth : à ajouter quand l'environnement de recette sera configuré.
 
 ## Historisation testée
 INSERT → UPDATE → mise à jour sans changement (pas de version) → SOFT_DELETE → RESTORE ; auteur, motif et correlation_id provenant du contexte Django ; avant/après et champs modifiés ; secrets exclus ; journaux non modifiables même par le propriétaire ; correction administrative auditée ; purge uniquement sous politique explicite ; isolation des historiques entre tenants (navigateur et backend).
@@ -42,4 +41,4 @@ INSERT → UPDATE → mise à jour sans changement (pas de version) → SOFT_DEL
 - **Supabase** : schéma complet appliqué, testé, advisors sécurité sans alerte bloquante (seule info : partitions sans politique propre, voulu — accès via la table parente). Extension temporaire `http` utilisée pour le chargement des migrations : supprimée.
 - **Backend** : monolithe Django modulaire (27 apps), API `/api/v1` (OpenAPI `/api/v1/docs`), JWT Supabase, multi-tenant, licences, permissions, console PILOTE, centre d'historique, System Health, Celery (files, retry, dead letter, idempotence, contexte propagé).
 - **Frontend** : React 19 + TypeScript strict + Vite, Router, TanStack Query, Zustand, React Hook Form + Zod, Mantine ; FR/EN, clair/sombre ; console PILOTE, espace tenant, centre d'historique, System Health.
-- **GitHub** : `main` à jour, sans secret.
+- **GitHub** : `main` à jour, sans secret, CI verte (SQL, backend, frontend, Docker).
