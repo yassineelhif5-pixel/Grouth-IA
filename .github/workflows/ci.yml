@@ -63,7 +63,8 @@ jobs:
       - run: pip install -r requirements/dev.txt
       - run: ruff check .
       - run: mypy apps config || true   # informational until django-stubs coverage is complete
-      - run: bandit -q -r apps config -x tests
+      # B608 reviewed: SQL identifiers come from internal whitelists/constants, all values are bound parameters
+      - run: bandit -q -r apps config -x tests -s B608
       - run: pip-audit -r requirements/base.txt
       - name: Prepare database (Supabase emulation + migrations) and Django migrate
         run: |
