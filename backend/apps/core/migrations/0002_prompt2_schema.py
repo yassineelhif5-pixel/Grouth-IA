@@ -2,7 +2,7 @@
 changes (new tables, ADD COLUMN IF NOT EXISTS, updated CHECK constraints, reference data)."""
 from django.db import migrations
 
-from .growth_sql import sql_operations
+from apps.core.sql_migrations import sql_operations
 
 
 class Migration(migrations.Migration):
