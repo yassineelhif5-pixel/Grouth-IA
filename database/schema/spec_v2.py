@@ -520,3 +520,6 @@ approval_request_id uuid -> approval_requests
 # ───────── Costs are never invented: unknown cost stays NULL ─────────
 relax("ai_usage_events", "cost_cents")
 set_default("ai_usage_events", "cost_cents", "NULL")
+
+# Email providers actually implemented by apps.email_center (send, receive, webhooks)
+recheck("email_provider_accounts", "provider", "gmail,outlook,smtp,imap,sendgrid,mailgun,ses,postmark,resend,brevo,generic,other")

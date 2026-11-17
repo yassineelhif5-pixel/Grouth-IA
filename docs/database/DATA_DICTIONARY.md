@@ -4732,7 +4732,7 @@ Unique: `(tenant_id, email)`
 |---|---|---|---|---|---|
 | tenant_id | uuid |  |  | → tenants (restrict) |  |
 | connector_account_id | uuid | yes |  | → tenant_connector_accounts (restrict) |  |
-| provider | text |  |  | in(gmail, outlook, smtp, sendgrid, mailgun, ses, other) |  |
+| provider | text |  |  | in(gmail, outlook, smtp, imap, sendgrid, mailgun, ses, postmark, resend, brevo, generic, other) |  |
 | display_name | text |  |  |  |  |
 | status | text |  | 'active' | in(active, error, disabled) |  |
 | created_at | timestamptz |  | now() |  |  |

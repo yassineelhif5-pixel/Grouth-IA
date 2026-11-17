@@ -14,7 +14,7 @@ class EmailProviderAccount(models.Model):
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
     connector_account = models.ForeignKey('integrations.TenantConnectorAccount', on_delete=models.DO_NOTHING, db_column='connector_account_id', related_name='+', null=True, blank=True, db_constraint=False)
-    provider = models.TextField(choices=[('gmail', 'gmail'), ('outlook', 'outlook'), ('smtp', 'smtp'), ('sendgrid', 'sendgrid'), ('mailgun', 'mailgun'), ('ses', 'ses'), ('other', 'other')])
+    provider = models.TextField(choices=[('gmail', 'gmail'), ('outlook', 'outlook'), ('smtp', 'smtp'), ('imap', 'imap'), ('sendgrid', 'sendgrid'), ('mailgun', 'mailgun'), ('ses', 'ses'), ('postmark', 'postmark'), ('resend', 'resend'), ('brevo', 'brevo'), ('generic', 'generic'), ('other', 'other')])
     display_name = models.TextField()
     status = models.TextField(default='active', choices=[('active', 'active'), ('error', 'error'), ('disabled', 'disabled')])
     created_at = models.DateTimeField(default=_tz.now)

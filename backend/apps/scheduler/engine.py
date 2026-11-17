@@ -3,6 +3,7 @@ transports work, so every execution is recoverable after a worker restart."""
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -16,6 +17,8 @@ from apps.core.context import get_context
 from apps.core.db import fetch_all_dict, fetch_one
 from apps.core.exceptions import BusinessError
 from apps.permissions.growth import effective_mode, register, request_approval
+
+logger = logging.getLogger("growth.workflows")
 
 CATEGORY_MODULE = {"seo": "seo", "geo": "geo", "articles": "content", "pages": "pages", "social": "social", "videos": "video",
                    "opportunities": "opportunities", "social_monitoring": "social_hunter", "prospects": "prospects", "crm": "crm",
@@ -355,6 +358,7 @@ def advance(execution_id: str) -> dict:
         try:
             outcome, out = _run_node(node, ctx, execution_id)
         except Exception as e:  # noqa: BLE001
+            logger.exception("workflow node %s failed", node_key)
             msg = getattr(e, "message", None) or f"{type(e).__name__}: {e}"
             if attempt < node.get("max_attempts", MAX_ATTEMPTS) and not isinstance(e, BusinessError):
                 delay = 60 * 2 ** (attempt - 1)

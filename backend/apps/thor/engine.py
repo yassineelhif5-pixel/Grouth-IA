@@ -130,7 +130,7 @@ def chat(conversation_id: str | None, message: str, product_id: str | None = Non
                                         [tid, ctx.user_id, product_id, message[:120]])[0])
     elif not fetch_one("SELECT 1 FROM public.thor_conversations WHERE id = %s AND tenant_id = %s AND user_id = %s", [conversation_id, tid, ctx.user_id]):
         raise BusinessError("conversation not found", "not_found", status_code=404)
-    fetch_one("INSERT INTO public.thor_messages (tenant_id, conversation_id, role, content) VALUES (%s,%s,'user',%s) RETURNING id", [tid, conversation_id, message[:20000]])
+    fetch_one("INSERT INTO public.thor_messages (tenant_id, conversation_id, role, content, created_at) VALUES (%s,%s,'user',%s, clock_timestamp()) RETURNING id", [tid, conversation_id, message[:20000]])
     history = fetch_all_dict("""SELECT role, content FROM public.thor_messages WHERE conversation_id = %s AND role IN ('user','assistant')
                                 ORDER BY created_at DESC LIMIT 12""", [conversation_id])[::-1]
     tools = available_tools(read_only)
@@ -149,7 +149,7 @@ def chat(conversation_id: str | None, message: str, product_id: str | None = Non
             break
         total_cost += float(r.cost_cents or 0)
         aid = fetch_one("""INSERT INTO public.thor_messages (tenant_id, conversation_id, role, content, model_code, input_tokens, output_tokens, provider_code,
-                             cost_cents, duration_ms, prompt_version, tool_calls) VALUES (%s,%s,'assistant',%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb) RETURNING id""",
+                             cost_cents, duration_ms, prompt_version, tool_calls, created_at) VALUES (%s,%s,'assistant',%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb, clock_timestamp()) RETURNING id""",
                         [tid, conversation_id, r.text or "(tool call)", r.model, r.input_tokens, r.output_tokens, r.provider, r.cost_cents,
                          int((time.monotonic() - t0) * 1000), PROMPT_VERSION, json.dumps(r.tool_calls)])[0]
         if not r.tool_calls:

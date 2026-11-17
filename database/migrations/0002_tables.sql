@@ -6644,7 +6644,7 @@ CREATE TABLE IF NOT EXISTS public.email_provider_accounts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id uuid NOT NULL,
   connector_account_id uuid,
-  provider text NOT NULL CHECK (provider IN ('gmail', 'outlook', 'smtp', 'sendgrid', 'mailgun', 'ses', 'other')),
+  provider text NOT NULL CHECK (provider IN ('gmail', 'outlook', 'smtp', 'imap', 'sendgrid', 'mailgun', 'ses', 'postmark', 'resend', 'brevo', 'generic', 'other')),
   display_name text NOT NULL,
   status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'error', 'disabled')),
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -6658,7 +6658,7 @@ CREATE TABLE IF NOT EXISTS public.email_provider_accounts (
 );
 ALTER TABLE public.email_provider_accounts ADD COLUMN IF NOT EXISTS tenant_id uuid,
   ADD COLUMN IF NOT EXISTS connector_account_id uuid,
-  ADD COLUMN IF NOT EXISTS provider text CHECK (provider IN ('gmail', 'outlook', 'smtp', 'sendgrid', 'mailgun', 'ses', 'other')),
+  ADD COLUMN IF NOT EXISTS provider text,
   ADD COLUMN IF NOT EXISTS display_name text,
   ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'error', 'disabled')),
   ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
@@ -6668,6 +6668,7 @@ ALTER TABLE public.email_provider_accounts ADD COLUMN IF NOT EXISTS tenant_id uu
   ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
   ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
   ADD COLUMN IF NOT EXISTS correlation_id uuid;
+ALTER TABLE public.email_provider_accounts DROP CONSTRAINT IF EXISTS email_provider_accounts_provider_check, ADD CONSTRAINT email_provider_accounts_provider_check CHECK (provider IN ('gmail', 'outlook', 'smtp', 'imap', 'sendgrid', 'mailgun', 'ses', 'postmark', 'resend', 'brevo', 'generic', 'other'));
 
 CREATE TABLE IF NOT EXISTS public.email_mailboxes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

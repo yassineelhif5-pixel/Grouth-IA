@@ -157,7 +157,7 @@ def test_parcours_5_content_versioning_approval_publication(tenant_user, client,
     ai_reply(mocked, "# Choisir un CRM\n\n## Pourquoi un crm pme\nTexte.\n\n## FAQ\n**Qu'est-ce qu'un CRM ?**\nUn CRM est un outil.")
     assert c.post(f"/api/v1/content/items/{item['id']}/ai", {"operation": "generate"}, format="json").status_code == 202
     obj = c.get(f"/api/v1/content/items/{item['id']}").json()
-    assert obj["model_code"] == "test-model" and obj["prompt_version"] == "content-builtin-v1" and obj["geo_score"] > 0
+    assert obj["model_code"] == "test-model" and obj["prompt_version"] == "content-builtin-v1" and float(obj["geo_score"]) > 0
     c.patch(f"/api/v1/content/items/{item['id']}", {"body": obj["body"] + "\nAjout manuel.", "version_number": obj["version_number"]}, format="json")
     versions = c.get(f"/api/v1/content/items/{item['id']}/versions").json()
     assert [v["source"] for v in versions][:2] == ["manual", "ai"]
