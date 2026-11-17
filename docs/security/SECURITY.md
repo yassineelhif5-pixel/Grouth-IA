@@ -12,7 +12,7 @@
 
 ## Secrets
 - Jamais dans le dépôt (`.gitignore`, `.env.example` sans valeurs).
-- Credentials de connecteurs et clés fournisseurs IA : **Supabase Vault** — PostgreSQL ne stocke que l'identifiant Vault et un indice masqué (`••••abcd`).
+- Credentials de connecteurs, jetons OAuth et clés fournisseurs IA : **chiffrés côté backend** (Fernet/`MultiFernet`, clé `SECRETS_ENCRYPTION_KEY` hors base, rotation possible) dans des colonnes `*_ciphertext` ; l'API ne renvoie qu'un indice masqué (`••••abcd`). Les colonnes PROMPT 1 prévues pour Supabase Vault restent disponibles.
 - Colonnes marquées `secret` dans le DSL : exclues de `entity_history` (trigger), retirées des sérialiseurs API, masquées dans `audit_events` (`redact`).
 - Logs et erreurs : `redact_text` supprime JWT et en-têtes Bearer/Basic.
 - Jetons d'invitation : seul le SHA-256 est stocké ; le jeton ne transite que dans l'e-mail.
@@ -26,7 +26,19 @@
 - Erreurs uniformes sans fuite d'information (un tenant étranger renvoie 404) ; rollback systématique des écritures partielles.
 - Export CSV protégé contre l'injection de formules.
 
+## Intégrations et IA (PROMPT 2)
+- **Aucun appel externe depuis React** : passerelle d'intégration et passerelle IA côté backend uniquement.
+- Webhooks (Stripe, e-mail, WhatsApp) : signature vérifiée à temps constant, fenêtre de fraîcheur, anti-rejeu `idempotency_keys` ; le tenant est déduit de la ressource en base, **jamais d'un `tenant_id` envoyé par le client**.
+- OAuth : `state` signé et lié au compte, aucune redirection ouverte.
+- Contenus entrants (e-mails, pages web, documents, signaux sociaux) = **données non fiables** : encapsulés `<untrusted_data>`, ne peuvent modifier ni les instructions ni les permissions de THOR ; HTML jamais exécuté côté UI ; XML parsé avec `defusedxml`.
+- THOR : outils filtrés par licence **et** permission, outil inconnu refusé et journalisé, aucun envoi automatique d'e-mail sans double autorisation PILOTE + tenant.
+- Modes de croissance : toute action sortante (envoi, publication, campagne) passe par `gate()` → exécution, approbation ou analyse seule.
+- Conformité prospection : désabonnement traité immédiatement, listes de suppression vérifiées à chaque envoi, consentement exigé ; WhatsApp : opt-in, STOP, fenêtre de 24 h, modèles approuvés.
+- Crawler : respect de `robots.txt`, user-agent identifiable, hôte unique, pages bornées ; plateformes tierces uniquement via API officielles.
+- Statuts de connecteurs **jamais simulés** : `tested` uniquement après un appel réel réussi.
+
 ## Points d'attention production
 - Créer un rôle LOGIN dédié `growth_backend` (membre de `app_backend` uniquement) plutôt que d'utiliser `postgres` pour l'application.
 - Activer la protection contre les mots de passe compromis et le MFA dans Supabase Auth.
-- Rotation régulière de `SUPABASE_SERVICE_ROLE_KEY` et `DJANGO_SECRET_KEY`.
+- Rotation régulière de `SUPABASE_SERVICE_ROLE_KEY`, `DJANGO_SECRET_KEY` et `SECRETS_ENCRYPTION_KEY`.
+- `SECRETS_ENCRYPTION_KEY` perdue = identifiants de connecteurs irrécupérables : la sauvegarder dans un coffre distinct de la base.

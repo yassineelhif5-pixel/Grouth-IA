@@ -18,6 +18,20 @@
 5. `docker compose up -d backend worker beat frontend`.
 6. Vérifier : `GET /api/v1/health/ready`, puis PILOTE → System Health → « Lancer les tests ».
 
+## Variables PROMPT 2
+| Variable | Rôle |
+|---|---|
+| `SECRETS_ENCRYPTION_KEY` | clé(s) Fernet (`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`) — **obligatoire** |
+| `PUBLIC_API_URL` | URL publique de l'API (callbacks OAuth, URLs de webhooks) |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | paiement des plans (webhook `POST /api/v1/webhooks/stripe`) |
+| `CRAWLER_USER_AGENT`, `CRAWLER_MAX_PAGES`, `CRAWLER_DELAY_SECONDS` | crawler SEO |
+| `ATTACHMENT_MAX_BYTES` | taille max des pièces jointes reçues |
+
+Clés IA, clients OAuth et identifiants de connecteurs **ne sont pas des variables d'environnement** : ils sont saisis dans la console (PILOTE → IA / OAuth, tenant → Connecteurs) et chiffrés en base.
+
+## Mise à niveau PROMPT 1 → PROMPT 2
+Migrations **additives uniquement** (`ADD COLUMN IF NOT EXISTS`, nouvelles tables, contraintes CHECK élargies, `0011_prompt2_reference_data.sql` en `ON CONFLICT DO NOTHING`) : aucune table ni donnée supprimée. Appliquées sur Supabase le 17/11/2026 puis tests SQL `10_*` et `20_*` exécutés avec succès (rollback).
+
 ## Supabase Auth
 - URL de redirection : `<FRONTEND_URL>/onboarding`, `<FRONTEND_URL>/reset-password`.
 - Activer : confirmation e-mail, MFA TOTP, protection des mots de passe compromis.
