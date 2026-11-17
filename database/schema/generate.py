@@ -269,6 +269,10 @@ DJ = {"uuid": "models.UUIDField", "text": "models.TextField", "int": "models.Int
       "date": "models.DateField", "json": "models.JSONField", "inet": "models.GenericIPAddressField"}
 
 
+RESERVED_ATTRS = {"check", "save", "delete", "clean", "objects", "pk", "full_clean", "refresh_from_db", "serializable_value",
+                  "validate_unique", "validate_constraints", "get_deferred_fields", "from_db", "prepare_database_save"}
+
+
 def dj_field(t: Table, c: Column) -> str | None:
     if c.dsl_type == "vec":
         return None
@@ -297,6 +301,8 @@ def dj_field(t: Table, c: Column) -> str | None:
         target = T[c.fk]
         ref = f"'{target.app}.{model_name(target.name)}'" if target.name != t.name else "'self'"
         fname = c.name[:-3] if c.name.endswith("_id") else c.name + "_ref"
+        if fname in RESERVED_ATTRS:
+            fname += "_ref"
         kw = [k for k in kw if not k.startswith("default")]
         return (f"    {fname} = models.ForeignKey({ref}, on_delete=models.DO_NOTHING, db_column={c.name!r}, "
                 f"related_name='+', {', '.join(kw + ['db_constraint=False'])})")

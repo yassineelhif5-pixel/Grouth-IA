@@ -55,7 +55,7 @@ class SystemHealthResult(models.Model):
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', null=True, blank=True, db_constraint=False)
-    check = models.ForeignKey('system_health.SystemHealthCheck', on_delete=models.DO_NOTHING, db_column='check_id', related_name='+', db_constraint=False)
+    check_ref = models.ForeignKey('system_health.SystemHealthCheck', on_delete=models.DO_NOTHING, db_column='check_id', related_name='+', db_constraint=False)
     status = models.TextField(choices=[('healthy', 'healthy'), ('degraded', 'degraded'), ('down', 'down'), ('not_configured', 'not_configured'), ('unknown', 'unknown'), ('checking', 'checking')])
     latency_ms = models.IntegerField(null=True, blank=True)
     error_message = models.TextField(null=True, blank=True)
