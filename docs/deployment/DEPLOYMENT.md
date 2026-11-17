@@ -39,3 +39,21 @@ Migrations **additives uniquement** (`ADD COLUMN IF NOT EXISTS`, nouvelles table
 
 ## CI/CD
 `.github/workflows/ci.yml` : dérive du schéma, migrations ×2, tests SQL (RLS/isolation/traçabilité), lint/types/sécurité Python, tests unitaires + intégration, lint/typecheck/tests/build frontend, build Docker. **Aucun déploiement si un contrôle échoue** (brancher l'étape de déploiement sur `needs: [docker]` et la protection de branche `main`).
+
+## Vercel (site React + API Django)
+Un seul projet Vercel sert le site (fichiers statiques `frontend/dist`) et l'API (`api/index.py`, fonction Python WSGI) sur la **même origine** : `/api/*` → Django, tout le reste → SPA.
+
+| Fichier | Rôle |
+|---|---|
+| `vercel.json` | build du frontend, fonction Python (`maxDuration` 60 s), réécritures `/api/*` et SPA |
+| `api/index.py` | point d'entrée WSGI (charge `backend/config`) |
+| `requirements.txt` | dépendances de la fonction (`-r backend/requirements/base.txt`) |
+| `.vercelignore` | exclut secrets (`.env*`, `.vercel-token`), environnements locaux, tests, docs |
+| `infrastructure/vercel/vercel-env.ps1` | crée le projet si besoin et pousse les variables de `.env.vercel` (API Vercel, upsert, chiffrées, production + preview) |
+| `infrastructure/vercel/vercel-deploy.ps1` | `vercel link` puis `vercel deploy --prod` via `npx` |
+
+Variables (fichier local `.env.vercel`, jamais commité) : `DJANGO_SECRET_KEY` (propre à la prod), `DB_*` (pooler Supabase **mode session**, port 5432), `DB_ROLE=app_backend`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SECRETS_ENCRYPTION_KEY` (**la même** que celle qui a chiffré les identifiants en base), `REDIS_URL=memory://`, `CELERY_TASK_ALWAYS_EAGER=true`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL=/api/v1`. Le domaine de production est lu de `VERCEL_PROJECT_PRODUCTION_URL` (hôtes autorisés, CSRF, `FRONTEND_URL`, `PUBLIC_API_URL`).
+
+Limites de l'hébergement serverless : pas de worker ni de Celery Beat (programmations, synchro e-mail, campagnes et sondes planifiées ne tournent pas d'elles-mêmes), traitements limités à 60 s par requête (audits SEO volumineux), cache et limitation de débit par instance. Pour ces fonctions, héberger l'API et les workers sur un serveur (Docker Compose) et ne garder que le site sur Vercel.
+
+Supabase Auth : ajouter le domaine Vercel dans *Authentication → URL Configuration* (Site URL et Redirect URLs `https://<domaine>/onboarding`, `https://<domaine>/reset-password`).

@@ -1,0 +1,21 @@
+# Never uploaded to Vercel: secrets, local environments, logs, local scripts
+.env
+.env.*
+!.env.example
+.vercel-token
+*.pem
+*.key
+backend/.venv/
+**/__pycache__/
+frontend/node_modules/
+frontend/dist/
+logs/
+_to_delete/
+*.bat
+*.log
+check-env.txt
+.github/
+docs/
+infrastructure/
+database/tests/
+backend/tests/

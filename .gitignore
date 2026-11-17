@@ -27,3 +27,7 @@ coverage/
 # Local data
 celerybeat-schedule*
 *.log
+
+# Vercel
+.vercel/
+.vercel-token

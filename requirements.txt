@@ -1,0 +1,2 @@
+# Python dependencies of the Vercel function (api/index.py) — single source of truth: backend/requirements/base.txt
+-r backend/requirements/base.txt

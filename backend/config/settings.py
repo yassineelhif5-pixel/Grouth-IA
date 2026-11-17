@@ -24,8 +24,11 @@ DEBUG = env_bool("DJANGO_DEBUG", False)
 SECRET_KEY = env("DJANGO_SECRET_KEY") or ("insecure-dev-only" if DEBUG else "")
 if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY is required when DJANGO_DEBUG is false")
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+# Vercel: the platform sets VERCEL=1 and the production domain; the API and the SPA share that origin.
+ON_VERCEL = env_bool("VERCEL", False)
+VERCEL_ORIGIN = f"https://{env('VERCEL_PROJECT_PRODUCTION_URL')}" if env("VERCEL_PROJECT_PRODUCTION_URL") else ""
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1") + ([".vercel.app"] if ON_VERCEL else [])
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS") + ([VERCEL_ORIGIN] if VERCEL_ORIGIN else [])
 APP_VERSION = env("APP_VERSION", "0.1.0")
 
 INSTALLED_APPS = [
@@ -74,7 +77,7 @@ DATABASES = {
         "NAME": env("DB_NAME", "postgres"),
         "USER": env("DB_USER", "postgres"),
         "PASSWORD": env("DB_PASSWORD"),
-        "CONN_MAX_AGE": int(env("DB_CONN_MAX_AGE", "60")),
+        "CONN_MAX_AGE": int(env("DB_CONN_MAX_AGE", "0" if ON_VERCEL else "60")),  # serverless: no persistent connections
         "ATOMIC_REQUESTS": True,  # business change + audit event in the same transaction
         "OPTIONS": {"options": _options, "sslmode": env("DB_SSLMODE", "require")},
         "TEST": {"NAME": env("DB_TEST_NAME", "growth_test")},
@@ -169,7 +172,7 @@ GROWTH = {
     "INVITATION_TTL_HOURS": int(env("INVITATION_TTL_HOURS", "168")),
     "EXPORT_LINK_TTL_SECONDS": int(env("EXPORT_LINK_TTL_SECONDS", "900")),
     "PILOT_REQUIRE_MFA": env_bool("PILOT_REQUIRE_MFA", True),
-    "FRONTEND_URL": env("FRONTEND_URL", "http://localhost:5173"),
+    "FRONTEND_URL": env("FRONTEND_URL", VERCEL_ORIGIN or "http://localhost:5173"),
 }
 
 # ── E-mail (notifications) ──
@@ -182,7 +185,7 @@ EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Growth IA <no-reply@example.com>")
 
 # ── PROMPT 2 ──
-PUBLIC_API_URL = env("PUBLIC_API_URL", "http://localhost:8000").rstrip("/")  # OAuth callbacks & webhooks
+PUBLIC_API_URL = env("PUBLIC_API_URL", VERCEL_ORIGIN or "http://localhost:8000").rstrip("/")  # OAuth callbacks & webhooks
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
 STRIPE_PRICE_IDS = {k: env(f"STRIPE_PRICE_{k}") for k in ("STARTER", "GROWTH", "GROWTH_ENTREPRISE")}
