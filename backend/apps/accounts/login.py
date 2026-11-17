@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import random
+import secrets
 import time
 
 import requests
@@ -68,7 +68,7 @@ class LoginView(APIView):
             raise _invalid()
         email = fetch_one("SELECT app.login_email(%s)", [identifier])[0]
         if not email:
-            time.sleep(random.uniform(0.15, 0.35))  # noqa: S311 — blur the timing difference with a real attempt
+            time.sleep(0.15 + secrets.randbelow(200) / 1000)  # blur the timing difference with a real attempt
             logger.info("login refused (unknown identifier)", extra={"data": {"identifier": _masked(identifier)}})
             raise _invalid()
         try:
