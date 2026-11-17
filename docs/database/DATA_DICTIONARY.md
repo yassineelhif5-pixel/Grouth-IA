@@ -30,6 +30,7 @@ Profil applicatif 1-1 avec auth.users (identité Supabase). — kind `gbiz`, RLS
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| username | text | yes |  |  | lowercase login identifier, unique |
 
 ### `tenants`
 

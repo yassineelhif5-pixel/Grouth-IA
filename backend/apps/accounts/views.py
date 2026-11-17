@@ -1,4 +1,4 @@
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -52,8 +52,14 @@ class MeView(GrowthAPIView):
         profile = UserProfile.objects.select_for_update().get(id=request.user.id)
         ser = UserProfileSerializer(profile, data=request.data, partial=True)
         ser.is_valid(raise_exception=True)
-        audited_update(profile, ser.validated_data, action="profile.updated", module="accounts",
-                       expected_version=request.data.get("version_number"))
+        try:
+            with transaction.atomic():
+                audited_update(profile, ser.validated_data, action="profile.updated", module="accounts",
+                               expected_version=request.data.get("version_number"))
+        except IntegrityError as e:
+            if "username" in str(e):
+                raise BusinessError("Cet identifiant est déjà utilisé.", "username_taken", status_code=409) from e
+            raise
         return Response(UserProfileSerializer(profile).data)
 
 

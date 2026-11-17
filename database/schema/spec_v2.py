@@ -523,3 +523,6 @@ set_default("ai_usage_events", "cost_cents", "NULL")
 
 # Email providers actually implemented by apps.email_center (send, receive, webhooks)
 recheck("email_provider_accounts", "provider", "gmail,outlook,smtp,imap,sendgrid,mailgun,ses,postmark,resend,brevo,generic,other")
+
+# Login by e-mail OR username (format, uniqueness and lookup function in 0012_usernames.sql)
+extend("user_profiles", "username text # lowercase login identifier, unique")

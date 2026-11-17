@@ -104,7 +104,9 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exceptions.exception_handler",
     "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.UserRateThrottle", "rest_framework.throttling.AnonRateThrottle"],
-    "DEFAULT_THROTTLE_RATES": {"user": env("THROTTLE_USER", "600/min"), "anon": env("THROTTLE_ANON", "30/min")},
+    "DEFAULT_THROTTLE_RATES": {"user": env("THROTTLE_USER", "600/min"), "anon": env("THROTTLE_ANON", "30/min"),
+                               "login": env("THROTTLE_LOGIN", "10/min"), "login_identifier": env("THROTTLE_LOGIN_IDENTIFIER", "5/min"),
+                               "username_check": env("THROTTLE_USERNAME_CHECK", "30/min")},
     "UNAUTHENTICATED_USER": None,
 }
 SPECTACULAR_SETTINGS = {"TITLE": "Growth IA API", "VERSION": APP_VERSION, "SERVE_INCLUDE_SCHEMA": False,

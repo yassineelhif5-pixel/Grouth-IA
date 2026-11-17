@@ -27,19 +27,30 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-const credentials = z.object({ email: z.string().email(), password: z.string().min(10) });
-type Credentials = z.infer<typeof credentials>;
+export const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,29}$/;
 
+interface SessionTokens { access_token: string; refresh_token: string }
+interface UsernameCheck { username: string; valid: boolean; available: boolean }
+
+const loginSchema = z.object({ identifier: z.string().trim().min(3).max(254), password: z.string().min(1) });
+type LoginValues = z.infer<typeof loginSchema>;
+
+/** Sign in with an e-mail OR a username: the backend resolves the username and returns the Supabase session. */
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const loc = useLocation() as { state?: { from?: string } };
   const [error, setError] = useState<string | null>(null);
-  const form = useForm<Credentials>({ resolver: zodResolver(credentials) });
+  const form = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
   const submit = form.handleSubmit(async (v) => {
     setError(null);
-    const { error: e } = await supabase.auth.signInWithPassword(v);
-    if (e) return setError(e.message);
+    try {
+      const tokens = await api<SessionTokens>("/auth/login", { method: "POST", body: v });
+      const { error: e } = await supabase.auth.setSession({ access_token: tokens.access_token, refresh_token: tokens.refresh_token });
+      if (e) return setError(e.message);
+    } catch (e) {
+      return setError(e instanceof Error ? e.message : String(e));
+    }
     const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
     navigate(data?.nextLevel === "aal2" && data.currentLevel !== "aal2" ? "/mfa" : loc.state?.from ?? "/");
   });
@@ -48,8 +59,8 @@ export function LoginPage() {
       {error && <Alert color="red">{error}</Alert>}
       <form onSubmit={submit}>
         <Stack>
-          <TextInput label={t("auth.email")} {...form.register("email")} error={form.formState.errors.email?.message} />
-          <PasswordInput label={t("auth.password")} {...form.register("password")} error={form.formState.errors.password?.message} />
+          <TextInput label={t("auth.identifier")} autoComplete="username" {...form.register("identifier")} error={form.formState.errors.identifier?.message} />
+          <PasswordInput label={t("auth.password")} autoComplete="current-password" {...form.register("password")} error={form.formState.errors.password?.message} />
           <Button type="submit" loading={form.formState.isSubmitting}>{t("auth.login")}</Button>
         </Stack>
       </form>
@@ -59,13 +70,27 @@ export function LoginPage() {
   );
 }
 
+const signupSchema = z.object({
+  email: z.string().email(),
+  username: z.string().trim().toLowerCase().regex(USERNAME_RE, { message: "usernameInvalid" }),
+  password: z.string().min(10),
+});
+type SignupValues = z.infer<typeof signupSchema>;
+
 export function SignupPage() {
   const { t } = useTranslation();
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const form = useForm<Credentials>({ resolver: zodResolver(credentials) });
+  const form = useForm<SignupValues>({ resolver: zodResolver(signupSchema) });
   const submit = form.handleSubmit(async (v) => {
-    const { error: e } = await supabase.auth.signUp({ ...v, options: { emailRedirectTo: `${window.location.origin}/onboarding` } });
+    setError(null);
+    const check = await api<UsernameCheck>("/auth/username-available", { query: { username: v.username } });
+    if (!check.valid) return form.setError("username", { message: t("auth.usernameInvalid") });
+    if (!check.available) return form.setError("username", { message: t("auth.usernameTaken") });
+    const { error: e } = await supabase.auth.signUp({
+      email: v.email, password: v.password,
+      options: { emailRedirectTo: `${window.location.origin}/onboarding`, data: { username: check.username } },
+    });
     if (e) return setError(e.message);
     setDone(true);
   });
@@ -75,8 +100,10 @@ export function SignupPage() {
         <form onSubmit={submit}>
           <Stack>
             {error && <Alert color="red">{error}</Alert>}
-            <TextInput label={t("auth.email")} {...form.register("email")} error={form.formState.errors.email?.message} />
-            <PasswordInput label={t("auth.password")} {...form.register("password")} error={form.formState.errors.password?.message} />
+            <TextInput label={t("auth.email")} autoComplete="email" {...form.register("email")} error={form.formState.errors.email?.message} />
+            <TextInput label={t("auth.username")} description={t("auth.usernameHelp")} autoComplete="username" {...form.register("username")}
+              error={form.formState.errors.username?.message === "usernameInvalid" ? t("auth.usernameInvalid") : form.formState.errors.username?.message} />
+            <PasswordInput label={t("auth.password")} autoComplete="new-password" {...form.register("password")} error={form.formState.errors.password?.message} />
             <Button type="submit" loading={form.formState.isSubmitting}>{t("auth.signup")}</Button>
           </Stack>
         </form>

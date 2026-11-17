@@ -30,6 +30,7 @@ class UserProfile(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    username = models.TextField(null=True, blank=True, help_text='lowercase login identifier, unique')
 
     class Meta:
         managed = False

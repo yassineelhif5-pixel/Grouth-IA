@@ -169,15 +169,22 @@ export function SettingsPage() {
   const { data } = useMe();
   const qc = useQueryClient();
   const [name, setName] = useState(data?.profile?.full_name ?? "");
+  const [username, setUsername] = useState(data?.profile?.username ?? "");
   const m = useMutation({
-    mutationFn: () => api("/me", { method: "PATCH", body: { full_name: name, locale: i18n.language, version_number: data?.profile?.version_number } }),
+    mutationFn: () => api("/me", { method: "PATCH", body: {
+      full_name: name, username: username.trim().toLowerCase() || null, locale: i18n.language, version_number: data?.profile?.version_number,
+    } }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["me"] }),
   });
+  const err = m.error as (Error & { code?: string }) | null;
   return (
     <>
       <PageHeader title={t("nav.settings")} />
       <Stack maw={420}>
         <TextInput label={t("onboarding.fullName")} value={name} onChange={(e) => setName(e.currentTarget.value)} />
+        <TextInput label={t("auth.username")} description={t("auth.usernameHelp")} value={username}
+          onChange={(e) => setUsername(e.currentTarget.value)}
+          error={err ? (err.code === "username_taken" ? t("auth.usernameTaken") : err.message) : undefined} />
         <Button onClick={() => m.mutate()} loading={m.isPending}>{t("app.save")}</Button>
       </Stack>
     </>

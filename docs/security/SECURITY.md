@@ -5,6 +5,12 @@
 - Django valide **cryptographiquement** chaque JWT : clés asymétriques via JWKS (`/auth/v1/.well-known/jwks.json`, ES256/RS256) ou secret HS256 historique ; `aud=authenticated`, `iss=<SUPABASE_URL>/auth/v1`, `exp/iat/sub` requis, `role=authenticated`.
 - **PILOTE** : rôle plateforme `PILOTE` dans `user_profiles` + niveau d'assurance `aal2` (MFA) exigé côté API et côté UI.
 
+## Connexion par e-mail ou identifiant
+- L'utilisateur se connecte avec son **e-mail ou son identifiant** (`username`, unique, 3–30 caractères `[a-z0-9._-]`, choisi à l'inscription ou dans *Paramètres*).
+- `POST /api/v1/auth/login` résout l'identifiant **côté serveur** (`app.login_email`, SECURITY DEFINER, exécutable par `app_backend` uniquement) puis effectue le *password grant* Supabase ; seuls les jetons de session sont renvoyés, **jamais l'e-mail**.
+- Identifiant inconnu et mot de passe faux renvoient la même réponse (`401 invalid_credentials`), sans appel à Supabase pour un identifiant inconnu (pas d'énumération de comptes).
+- Limitation : 10 tentatives/min par IP et 5/min par identifiant (`THROTTLE_LOGIN`, `THROTTLE_LOGIN_IDENTIFIER`). MFA inchangé (étape `aal2` après la connexion).
+
 ## Autorisation (défense en profondeur)
 1. Django : appartenance au tenant vérifiée en base à chaque requête, permission (`app.has_permission`), module autorisé par la licence, quotas.
 2. PostgreSQL : RLS pour `authenticated` **et** pour `app_backend` ; FK composites `(tenant_id, id)` ; `tenant_id` et `id` immuables (trigger).

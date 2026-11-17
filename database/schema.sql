@@ -115,7 +115,8 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
   updated_by uuid,
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
-  correlation_id uuid
+  correlation_id uuid,
+  username text
 );
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS email text,
   ADD COLUMN IF NOT EXISTS full_name text,
@@ -134,7 +135,8 @@ ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS email text,
   ADD COLUMN IF NOT EXISTS updated_by uuid,
   ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
   ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
-  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS username text;
 
 CREATE TABLE IF NOT EXISTS public.tenants (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -10489,6 +10491,7 @@ DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
 -- ── Comments ──
 COMMENT ON TABLE public.user_profiles IS '[A. Identité et utilisateurs] Profil applicatif 1-1 avec auth.users (identité Supabase).';
 COMMENT ON COLUMN public.user_profiles.platform_role_code IS 'code from platform_roles, null for ordinary users';
+COMMENT ON COLUMN public.user_profiles.username IS 'lowercase login identifier, unique';
 COMMENT ON TABLE public.tenants IS '[A. Identité et utilisateurs] Organisation cliente (tenant).';
 COMMENT ON COLUMN public.tenants.metadata IS 'free-form display metadata, never secrets';
 COMMENT ON TABLE public.tenant_domains IS '[A. Identité et utilisateurs] tenant_domains';
