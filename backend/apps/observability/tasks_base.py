@@ -56,8 +56,10 @@ class TracedTask(Task):
         finally:
             try:
                 clear_db_context()
-                if caller.tenant_id or caller.is_platform:  # eager execution inside a request: restore the caller's DB context
-                    apply_db_context(caller)
+                if caller.tenant_id or caller.is_platform:  # eager/nested execution: restore the caller's DB context
+                    from django.db import connection
+                    # inside a request transaction → transaction-local; in autocommit (caller is itself a task) → session-level
+                    apply_db_context(caller, session=not connection.in_atomic_block)
             except Exception:  # noqa: BLE001
                 logger.warning("could not reset db context")
             reset_context(token)
