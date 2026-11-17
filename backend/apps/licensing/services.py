@@ -27,7 +27,7 @@ def effective_limit(tenant_id: str, quota_code: str) -> int | None:
                 WHERE o.tenant_id = %s AND o.override_type = 'quota' AND o.target_code = %s AND o.deleted_at IS NULL
                   AND (o.expires_at IS NULL OR o.expires_at > now()) ORDER BY o.created_at DESC LIMIT 1),
               (SELECT q.limit_value FROM public.tenant_license_quotas q
-                WHERE q.tenant_id = %s AND q.quota_code = %s AND q.deleted_at IS NULL)), -1)""",
+                WHERE q.tenant_id = %s AND q.quota_code = %s AND q.deleted_at IS NULL), -1)""",
         [tenant_id, quota_code, tenant_id, quota_code])
     value = row[0] if row else -1
     return None if value is None or value < 0 else int(value)

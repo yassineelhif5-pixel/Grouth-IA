@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = pytest.mark.django_db(transaction=True, databases=["default", "logs"])
 
 
 def test_requires_valid_jwt(client):
@@ -21,8 +21,12 @@ def test_demo_signup_once_per_user(make_user):
 
 
 def test_tenant_header_is_verified_not_trusted(tenant_user):
+    from rest_framework.test import APIClient
+
     a, b = tenant_user(), tenant_user()
-    r = a["client"].get("/api/v1/products", HTTP_X_TENANT_ID=b["tenant_id"])
+    intruder = APIClient()  # A's valid JWT, but B's tenant id in the header
+    intruder.credentials(HTTP_AUTHORIZATION=a["client"]._credentials["HTTP_AUTHORIZATION"], HTTP_X_TENANT_ID=b["tenant_id"])
+    r = intruder.get("/api/v1/products")
     assert r.status_code == 404  # existence of B is not even revealed
 
 
