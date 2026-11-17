@@ -50,7 +50,8 @@ Un seul projet Vercel sert le site (fichiers statiques `frontend/dist`) et l'API
 | `requirements.txt` | dépendances de la fonction (`-r backend/requirements/base.txt`) |
 | `.vercelignore` | exclut secrets (`.env*`, `.vercel-token`), environnements locaux, tests, docs |
 | `infrastructure/vercel/vercel-env.ps1` | crée le projet si besoin et pousse les variables de `.env.vercel` (API Vercel, upsert, chiffrées, production + preview) |
-| `infrastructure/vercel/vercel-deploy.ps1` | `vercel link` puis `vercel deploy --prod` via `npx` |
+| `infrastructure/vercel/vercel-deploy.ps1` | `vercel link` puis `vercel deploy --prod` via `npx` (sortie de la CLI fusionnée par `cmd`, compatible Windows PowerShell 5) |
+| `infrastructure/vercel/vercel-status.ps1` | état des 5 derniers déploiements, domaines, nombre de variables et journal de build du dernier déploiement |
 
 Variables (fichier local `.env.vercel`, jamais commité) : `DJANGO_SECRET_KEY` (propre à la prod), `DB_*` (pooler Supabase **mode session**, port 5432), `DB_ROLE=app_backend`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SECRETS_ENCRYPTION_KEY` (**la même** que celle qui a chiffré les identifiants en base), `REDIS_URL=memory://`, `CELERY_TASK_ALWAYS_EAGER=true`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL=/api/v1`. Le domaine de production est lu de `VERCEL_PROJECT_PRODUCTION_URL` (hôtes autorisés, CSRF, `FRONTEND_URL`, `PUBLIC_API_URL`).
 

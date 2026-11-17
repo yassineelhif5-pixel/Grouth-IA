@@ -4,7 +4,7 @@
   Usage : powershell -ExecutionPolicy Bypass -File infrastructure\vercel\vercel-deploy.ps1 [-Project growth-ia]
 #>
 param([string]$Project = "growth-ia")
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Set-Location $Root
 $tokenFile = Join-Path $Root ".vercel-token"
@@ -14,9 +14,10 @@ $env:VERCEL_TELEMETRY_DISABLED = "1"
 
 if (-not (Test-Path (Join-Path $Root ".vercel\project.json"))) {
   Write-Host "Liaison du dossier au projet Vercel $Project..."
-  & npx --yes vercel@latest link --yes --project $Project --token $token
+  cmd /c "npx --yes vercel@latest link --yes --project $Project --token $token 2>&1"
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 Write-Host "Deploiement en production (build du site + fonction API)..." -ForegroundColor Cyan
-& npx --yes vercel@latest deploy --prod --yes --token $token
+# The Vercel CLI writes its progress on stderr: merged by cmd so Windows PowerShell 5 does not treat it as an error.
+cmd /c "npx --yes vercel@latest deploy --prod --yes --token $token 2>&1"
 exit $LASTEXITCODE
