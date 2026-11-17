@@ -1,0 +1,18 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["apps/*/models.py"]  # generated
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S", "UP"]
+ignore = ["S101", "S608"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+exclude = ["apps/.*/models.py"]

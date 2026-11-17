@@ -1,0 +1,37 @@
+from rest_framework.response import Response
+
+from apps.core.db import fetch_all_dict, fetch_one
+from apps.core.views import GrowthAPIView
+
+
+class TenantDashboardView(GrowthAPIView):
+    permission_map = {"GET": "reporting.read"}
+
+    def get(self, request):
+        tid = request.tenant.tenant_id
+        counts = fetch_all_dict(
+            """SELECT (SELECT count(*) FROM public.products WHERE tenant_id = %(t)s AND deleted_at IS NULL) AS products,
+                      (SELECT count(*) FROM public.websites WHERE tenant_id = %(t)s AND deleted_at IS NULL) AS websites,
+                      (SELECT count(*) FROM public.tenant_members WHERE tenant_id = %(t)s AND status = 'active' AND deleted_at IS NULL) AS members,
+                      (SELECT count(*) FROM public.tenant_schedulers WHERE tenant_id = %(t)s AND deleted_at IS NULL) AS schedulers,
+                      (SELECT count(*) FROM public.execution_logs WHERE tenant_id = %(t)s AND created_at > now() - interval '7 days') AS executions_7d,
+                      (SELECT count(*) FROM public.execution_logs WHERE tenant_id = %(t)s AND status = 'failed' AND created_at > now() - interval '7 days') AS failures_7d""",
+            {"t": tid})[0]
+        activity = fetch_all_dict(
+            """SELECT date_trunc('day', created_at)::date AS day, count(*) AS events FROM public.activity_events
+                WHERE tenant_id = %s AND created_at > now() - interval '30 days' GROUP BY 1 ORDER BY 1""", [tid])
+        return Response({"counts": counts, "activity_30d": activity})
+
+
+class PilotUsageView(GrowthAPIView):
+    platform_scoped = True
+
+    def get(self, request):
+        return Response({
+            "usage_by_tenant": fetch_all_dict(
+                """SELECT t.id, t.name, count(u.id) AS events, coalesce(sum(u.cost_cents), 0) AS cost_cents
+                     FROM public.tenants t LEFT JOIN public.tenant_usage_events u
+                       ON u.tenant_id = t.id AND u.created_at > now() - interval '30 days'
+                    WHERE t.deleted_at IS NULL GROUP BY t.id ORDER BY cost_cents DESC LIMIT 200"""),
+            "ai_cost_30d": fetch_one("SELECT coalesce(sum(cost_cents), 0) FROM public.ai_usage_events WHERE created_at > now() - interval '30 days'")[0],
+        })

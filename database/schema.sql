@@ -12287,3 +12287,32 @@ BEGIN
            AND app.is_tenant_admin(((storage.foldername(name))[1])::uuid));
   -- Writes go through Django (service role) which validates tenant & permissions and logs record_access_logs.
 END $$;
+
+-- >>> 0009_django_schema.sql
+-- Growth IA — Migration 0009 — private schema for Django/Celery-beat internal tables
+-- Django connects with search_path=django,public: its own tables (django_migrations, celery beat…)
+-- land here, outside the schemas exposed by the Supabase Data API.
+CREATE SCHEMA IF NOT EXISTS django;
+REVOKE ALL ON SCHEMA django FROM PUBLIC;
+DO $$ BEGIN EXECUTE 'REVOKE ALL ON SCHEMA django FROM anon, authenticated'; EXCEPTION WHEN undefined_object THEN NULL; END $$;
+GRANT USAGE ON SCHEMA django TO app_backend;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA django TO app_backend;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA django TO app_backend;
+ALTER DEFAULT PRIVILEGES IN SCHEMA django GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_backend;
+ALTER DEFAULT PRIVILEGES IN SCHEMA django GRANT USAGE, SELECT ON SEQUENCES TO app_backend;
+
+-- >>> 0010_notification_read_state.sql
+-- Growth IA — Migration 0010 — controlled read-state update on the append-only notifications journal
+CREATE OR REPLACE FUNCTION app.mark_notifications_read(p_ids uuid[]) RETURNS int
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE n int;
+BEGIN
+  PERFORM set_config('app.allow_log_mutation', 'on', true);
+  UPDATE public.notifications SET read_at = now()
+   WHERE id = ANY (p_ids) AND user_id = app.current_user_id() AND read_at IS NULL;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  PERFORM set_config('app.allow_log_mutation', '', true);
+  RETURN n;
+END $$;
+REVOKE EXECUTE ON FUNCTION app.mark_notifications_read(uuid[]) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION app.mark_notifications_read(uuid[]) TO app_backend;
