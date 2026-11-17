@@ -75,7 +75,7 @@ export function ConnectorsPage() {
   return (
     <>
       <PageHeader title={t("nav.connectors")} />
-      <DataTable rows={q.data?.map((r) => ({ ...r, id: r.code as string }))} loading={q.isLoading} error={q.error} columns={[
+      <DataTable rows={q.data?.map((r): Row => ({ ...r, id: String(r.code) }))} loading={q.isLoading} error={q.error} columns={[
         { key: "name", label: "Connecteur" }, { key: "category", label: "Catégorie" }, { key: "auth_type", label: "Auth" },
         { key: "authorization_status", label: "Autorisation", render: (r) => <StatusBadge value={r.authorization_status as string} /> }]} />
     </>

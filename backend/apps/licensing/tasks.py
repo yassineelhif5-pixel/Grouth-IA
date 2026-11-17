@@ -1,7 +1,6 @@
-from config.celery import app
-
 from apps.core.db import fetch_one
 from apps.observability.tasks_base import TracedTask, run_in_platform_scope
+from config.celery import app
 
 
 @app.task(base=TracedTask, name="licensing.expire_trials", module="licensing")

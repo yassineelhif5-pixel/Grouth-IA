@@ -1,7 +1,6 @@
-from config.celery import app
-
 from apps.core.db import fetch_all_dict, fetch_one
 from apps.observability.tasks_base import TracedTask, run_in_platform_scope
+from config.celery import app
 
 PARTITIONED = ("audit_events", "activity_events", "execution_logs", "application_logs")
 

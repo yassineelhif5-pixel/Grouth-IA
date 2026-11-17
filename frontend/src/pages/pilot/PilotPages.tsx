@@ -110,7 +110,7 @@ export function PilotTenantDetailPage() {
             <Button variant="default" onClick={() => license.mutate({ operation: "module", module_code: module, status: "disabled", reason: ask(t("pilot.authorizeModule")) })}>Disable</Button>
           </Group>
           <Title order={5} mt="lg" mb="sm">{t("nav.connectors")}</Title>
-          <DataTable rows={conn.data?.map((c) => ({ ...c, id: c.code as string }))} columns={[
+          <DataTable rows={conn.data?.map((c): Row => ({ ...c, id: String(c.code) }))} columns={[
             { key: "name", label: "Connecteur" }, { key: "status", label: "Statut", render: (r) => <StatusBadge value={r.status as string} /> },
             { key: "a", label: "", render: (r) => <Button size="xs" variant="light" onClick={() => connector.mutate({ provider_code: r.code, status: r.status === "enabled" ? "disabled" : "enabled", reason: ask(t("pilot.authorizeConnector")) })}>{r.status === "enabled" ? "Disable" : "Enable"}</Button> }]} />
         </Card>

@@ -1,7 +1,8 @@
+from rest_framework.response import Response
+
 from apps.core.crud import AuditedTenantViewSet, tenant_serializer
 from apps.core.db import fetch_all_dict
 from apps.core.views import GrowthAPIView
-from rest_framework.response import Response
 
 from .models import SchedulerTask, TenantScheduler
 
