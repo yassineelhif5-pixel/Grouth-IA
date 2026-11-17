@@ -5,7 +5,7 @@
   - Cree le projet Vercel s'il n'existe pas, puis met a jour chaque variable (upsert, chiffree).
   Usage : powershell -ExecutionPolicy Bypass -File infrastructure\vercel\vercel-env.ps1 [-Project growth-ia]
 #>
-param([string]$Project = "growth-ia", [string]$EnvFile = ".env.vercel")
+param([string]$Project = "growth-ia", [string]$EnvFile = ".env.vercel", [string]$Scope = "")
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -19,9 +19,20 @@ $token = (Get-Content $tokenFile -Raw).Trim()
 $headers = @{ Authorization = "Bearer $token" }
 $api = "https://api.vercel.com"
 
+if (-not $Scope) { $scopeFile = Join-Path $Root ".vercel-scope"; if (Test-Path $scopeFile) { $Scope = (Get-Content $scopeFile -Raw).Trim() } }
 $teamQs = ""
-$teamFile = Join-Path $Root ".vercel\project.json"
-if (Test-Path $teamFile) { $orgId = (Get-Content $teamFile -Raw | ConvertFrom-Json).orgId; if ($orgId -like "team_*") { $teamQs = "teamId=$orgId" } }
+if ($Scope) {
+  $teams = (Invoke-RestMethod -Headers $headers -Uri "$api/v2/teams?limit=100").teams
+  $team = $teams | Where-Object { $_.slug -eq $Scope -or $_.id -eq $Scope }
+  if (-not $team) {
+    Write-Host "Le jeton n'a pas acces au compte/equipe Vercel '$Scope'." -ForegroundColor Red
+    Write-Host ("Comptes accessibles avec ce jeton : " + (($teams | ForEach-Object { $_.slug }) -join ", ")) -ForegroundColor Yellow
+    Write-Host "Creez le jeton depuis le compte '$Scope' (https://vercel.com/account/tokens, portee : $Scope)." -ForegroundColor Yellow
+    exit 2
+  }
+  $teamQs = "teamId=$($team.id)"
+  Write-Host "Cible Vercel : $($team.slug) ($($team.id))" -ForegroundColor Cyan
+}
 function Url([string]$path, [string]$qs = "") { $q = @($qs, $teamQs) | Where-Object { $_ }; if ($q) { "$api$path`?" + ($q -join "&") } else { "$api$path" } }
 
 $me = Invoke-RestMethod -Headers $headers -Uri (Url "/v2/user")

@@ -31,3 +31,4 @@ celerybeat-schedule*
 # Vercel
 .vercel/
 .vercel-token
+.vercel-scope
