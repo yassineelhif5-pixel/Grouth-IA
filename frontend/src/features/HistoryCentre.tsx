@@ -14,12 +14,12 @@ type Filters = Record<string, string>;
 const FILTER_KEYS = ["from", "to", "user", "module", "action", "entity_type", "entity_id", "status", "product", "execution", "correlation_id"] as const;
 
 /** History & audit centre. `scope` = tenant (X-Tenant-ID) or pilot (global, audited server-side). */
-export function HistoryCentre({ scope, tenantId, canExport }: { scope: "tenant" | "pilot"; tenantId?: string; canExport?: boolean }) {
+export function HistoryCentre({ scope, tenantId, canExport, presetModule }: { scope: "tenant" | "pilot"; tenantId?: string; canExport?: boolean; presetModule?: string }) {
   const { t } = useTranslation();
   const prefix = scope === "pilot" ? "/pilot/history" : "/history";
   const [tab, setTab] = useState<string | null>("events");
-  const [filters, setFilters] = useState<Filters>({});
-  const [draft, setDraft] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>(presetModule ? { module: presetModule } : {});
+  const [draft, setDraft] = useState<Filters>(presetModule ? { module: presetModule } : {});
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<AuditEvent | null>(null);
   const [traceId, setTraceId] = useState<string | null>(null);
@@ -39,7 +39,7 @@ export function HistoryCentre({ scope, tenantId, canExport }: { scope: "tenant" 
   };
   return (
     <>
-      <PageHeader title={t("history.title")} actions={canExport && scope === "tenant" && <Button variant="default" onClick={() => void exportCsv()}>{t("app.export")}</Button>} />
+      {!presetModule && <PageHeader title={t("history.title")} actions={canExport && scope === "tenant" && <Button variant="default" onClick={() => void exportCsv()}>{t("app.export")}</Button>} />}
       <Group align="flex-end" mb="md" gap="xs" wrap="wrap">
         {FILTER_KEYS.map((k) => (
           <TextInput key={k} size="xs" w={k === "from" || k === "to" ? 190 : 150} type={k === "from" || k === "to" ? "datetime-local" : "text"}

@@ -86,7 +86,8 @@ def build_export(fmt: str = "pdf", days: int = 30) -> dict:
         path = upload("exports", f"{tid}/reports/{job}.{fmt}", data, ctype)
         status = "succeeded"
     except Exception as e:  # noqa: BLE001 — storage not configured: file returned directly, still recorded
-        status, err = "succeeded", str(e)[:200]
+        status = "succeeded"
+        _ = e
     fetch_one("""UPDATE public.export_jobs SET status = %s, storage_path = %s, link_expires_at = now() + interval '1 day', result = %s::jsonb WHERE id = %s RETURNING 1""",
               [status, path, json.dumps({"bytes": len(data), "stored": bool(path)}), job])
     snap = fetch_one("INSERT INTO public.tenant_reporting_snapshots (tenant_id, period_start, period_end, metrics) VALUES (%s, (now() - make_interval(days => %s))::date, now()::date, %s::jsonb) RETURNING id",

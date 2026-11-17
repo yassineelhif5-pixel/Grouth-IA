@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import re
 import time
-import xml.etree.ElementTree as ET
 from collections import defaultdict
 from dataclasses import dataclass, field
 from urllib import robotparser
@@ -16,6 +15,7 @@ from urllib.parse import urldefrag, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
+from defusedxml import ElementTree as ET
 
 SEVERITY_WEIGHT = {"critical": 10, "high": 6, "medium": 3, "low": 1, "info": 0}
 
@@ -265,10 +265,10 @@ def analyze(res: CrawlResult) -> list[Issue]:
         for link in p.internal_links:
             if status.get(link) and status[link] >= 400:
                 add(Issue("broken_internal_link", "high", "links", f"Link to broken page {link}", p.url, "high", {"target": link}))
-    for t, urls in titles.items():
+    for urls in titles.values():
         if len(urls) > 1:
             add(Issue("title_duplicate", "medium", "onpage", f"Title shared by {len(urls)} pages", urls[0], "medium", {"pages": urls[:20]}))
-    for d, urls in descs.items():
+    for urls in descs.values():
         if len(urls) > 1:
             add(Issue("meta_description_duplicate", "low", "onpage", f"Meta description shared by {len(urls)} pages", urls[0], "low",
                       {"pages": urls[:20]}))

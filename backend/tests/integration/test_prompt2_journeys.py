@@ -29,9 +29,14 @@ def site():
     class H(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path not in SITE:
-                self.send_response(404); self.end_headers(); return
+                self.send_response(404)
+                self.end_headers()
+                return
             ct, body = SITE[self.path]
-            self.send_response(200); self.send_header("Content-Type", ct); self.end_headers(); self.wfile.write(body.encode())
+            self.send_response(200)
+            self.send_header("Content-Type", ct)
+            self.end_headers()
+            self.wfile.write(body.encode())
 
         def log_message(self, *a):
             pass

@@ -1,5 +1,5 @@
-from django.http import HttpResponseRedirect
 from django.conf import settings
+from django.http import HttpResponseRedirect
 from rest_framework import serializers
 from rest_framework.response import Response
 

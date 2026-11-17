@@ -26,9 +26,13 @@ def site():
         def do_GET(self):
             host = f"127.0.0.1:{self.server.server_port}"
             if self.path not in SITE:
-                self.send_response(404); self.end_headers(); return
+                self.send_response(404)
+                self.end_headers()
+                return
             ctype, body = SITE[self.path]
-            self.send_response(200); self.send_header("Content-Type", ctype); self.end_headers()
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.end_headers()
             self.wfile.write(body.replace("HOST", host).encode())
 
         def log_message(self, *a):

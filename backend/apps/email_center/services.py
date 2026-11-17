@@ -19,7 +19,6 @@ from email.utils import getaddresses, make_msgid, parseaddr
 
 from django.conf import settings
 from django.db import transaction
-from django.utils import timezone
 
 from apps.ai_providers.gateway import AINotConfigured, complete, wrap_untrusted
 from apps.audit.services import record_activity, record_audit

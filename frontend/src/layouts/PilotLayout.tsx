@@ -14,6 +14,8 @@ export function PilotLayout() {
       { to: "/pilot/errors", label: t("nav.errors") },
       { to: "/pilot/health", label: t("nav.health") },
       { to: "/pilot/incidents", label: t("nav.incidents") },
+      { to: "/pilot/ai", label: "Fournisseurs IA" },
+      { to: "/pilot/global", label: "Vue globale" },
       { to: "/", label: "← Tenant" },
     ]} />
   );

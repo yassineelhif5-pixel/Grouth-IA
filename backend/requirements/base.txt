@@ -18,3 +18,4 @@ croniter==6.0.0
 openpyxl==3.1.5
 reportlab==4.4.4
 beautifulsoup4==4.14.2
+defusedxml==0.7.1

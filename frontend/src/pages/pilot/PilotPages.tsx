@@ -209,3 +209,53 @@ export function PilotIncidentsPage() {
     </>
   );
 }
+
+export function PilotAIPage() {
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: ["pilot-ai"], queryFn: () => api<{ providers: Row[]; models: Row[]; routes: Row[] }>("/pilot/ai") });
+  const op = useMutation({ mutationFn: (b: Record<string, unknown>) => api("/pilot/ai", { method: "POST", body: b }), onSuccess: () => void qc.invalidateQueries({ queryKey: ["pilot-ai"] }) });
+  const [k, setK] = useState({ provider_code: "anthropic", api_key: "", base_url: "" });
+  const [m, setM] = useState({ provider_code: "anthropic", model_code: "", input_cost_per_mtok_cents: "", output_cost_per_mtok_cents: "" });
+  const [r, setR] = useState({ feature_code: "*", model_code: "", priority: "1" });
+  return (
+    <>
+      <PageHeader title="Fournisseurs IA" subtitle="Clés chiffrées côté backend · coûts calculés uniquement à partir des tarifs saisis et des tokens réellement consommés" />
+      <DataTable rows={q.data?.providers.map((p) => ({ ...p, id: String(p.code) }))} columns={[{ key: "name", label: "Fournisseur" }, { key: "api_style", label: "API" },
+        { key: "has_key", label: "Clé", render: (x) => (x.has_key ? "✓" : "—") }, { key: "base_url", label: "URL" }, { key: "priority", label: "Priorité" }]} />
+      <SimpleGrid cols={{ base: 1, lg: 3 }} mt="md">
+        <Card withBorder><Stack gap={4}><Title order={6}>Clé API</Title>
+          <Select data={(q.data?.providers ?? []).map((p) => String(p.code))} value={k.provider_code} onChange={(v) => setK({ ...k, provider_code: v ?? "" })} />
+          <TextInput placeholder="api key" type="password" value={k.api_key} onChange={(e) => setK({ ...k, api_key: e.currentTarget.value })} />
+          <TextInput placeholder="base URL (optionnel)" value={k.base_url} onChange={(e) => setK({ ...k, base_url: e.currentTarget.value })} />
+          <Button size="xs" onClick={() => { op.mutate({ operation: "set_key", ...k }); setK({ ...k, api_key: "" }); }}>Enregistrer</Button></Stack></Card>
+        <Card withBorder><Stack gap={4}><Title order={6}>Modèle & tarifs (cts / M tokens)</Title>
+          <Select data={(q.data?.providers ?? []).map((p) => String(p.code))} value={m.provider_code} onChange={(v) => setM({ ...m, provider_code: v ?? "" })} />
+          <TextInput placeholder="code modèle exact" value={m.model_code} onChange={(e) => setM({ ...m, model_code: e.currentTarget.value })} />
+          <TextInput placeholder="prix input" value={m.input_cost_per_mtok_cents} onChange={(e) => setM({ ...m, input_cost_per_mtok_cents: e.currentTarget.value })} />
+          <TextInput placeholder="prix output" value={m.output_cost_per_mtok_cents} onChange={(e) => setM({ ...m, output_cost_per_mtok_cents: e.currentTarget.value })} />
+          <Button size="xs" onClick={() => op.mutate({ operation: "upsert_model", ...m, input_cost_per_mtok_cents: m.input_cost_per_mtok_cents || null, output_cost_per_mtok_cents: m.output_cost_per_mtok_cents || null })}>Enregistrer</Button></Stack></Card>
+        <Card withBorder><Stack gap={4}><Title order={6}>Routage par fonctionnalité (fallback = priorité)</Title>
+          <TextInput placeholder="feature (*, content.generate, email.classify, thor.chat, geo.engine.openai…)" value={r.feature_code} onChange={(e) => setR({ ...r, feature_code: e.currentTarget.value })} />
+          <Select data={(q.data?.models ?? []).map((x) => String(x.code))} value={r.model_code} onChange={(v) => setR({ ...r, model_code: v ?? "" })} />
+          <TextInput placeholder="priorité" value={r.priority} onChange={(e) => setR({ ...r, priority: e.currentTarget.value })} />
+          <Button size="xs" onClick={() => op.mutate({ operation: "route", ...r })}>Ajouter</Button></Stack></Card>
+      </SimpleGrid>
+      <DataTable rows={q.data?.routes} columns={[{ key: "feature_code", label: "Fonctionnalité" }, { key: "model", label: "Modèle" }, { key: "priority", label: "Priorité" }, { key: "is_enabled", label: "Actif", render: (x) => (x.is_enabled ? "✓" : "—") }]} />
+    </>
+  );
+}
+
+export function PilotGlobalPage() {
+  const q = useQuery({ queryKey: ["pilot-global"], queryFn: () => api<{ users: Row[]; schedulers: Row[]; ai_costs: Row[]; approvals_pending: Row[] }>("/pilot/global") });
+  return (
+    <>
+      <PageHeader title="Vue globale" />
+      <Title order={5}>Utilisateurs</Title>
+      <DataTable rows={q.data?.users} loading={q.isLoading} error={q.error} columns={[{ key: "email", label: "E-mail" }, { key: "platform_role_code", label: "Rôle plateforme" }, { key: "tenants", label: "Tenants" }, { key: "status", label: "Statut", render: (r) => <StatusBadge value={r.status as string} /> }]} />
+      <Title order={5} mt="md">Coûts IA (30 j)</Title>
+      <DataTable rows={q.data?.ai_costs.map((x, i) => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "provider_code", label: "Fournisseur" }, { key: "model_code", label: "Modèle" }, { key: "calls", label: "Appels" }, { key: "cost_cents", label: "Coût (cts)" }]} />
+      <Title order={5} mt="md">Programmations</Title>
+      <DataTable rows={q.data?.schedulers.map((x, i) => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "category", label: "Catégorie" }, { key: "n", label: "Nombre" }, { key: "failing", label: "En échec" }]} />
+    </>
+  );
+}

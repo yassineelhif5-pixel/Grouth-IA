@@ -59,9 +59,8 @@ def next_run(freq: str, value: str | None, tz: str, after: datetime | None = Non
 # ─────────────────────────── Handlers (shared by schedulers and workflow nodes) ───────────────────────────
 def _h_seo(p):
     from apps.seo.services import execute_audit, launch_audit
-    from apps.core.db import fetch_one as f
     aid = launch_audit(p["project_id"], p.get("audit_type", "full"), p.get("pages_limit"))
-    if f("SELECT status FROM public.seo_audits WHERE id = %s", [aid])[0] == "queued":
+    if fetch_one("SELECT status FROM public.seo_audits WHERE id = %s", [aid])[0] == "queued":
         return execute_audit(aid) | {"audit_id": aid}
     return {"audit_id": aid}
 
@@ -215,8 +214,8 @@ def execute_run(run_id: str) -> dict:
     started = timezone.now()
     fetch_one("UPDATE public.scheduler_execution_runs SET status = 'running', started_at = now() WHERE id = %s RETURNING 1", [run_id])
     try:
-        from apps.licensing.services import ensure_active_subscription
         from apps.core.tenancy import module_enabled
+        from apps.licensing.services import ensure_active_subscription
         ensure_active_subscription(tid)
         _step(run_id, "licence_check", "succeeded")
         if not module_enabled(tid, CATEGORY_MODULE[cat]):

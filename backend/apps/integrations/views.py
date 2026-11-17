@@ -17,7 +17,7 @@ class ConnectorCatalogView(GrowthAPIView):
 
     def get(self, request):
         return Response(fetch_all_dict(
-            """SELECT p.code, p.name, p.category, p.auth_type,
+            """SELECT p.id, p.code, p.name, p.category, p.auth_type, p.docs_status,
                       coalesce(a.status, 'not_authorized') AS authorization_status
                  FROM public.connector_providers p
                  LEFT JOIN public.tenant_connector_authorizations a ON a.provider_id = p.id AND a.tenant_id = %s AND a.deleted_at IS NULL

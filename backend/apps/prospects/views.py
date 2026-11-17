@@ -6,17 +6,16 @@ from apps.core.db import fetch_all_dict
 from apps.core.views import GrowthAPIView
 
 from . import services as s
-from .models import (CrmActivity, CrmMeeting, CrmOpportunity, CrmPipelineStage, CrmTask, Prospect, ProspectCampaign, ProspectCampaignSequence,
-                     ProspectCompany, ProspectContact, ProspectProject, ProspectSegment, ProspectSuppressionList, ProspectTemplate)
+from . import models as m
 
-ProjectViewSet = crud(ProspectProject, module="prospects", perm="prospects", filters=["product", "status"])
-CompanyViewSet = crud(ProspectCompany, module="prospects", perm="prospects", search=["name", "domain"], filters=["industry", "country_code"])
-ContactViewSet = crud(ProspectContact, module="prospects", perm="prospects", search=["email", "last_name"], filters=["prospect", "consent_status"])
-SegmentViewSet = crud(ProspectSegment, module="prospects", perm="prospects", filters=["project"])
-TemplateViewSet = crud(ProspectTemplate, module="prospects", perm="campaigns", write="manage", filters=["channel"])
-SequenceViewSet = crud(ProspectCampaignSequence, module="prospects", perm="campaigns", write="manage", filters=["campaign"], ordering=["step"])
-SuppressionViewSet = crud(ProspectSuppressionList, module="prospects", perm="prospects", search=["email"])
-_P = crud(Prospect, module="prospects", perm="prospects", filters=["project", "company", "status", "owner_user_id", "product"], quota="prospects.max",
+ProjectViewSet = crud(m.ProspectProject, module="prospects", perm="prospects", filters=["product", "status"])
+CompanyViewSet = crud(m.ProspectCompany, module="prospects", perm="prospects", search=["name", "domain"], filters=["industry", "country_code"])
+ContactViewSet = crud(m.ProspectContact, module="prospects", perm="prospects", search=["email", "last_name"], filters=["prospect", "consent_status"])
+SegmentViewSet = crud(m.ProspectSegment, module="prospects", perm="prospects", filters=["project"])
+TemplateViewSet = crud(m.ProspectTemplate, module="prospects", perm="campaigns", write="manage", filters=["channel"])
+SequenceViewSet = crud(m.ProspectCampaignSequence, module="prospects", perm="campaigns", write="manage", filters=["campaign"], ordering=["step"])
+SuppressionViewSet = crud(m.ProspectSuppressionList, module="prospects", perm="prospects", search=["email"])
+_P = crud(m.Prospect, module="prospects", perm="prospects", filters=["project", "company", "status", "owner_user_id", "product"], quota="prospects.max",
           ordering=["-score", "-created_at"])
 
 
@@ -57,7 +56,7 @@ class ProspectViewSet(_P):
             ) x ORDER BY at DESC LIMIT 500""", {"p": str(pk), "t": tid}))
 
 
-_C = crud(ProspectCampaign, module="prospects", perm="campaigns", write="manage", filters=["project", "status", "channel"])
+_C = crud(m.ProspectCampaign, module="prospects", perm="campaigns", write="manage", filters=["project", "status", "channel"])
 
 
 class CampaignViewSet(_C):
@@ -78,11 +77,11 @@ class CampaignViewSet(_C):
         return Response(s.process_campaign(str(pk)))
 
 
-StageViewSet = crud(CrmPipelineStage, module="crm", perm="crm", ordering=["position"])
-OpportunityViewSet = crud(CrmOpportunity, module="crm", perm="crm", filters=["stage", "prospect", "owner_user_id", "product"])
-TaskViewSet = crud(CrmTask, module="crm", perm="crm", filters=["assigned_to", "status", "opportunity"], ordering=["due_at"])
-MeetingViewSet = crud(CrmMeeting, module="crm", perm="crm", filters=["opportunity"], ordering=["starts_at"])
-ActivityViewSet = crud(CrmActivity, module="crm", perm="crm", filters=["prospect", "opportunity", "activity_type"])
+StageViewSet = crud(m.CrmPipelineStage, module="crm", perm="crm", ordering=["position"])
+OpportunityViewSet = crud(m.CrmOpportunity, module="crm", perm="crm", filters=["stage", "prospect", "owner_user_id", "product"])
+TaskViewSet = crud(m.CrmTask, module="crm", perm="crm", filters=["assigned_to", "status", "opportunity"], ordering=["due_at"])
+MeetingViewSet = crud(m.CrmMeeting, module="crm", perm="crm", filters=["opportunity"], ordering=["starts_at"])
+ActivityViewSet = crud(m.CrmActivity, module="crm", perm="crm", filters=["prospect", "opportunity", "activity_type"])
 
 DEFAULT_STAGES = [("New Lead", 10), ("Contacted", 20), ("Qualified", 30), ("Interested", 40), ("Demo Requested", 50), ("Meeting Scheduled", 60),
                   ("Proposal Sent", 70), ("Negotiation", 80), ("Customer", 100), ("Lost", 0)]

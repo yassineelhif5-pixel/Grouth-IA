@@ -5,7 +5,6 @@ from django.db import connection, connections, transaction
 
 from .context import ExecutionContext
 
-
 GUCS = ("user_id", "tenant_id", "correlation_id", "request_id", "actor_type", "is_platform", "change_reason")
 
 

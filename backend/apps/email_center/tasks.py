@@ -1,8 +1,12 @@
+import logging
+
 from apps.core.db import fetch_all_dict
 from apps.observability.tasks_base import TracedTask, run_in_platform_scope, run_in_tenant_scope
 from config.celery import app
 
 from . import services as s
+
+logger = logging.getLogger("growth.email")
 
 
 @app.task(base=TracedTask, name="email.classify", module="email_center", max_retries=2)
@@ -28,5 +32,6 @@ def sync_all():
             run_in_tenant_scope(str(b["tenant_id"]), lambda b=b: sync_mailbox(str(b["id"])))
             done += 1
         except Exception:  # noqa: BLE001 — failure persisted in email_sync_runs
+            logger.warning("mailbox sync failed", exc_info=True)
             continue
     return {"mailboxes": len(boxes), "synced": done}

@@ -187,7 +187,6 @@ def cms_publish(account_id: str, kind: str, title: str, html_body: str, slug: st
                  json={"title": title, "content": html_body, "status": status, **({"slug": slug} if slug else {})}).json()
         return str(d["id"]), d.get("link", "")
     if acc.provider == "ghost":
-        from apps.integrations.providers import _t_ghost  # noqa: F401  (same JWT scheme)
         import jwt as pyjwt
         from django.utils import timezone
         kid, secret = cred["admin_api_key"].split(":")

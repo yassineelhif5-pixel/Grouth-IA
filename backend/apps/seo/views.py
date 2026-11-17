@@ -1,10 +1,10 @@
+from rest_framework import mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.core.crud import AuditedTenantViewSet, tenant_serializer
 from apps.core.db import fetch_all_dict
 from apps.core.views import GrowthAPIView, GrowthViewSet
-from rest_framework import mixins
 
 from .models import Backlink, KeywordGroup, KeywordRanking, SeoAudit, SeoIssue, SeoKeyword, SeoProject, SeoRecommendation
 from .services import compare, launch_audit

@@ -7,6 +7,7 @@ import { PilotLayout } from "@/layouts/PilotLayout";
 import { TenantLayout } from "@/layouts/TenantLayout";
 import { AcceptInvitationPage, HomeRedirect, LoginPage, MfaPage, OnboardingPage, ResetPasswordPage, SignupPage } from "@/pages/auth/AuthPages";
 import * as P from "@/pages/pilot/PilotPages";
+import * as M from "@/pages/tenant/ModulePages";
 import * as T from "@/pages/tenant/TenantPages";
 
 function TenantHistory() {
@@ -30,8 +31,25 @@ export function App() {
           <Route path="dashboard" element={<T.DashboardPage />} />
           <Route path="products" element={<RequirePermission perm="products.read" module="products"><T.ProductsPage /></RequirePermission>} />
           <Route path="websites" element={<RequirePermission perm="websites.read" module="websites"><T.WebsitesPage /></RequirePermission>} />
-          <Route path="scheduler" element={<RequirePermission perm="scheduler.read" module="scheduler"><T.SchedulerPage /></RequirePermission>} />
-          <Route path="connectors" element={<RequirePermission perm="connectors.read" module="connectors"><T.ConnectorsPage /></RequirePermission>} />
+          <Route path="scheduler" element={<RequirePermission perm="scheduler.read" module="scheduler"><M.SchedulerV2Page /></RequirePermission>} />
+          <Route path="connectors" element={<RequirePermission perm="connectors.read"><M.ConnectorsV2Page /></RequirePermission>} />
+          <Route path="seo" element={<RequirePermission perm="seo.read" module="seo"><M.SeoPage /></RequirePermission>} />
+          <Route path="geo" element={<RequirePermission perm="geo.read" module="geo"><M.GeoPage /></RequirePermission>} />
+          <Route path="content" element={<RequirePermission perm="content.read" module="content"><M.ContentPage /></RequirePermission>} />
+          <Route path="pages" element={<RequirePermission perm="pages.read" module="pages"><M.PagesPage /></RequirePermission>} />
+          <Route path="social" element={<RequirePermission perm="social.read" module="social"><M.SocialPage /></RequirePermission>} />
+          <Route path="video" element={<RequirePermission perm="video.read" module="video"><M.VideoPage /></RequirePermission>} />
+          <Route path="opportunities" element={<RequirePermission perm="opportunities.read" module="opportunities"><M.OpportunitiesPage /></RequirePermission>} />
+          <Route path="prospects" element={<RequirePermission perm="prospects.read" module="prospects"><M.ProspectsPage /></RequirePermission>} />
+          <Route path="campaigns" element={<RequirePermission perm="campaigns.read" module="prospects"><M.CampaignsPage /></RequirePermission>} />
+          <Route path="email" element={<RequirePermission perm="email.read" module="email_center"><M.EmailCenterPage /></RequirePermission>} />
+          <Route path="whatsapp" element={<RequirePermission perm="whatsapp.read" module="whatsapp"><M.WhatsAppPage /></RequirePermission>} />
+          <Route path="crm" element={<RequirePermission perm="crm.read" module="crm"><M.CrmPage /></RequirePermission>} />
+          <Route path="workflows" element={<RequirePermission perm="workflows.read" module="workflows"><M.WorkflowsPage /></RequirePermission>} />
+          <Route path="intelligence" element={<RequirePermission perm="intelligence.read" module="intelligence"><M.IntelligencePage /></RequirePermission>} />
+          <Route path="thor" element={<RequirePermission perm="thor.use" module="thor"><M.ThorPage /></RequirePermission>} />
+          <Route path="approvals" element={<RequirePermission perm="approvals.decide"><M.ApprovalsPage /></RequirePermission>} />
+          <Route path="reporting" element={<RequirePermission perm="reporting.read"><M.ReportingPage /></RequirePermission>} />
           <Route path="members" element={<RequirePermission perm="members.read"><T.MembersPage /></RequirePermission>} />
           <Route path="invitations" element={<RequirePermission perm="invitations.manage"><T.InvitationsPage /></RequirePermission>} />
           <Route path="history" element={<RequirePermission perm="history.read"><TenantHistory /></RequirePermission>} />
@@ -49,6 +67,8 @@ export function App() {
           <Route path="errors" element={<P.PilotErrorsPage />} />
           <Route path="health" element={<P.SystemHealthPage />} />
           <Route path="incidents" element={<P.PilotIncidentsPage />} />
+          <Route path="ai" element={<P.PilotAIPage />} />
+          <Route path="global" element={<P.PilotGlobalPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
