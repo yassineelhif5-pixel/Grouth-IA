@@ -60,8 +60,8 @@ export function GeoPage() {
         <Group align="flex-end"><TextInput label="Produit (id) pour les observations" value={product} onChange={(e) => setProduct(e.currentTarget.value)} w={380} />
           {product.length === 36 && <Button variant="light" onClick={() => api(`/geo/products/${product}`, { method: "POST", tenantId }).then(() => notifications.show({ message: "Audit GEO lancé" }))}>Audit GEO</Button>}</Group>
         {obs.data && <>
-          <Text mt="sm">Visibilité observée : <b>{obs.data.visibility.visibility_score ?? "non mesurée"}</b> % ({String(obs.data.visibility.observations)} réponses, méthode API)</Text>
-          <DataTable rows={obs.data.observations.map((o) => ({ ...o, id: String(o.run_id) }))} columns={[dateCol(), { key: "engine", label: "Moteur" }, { key: "model_code", label: "Modèle" },
+          <Text mt="sm">Visibilité observée : <b>{String(obs.data.visibility.visibility_score ?? "non mesurée")}</b> % ({String(obs.data.visibility.observations)} réponses, méthode API)</Text>
+          <DataTable rows={obs.data.observations.map((o): Row => ({ ...o, id: String(o.run_id) }))} columns={[dateCol(), { key: "engine", label: "Moteur" }, { key: "model_code", label: "Modèle" },
             { key: "query", label: "Question" }, { key: "mentions", label: "Mentions", render: (r) => ((r.mentions as { brand: string }[] | null) ?? []).map((m) => m.brand).join(" → ") },
             { key: "citations", label: "Citations", render: (r) => ((r.citations as unknown[] | null) ?? []).length }, { key: "cost_cents", label: "Coût (cts)" }, statusCol()]} />
         </>}
@@ -429,7 +429,7 @@ export function ReportingPage() {
         <Table.Tbody>{d.data?.modules.map((m) => { const l = m.last_execution as Row | null; return (
           <Table.Tr key={String(m.module)}><Table.Td>{String(m.module)}</Table.Td><Table.Td>{formatDate(l?.created_at as string)}</Table.Td><Table.Td><StatusBadge value={(l?.status as string) ?? "unknown"} /></Table.Td>
             <Table.Td>{l?.duration_ms ? `${String(l.duration_ms)} ms` : "—"}</Table.Td><Table.Td>{String(m.executions)}</Table.Td><Table.Td>{String(m.errors)}</Table.Td></Table.Tr>); })}</Table.Tbody></Table>
-      <DataTable rows={d.data?.ai_usage.map((a) => ({ ...a, id: String(a.feature_code) }))} columns={[{ key: "feature_code", label: "Fonctionnalité IA" }, { key: "calls", label: "Appels" }, { key: "input_tokens", label: "Tokens in" }, { key: "output_tokens", label: "Tokens out" }, { key: "cost_cents", label: "Coût (cts)" }]} />
+      <DataTable rows={d.data?.ai_usage.map((a): Row => ({ ...a, id: String(a.feature_code) }))} columns={[{ key: "feature_code", label: "Fonctionnalité IA" }, { key: "calls", label: "Appels" }, { key: "input_tokens", label: "Tokens in" }, { key: "output_tokens", label: "Tokens out" }, { key: "cost_cents", label: "Coût (cts)" }]} />
     </Stack>
   );
 }

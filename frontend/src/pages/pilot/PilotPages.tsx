@@ -220,7 +220,7 @@ export function PilotAIPage() {
   return (
     <>
       <PageHeader title="Fournisseurs IA" subtitle="Clés chiffrées côté backend · coûts calculés uniquement à partir des tarifs saisis et des tokens réellement consommés" />
-      <DataTable rows={q.data?.providers.map((p) => ({ ...p, id: String(p.code) }))} columns={[{ key: "name", label: "Fournisseur" }, { key: "api_style", label: "API" },
+      <DataTable rows={q.data?.providers.map((p): Row => ({ ...p, id: String(p.code) }))} columns={[{ key: "name", label: "Fournisseur" }, { key: "api_style", label: "API" },
         { key: "has_key", label: "Clé", render: (x) => (x.has_key ? "✓" : "—") }, { key: "base_url", label: "URL" }, { key: "priority", label: "Priorité" }]} />
       <SimpleGrid cols={{ base: 1, lg: 3 }} mt="md">
         <Card withBorder><Stack gap={4}><Title order={6}>Clé API</Title>
@@ -253,9 +253,9 @@ export function PilotGlobalPage() {
       <Title order={5}>Utilisateurs</Title>
       <DataTable rows={q.data?.users} loading={q.isLoading} error={q.error} columns={[{ key: "email", label: "E-mail" }, { key: "platform_role_code", label: "Rôle plateforme" }, { key: "tenants", label: "Tenants" }, { key: "status", label: "Statut", render: (r) => <StatusBadge value={r.status as string} /> }]} />
       <Title order={5} mt="md">Coûts IA (30 j)</Title>
-      <DataTable rows={q.data?.ai_costs.map((x, i) => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "provider_code", label: "Fournisseur" }, { key: "model_code", label: "Modèle" }, { key: "calls", label: "Appels" }, { key: "cost_cents", label: "Coût (cts)" }]} />
+      <DataTable rows={q.data?.ai_costs.map((x, i): Row => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "provider_code", label: "Fournisseur" }, { key: "model_code", label: "Modèle" }, { key: "calls", label: "Appels" }, { key: "cost_cents", label: "Coût (cts)" }]} />
       <Title order={5} mt="md">Programmations</Title>
-      <DataTable rows={q.data?.schedulers.map((x, i) => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "category", label: "Catégorie" }, { key: "n", label: "Nombre" }, { key: "failing", label: "En échec" }]} />
+      <DataTable rows={q.data?.schedulers.map((x, i): Row => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "category", label: "Catégorie" }, { key: "n", label: "Nombre" }, { key: "failing", label: "En échec" }]} />
     </>
   );
 }

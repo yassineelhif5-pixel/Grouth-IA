@@ -6,7 +6,7 @@ from apps.core.crud import AuditedTenantViewSet, tenant_serializer
 from apps.core.db import fetch_all_dict
 from apps.core.views import GrowthAPIView, GrowthViewSet
 
-from .models import Backlink, KeywordGroup, KeywordRanking, SeoAudit, SeoIssue, SeoKeyword, SeoProject, SeoRecommendation
+from .models import Backlink, KeywordGroup, SeoAudit, SeoIssue, SeoKeyword, SeoProject, SeoRecommendation
 from .services import compare, launch_audit
 
 
@@ -84,4 +84,3 @@ class RankingsView(GrowthAPIView):
                  JOIN public.seo_keywords k ON k.id = r.keyword_id WHERE r.tenant_id = %s ORDER BY r.checked_on DESC LIMIT 1000""",
             [request.tenant.tenant_id]))
 
-_ = KeywordRanking

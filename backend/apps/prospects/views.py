@@ -5,8 +5,8 @@ from apps.core.crud import crud
 from apps.core.db import fetch_all_dict
 from apps.core.views import GrowthAPIView
 
-from . import services as s
 from . import models as m
+from . import services as s
 
 ProjectViewSet = crud(m.ProspectProject, module="prospects", perm="prospects", filters=["product", "status"])
 CompanyViewSet = crud(m.ProspectCompany, module="prospects", perm="prospects", search=["name", "domain"], filters=["industry", "country_code"])
