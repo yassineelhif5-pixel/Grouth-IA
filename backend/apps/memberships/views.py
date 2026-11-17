@@ -28,7 +28,7 @@ class MemberListView(GrowthAPIView):
 
 
 class RoleSerializer(serializers.Serializer):
-    role_code = serializers.ChoiceField(choices=["tenant_admin", "tenant_member", "tenant_viewer"])
+    role_code = serializers.ChoiceField(choices=["tenant_admin", "tenant_manager", "marketing_manager", "seo_manager", "content_manager", "social_media_manager", "sales_manager", "sales_rep", "analyst", "tenant_member", "tenant_viewer"])
     reason = serializers.CharField(max_length=500, required=False, allow_blank=True)
 
 

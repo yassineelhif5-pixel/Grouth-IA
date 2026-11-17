@@ -292,6 +292,8 @@ def model_name(table: str) -> str:
     base = table
     if base.endswith("ies"):
         base = base[:-3] + "y"
+    elif base.endswith(("sses", "xes", "ches", "shes")):
+        base = base[:-2]
     elif base.endswith("s") and not base.endswith("ss"):
         base = base[:-1]
     return "".join(p.capitalize() for p in base.split("_"))

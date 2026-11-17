@@ -175,3 +175,19 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Growth IA <no-reply@example.com>")
+
+# ── PROMPT 2 ──
+PUBLIC_API_URL = env("PUBLIC_API_URL", "http://localhost:8000").rstrip("/")  # OAuth callbacks & webhooks
+STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
+STRIPE_PRICE_IDS = {k: env(f"STRIPE_PRICE_{k}") for k in ("STARTER", "GROWTH", "GROWTH_ENTREPRISE")}
+CRAWLER_USER_AGENT = env("CRAWLER_USER_AGENT", "GrowthIA-Bot/1.0 (+https://growth-ia.example/bot)")
+CRAWLER_MAX_PAGES = int(env("CRAWLER_MAX_PAGES", "200"))
+CRAWLER_DELAY_SECONDS = float(env("CRAWLER_DELAY_SECONDS", "0.5"))
+ATTACHMENT_MAX_BYTES = int(env("ATTACHMENT_MAX_BYTES", str(20 * 1024 * 1024)))
+ATTACHMENT_ALLOWED_MIME = env_list("ATTACHMENT_ALLOWED_MIME", "application/pdf,image/png,image/jpeg,image/gif,text/plain,text/csv,"
+                                   "application/vnd.openxmlformats-officedocument.wordprocessingml.document,"
+                                   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,"
+                                   "application/vnd.openxmlformats-officedocument.presentationml.presentation")
+CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
+CELERY_TASK_EAGER_PROPAGATES = True

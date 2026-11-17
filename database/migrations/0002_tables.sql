@@ -3484,7 +3484,7 @@ CREATE TABLE IF NOT EXISTS public.ai_usage_events (
   agent_id uuid,
   input_tokens integer NOT NULL DEFAULT 0,
   output_tokens integer NOT NULL DEFAULT 0,
-  cost_cents numeric NOT NULL DEFAULT 0,
+  cost_cents numeric DEFAULT NULL,
   idempotency_key text,
   correlation_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -3495,10 +3495,12 @@ ALTER TABLE public.ai_usage_events ADD COLUMN IF NOT EXISTS tenant_id uuid,
   ADD COLUMN IF NOT EXISTS agent_id uuid,
   ADD COLUMN IF NOT EXISTS input_tokens integer DEFAULT 0 NOT NULL,
   ADD COLUMN IF NOT EXISTS output_tokens integer DEFAULT 0 NOT NULL,
-  ADD COLUMN IF NOT EXISTS cost_cents numeric DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS cost_cents numeric DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS idempotency_key text,
   ADD COLUMN IF NOT EXISTS correlation_id uuid,
   ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
+ALTER TABLE public.ai_usage_events ALTER COLUMN cost_cents DROP NOT NULL;
+ALTER TABLE public.ai_usage_events ALTER COLUMN cost_cents SET DEFAULT NULL;
 
 CREATE TABLE IF NOT EXISTS public.ai_cost_snapshots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

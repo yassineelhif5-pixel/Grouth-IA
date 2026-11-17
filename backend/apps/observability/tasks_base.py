@@ -5,10 +5,9 @@ import logging
 import uuid
 
 from celery import Task
-from django.db import transaction
 
 from apps.core.context import ExecutionContext, get_context, reset_context, set_context
-from apps.core.db import apply_db_context, fetch_one
+from apps.core.db import apply_db_context, clear_db_context, fetch_one
 
 logger = logging.getLogger("growth.tasks")
 
@@ -32,23 +31,35 @@ class TracedTask(Task):
         headers = getattr(self.request, "headers", None) or {}
         if not headers and self.request:
             headers = {k: v for k, v in vars(self.request).items() if str(k).startswith("growth_")}
-        ctx = ExecutionContext.from_headers(headers).with_(execution_id=self.request.id or str(uuid.uuid4()))
+        if any(str(k).startswith("growth_") for k in headers):
+            ctx = ExecutionContext.from_headers(headers)
+        else:  # eager mode / same thread: inherit the caller's context
+            ctx = get_context().with_(actor_type="celery")
+        ctx = ctx.with_(execution_id=self.request.id or str(uuid.uuid4()))
+        caller = get_context()
         token = set_context(ctx)
         try:
             from apps.audit.services import track_execution
             with track_execution(self.module, self.name, execution_id=ctx.execution_id, celery_task_id=self.request.id,
                                  retry_count=self.request.retries or 0,
                                  input_summary={"args": [str(a)[:200] for a in args], "kwargs": list(kwargs)}) as out:
-                with transaction.atomic():
-                    apply_db_context(ctx)
-                    if self.idempotent and not self._claim(ctx):
-                        out["skipped"] = "duplicate"
-                        return None
-                    result = super().__call__(*args, **kwargs)
+                # session-level context: the task manages its own (short) transactions, so a failure
+                # status written before an exception is never rolled back with the work.
+                apply_db_context(ctx, session=True)
+                if self.idempotent and not self._claim(ctx):
+                    out["skipped"] = "duplicate"
+                    return None
+                result = super().__call__(*args, **kwargs)
                 if isinstance(result, dict):
                     out.update(result)
                 return result
         finally:
+            try:
+                clear_db_context()
+                if caller.tenant_id or caller.is_platform:  # eager execution inside a request: restore the caller's DB context
+                    apply_db_context(caller)
+            except Exception:  # noqa: BLE001
+                logger.warning("could not reset db context")
             reset_context(token)
 
     def _claim(self, ctx: ExecutionContext) -> bool:
@@ -81,5 +92,13 @@ def platform_context() -> ExecutionContext:
 def run_in_platform_scope(fn):
     ctx = get_context().with_(is_platform=True, actor_type="celery")
     set_context(ctx)
-    apply_db_context(ctx)
+    apply_db_context(ctx, session=True)
+    return fn()
+
+
+def run_in_tenant_scope(tenant_id: str, fn, user_id: str | None = None):
+    """Switch a platform task to ONE tenant (RLS then restricts every query to that tenant)."""
+    ctx = get_context().with_(tenant_id=str(tenant_id), is_platform=False, actor_type="celery", user_id=user_id)
+    set_context(ctx)
+    apply_db_context(ctx, session=True)
     return fn()

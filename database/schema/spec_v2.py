@@ -516,3 +516,7 @@ extend("thor_tool_executions", """
 duration_ms int
 approval_request_id uuid -> approval_requests
 """)
+
+# ───────── Costs are never invented: unknown cost stays NULL ─────────
+relax("ai_usage_events", "cost_cents")
+set_default("ai_usage_events", "cost_cents", "NULL")

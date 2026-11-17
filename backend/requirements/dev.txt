@@ -8,3 +8,4 @@ django-stubs==5.2.7
 djangorestframework-stubs==3.16.5
 bandit==1.8.6
 pip-audit==2.9.0
+responses==0.25.8

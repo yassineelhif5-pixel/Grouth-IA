@@ -2510,7 +2510,7 @@ Unique: `(tenant_id, code)`
 | agent_id | uuid | yes |  | → ai_agents_registry (restrict) |  |
 | input_tokens | integer |  | 0 |  |  |
 | output_tokens | integer |  | 0 |  |  |
-| cost_cents | numeric |  | 0 |  |  |
+| cost_cents | numeric | yes | NULL |  |  |
 | idempotency_key | text | yes |  | unique |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |

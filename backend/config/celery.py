@@ -17,6 +17,7 @@ app.conf.task_routes = {
     "maintenance.*": {"queue": "maintenance"},
     "licensing.*": {"queue": "maintenance"},
     "integrations.*": {"queue": "integrations"},
+    "email.*": {"queue": "integrations"},
 }
 app.conf.beat_schedule = {
     "health-checks": {"task": "system_health.run_all_checks", "schedule": 300.0},
@@ -26,6 +27,11 @@ app.conf.beat_schedule = {
     "ensure-partitions": {"task": "maintenance.ensure_partitions", "schedule": 86400.0},
     "retention-purge": {"task": "maintenance.purge_retention", "schedule": 86400.0},
     "connector-health": {"task": "integrations.check_connectors", "schedule": 3600.0},
+    "scheduler-dispatch": {"task": "scheduler.dispatch", "schedule": 60.0},
+    "scheduler-recover": {"task": "scheduler.recover", "schedule": 300.0},
+    "email-sync": {"task": "email.sync_all", "schedule": 300.0},
+    "campaigns": {"task": "prospects.process_campaigns", "schedule": 300.0},
 }
-app.autodiscover_tasks(lambda: ["apps.system_health", "apps.notifications", "apps.licensing", "apps.observability",
-                                "apps.integrations"])
+app.autodiscover_tasks(lambda: ["apps.system_health", "apps.notifications", "apps.licensing", "apps.observability", "apps.integrations",
+                                "apps.products", "apps.seo", "apps.geo", "apps.content", "apps.opportunities", "apps.prospects",
+                                "apps.email_center", "apps.scheduler"])

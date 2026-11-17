@@ -53,6 +53,9 @@ jobs:
       SUPABASE_JWT_SECRET: ci-jwt-secret-with-enough-length-0123456789
       REDIS_URL: redis://localhost:6379/0
       PILOT_REQUIRE_MFA: "true"
+      CELERY_TASK_ALWAYS_EAGER: "true"
+      CRAWLER_DELAY_SECONDS: "0"
+      STRIPE_WEBHOOK_SECRET: whsec_ci_only
       PGURL: postgresql://postgres:postgres@localhost:5432/growth_test
       DB_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/growth_test
     defaults: { run: { working-directory: backend } }
@@ -66,6 +69,8 @@ jobs:
       # B608 reviewed: SQL identifiers come from internal whitelists/constants, all values are bound parameters
       - run: bandit -q -r apps config -x tests -s B608
       - run: pip-audit -r requirements/base.txt
+      - name: Generate an ephemeral encryption key (CI only)
+        run: echo "SECRETS_ENCRYPTION_KEY=$(python -c 'from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())')" >> "$GITHUB_ENV"
       - name: Prepare database (Supabase emulation + migrations) and Django migrate
         run: |
           ../infrastructure/scripts/db_local.sh

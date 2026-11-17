@@ -33,7 +33,7 @@ class EmailProviderAccount(models.Model):
     SECRET_FIELDS = ()
 
 
-class EmailMailboxe(models.Model):
+class EmailMailbox(models.Model):
     """email_mailboxes [biz]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
@@ -69,7 +69,7 @@ class EmailMailboxPermission(models.Model):
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
     user_id = models.UUIDField()
     can_read = models.BooleanField(default=True)
     can_send = models.BooleanField(default=False)
@@ -94,7 +94,7 @@ class EmailSyncCursor(models.Model):
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
     cursor = models.TextField(null=True, blank=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)
@@ -118,7 +118,7 @@ class EmailWebhookEvent(models.Model):
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', null=True, blank=True, db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', null=True, blank=True, db_constraint=False)
     provider = models.TextField()
     idempotency_key = models.TextField()
     event_type = models.TextField()
@@ -144,7 +144,7 @@ class EmailConversation(models.Model):
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
     thread_id = models.TextField()
     subject = models.TextField(null=True, blank=True)
     prospect = models.ForeignKey('prospects.Prospect', on_delete=models.DO_NOTHING, db_column='prospect_id', related_name='+', null=True, blank=True, db_constraint=False)
@@ -204,7 +204,7 @@ class EmailMessage(models.Model):
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
     conversation = models.ForeignKey('email_center.EmailConversation', on_delete=models.DO_NOTHING, db_column='conversation_id', related_name='+', db_constraint=False)
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
     message_id_header = models.TextField(help_text='RFC 5322 Message-ID')
     in_reply_to = models.TextField(null=True, blank=True)
     references_header = models.TextField(null=True, blank=True)
@@ -435,7 +435,7 @@ class EmailSyncRun(models.Model):
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', db_constraint=False)
     execution_id = models.UUIDField(null=True, blank=True)
     status = models.TextField(choices=[('running', 'running'), ('succeeded', 'succeeded'), ('failed', 'failed')])
     messages_synced = models.IntegerField(default=0)
@@ -457,7 +457,7 @@ class EmailProviderError(models.Model):
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', null=True, blank=True, db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', null=True, blank=True, db_constraint=False)
     error_code = models.TextField(null=True, blank=True)
     error_message = models.TextField()
     correlation_id = models.UUIDField(null=True, blank=True)

@@ -17,6 +17,13 @@ QUOTA_SOURCES = {  # quota_code → SQL counting current usage for the tenant (%
     "members.max": "SELECT count(*) FROM public.tenant_members WHERE tenant_id = %s AND status IN ('active','invited') AND deleted_at IS NULL",
     "scheduler.configurations": "SELECT count(*) FROM public.tenant_schedulers WHERE tenant_id = %s AND deleted_at IS NULL",
     "connectors.max": "SELECT count(*) FROM public.tenant_connector_accounts WHERE tenant_id = %s AND deleted_at IS NULL AND status <> 'revoked'",
+    "seo.audits.monthly": "SELECT count(*) FROM public.seo_audits WHERE tenant_id = %s AND created_at >= date_trunc('month', now())",
+    "geo.queries.monthly": "SELECT count(*) FROM public.ai_search_runs WHERE tenant_id = %s AND created_at >= date_trunc('month', now())",
+    "content.generations.monthly": "SELECT count(*) FROM public.content_generation_jobs WHERE tenant_id = %s AND created_at >= date_trunc('month', now())",
+    "email.sends.daily": "SELECT count(*) FROM public.email_messages WHERE tenant_id = %s AND direction = 'outbound' AND status NOT IN ('draft','failed') AND created_at >= date_trunc('day', now())",
+    "whatsapp.sends.daily": "SELECT count(*) FROM public.whatsapp_messages WHERE tenant_id = %s AND direction = 'outbound' AND created_at >= date_trunc('day', now())",
+    "prospects.max": "SELECT count(*) FROM public.prospects WHERE tenant_id = %s AND deleted_at IS NULL",
+    "workflows.max": "SELECT count(*) FROM public.growth_workflow_definitions WHERE tenant_id = %s AND deleted_at IS NULL",
 }
 
 

@@ -89,3 +89,25 @@ class PilotOverviewView(GrowthAPIView):
             total=Count("id"), active=Count("id", filter=Q(status="active")),
             suspended=Count("id", filter=Q(status="suspended")), demo=Count("id", filter=Q(is_demo=True)))
         return Response({"tenants": agg})
+
+
+from apps.core.db import fetch_all_dict  # noqa: E402
+
+
+class PilotGlobalView(GrowthAPIView):
+    """PILOTE: users, schedulers, AI costs and errors across tenants (aggregates only — no private business content)."""
+    platform_scoped = True
+
+    def get(self, request):
+        return Response({
+            "users": fetch_all_dict("""SELECT p.id, p.email, p.full_name, p.platform_role_code, p.status, p.last_login_at,
+                                              (SELECT count(*) FROM public.tenant_members m WHERE m.user_id = p.id AND m.deleted_at IS NULL) AS tenants
+                                         FROM public.user_profiles p ORDER BY p.created_at DESC LIMIT 500"""),
+            "schedulers": fetch_all_dict("""SELECT t.name AS tenant, s.category, count(*) AS n, count(*) FILTER (WHERE s.last_status = 'failed') AS failing
+                                              FROM public.tenant_schedulers s JOIN public.tenants t ON t.id = s.tenant_id WHERE s.deleted_at IS NULL GROUP BY 1, 2 ORDER BY 1"""),
+            "ai_costs": fetch_all_dict("""SELECT t.name AS tenant, l.provider_code, l.model_code, count(*) AS calls, sum(l.cost_cents) AS cost_cents
+                                            FROM public.ai_execution_logs l JOIN public.tenants t ON t.id = l.tenant_id
+                                           WHERE l.created_at > now() - interval '30 days' GROUP BY 1, 2, 3 ORDER BY 5 DESC NULLS LAST"""),
+            "approvals_pending": fetch_all_dict("""SELECT t.name AS tenant, a.module_code, a.action_code, count(*) AS n FROM public.approval_requests a
+                                                     JOIN public.tenants t ON t.id = a.tenant_id WHERE a.status = 'pending' GROUP BY 1, 2, 3"""),
+        })

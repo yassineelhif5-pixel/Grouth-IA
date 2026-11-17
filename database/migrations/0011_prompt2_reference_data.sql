@@ -63,7 +63,7 @@ SELECT v.code, split_part(v.code, '.', 1), v.name, 'tenant' FROM (VALUES
   ('video.read', 'Voir les vidéos'), ('video.write', 'Gérer les vidéos'),
   ('opportunities.read', 'Voir les opportunités'), ('opportunities.manage', 'Gérer les opportunités'),
   ('prospects.read', 'Voir les prospects'), ('prospects.write', 'Gérer les prospects'),
-  ('campaigns.manage', 'Gérer les campagnes'),
+  ('campaigns.read', 'Voir les campagnes'), ('campaigns.manage', 'Gérer les campagnes'),
   ('email.read', 'Lire les emails'), ('email.send', 'Envoyer des emails'), ('email.manage', 'Gérer les boîtes mail'),
   ('whatsapp.read', 'Lire WhatsApp'), ('whatsapp.send', 'Envoyer WhatsApp'),
   ('crm.read', 'Voir le CRM'), ('crm.write', 'Modifier le CRM'),
@@ -168,7 +168,7 @@ UPDATE public.connector_providers SET category = 'social', auth_type = 'oauth2' 
 -- ── AI providers (models & prices are configured by the PILOTE — never assumed) ──
 INSERT INTO public.ai_providers (code, name, api_style) VALUES
   ('azure_openai', 'Azure OpenAI', 'azure_openai'), ('cohere', 'Cohere', 'cohere'),
-  ('groq', 'Groq', 'openai'), ('ollama', 'Ollama', 'ollama')
+  ('groq', 'Groq', 'openai'), ('ollama', 'Ollama', 'ollama'), ('perplexity', 'Perplexity', 'openai')
 ON CONFLICT DO NOTHING;
 UPDATE public.ai_providers SET api_style = 'anthropic' WHERE code = 'anthropic' AND api_style <> 'anthropic';
 UPDATE public.ai_providers SET api_style = 'gemini' WHERE code = 'google' AND api_style <> 'gemini';

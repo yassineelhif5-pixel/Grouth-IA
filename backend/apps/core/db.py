@@ -6,8 +6,18 @@ from django.db import connection, connections, transaction
 from .context import ExecutionContext
 
 
-def apply_db_context(ctx: ExecutionContext, using: str = "default") -> None:
-    """Call app.set_context(); requires an open transaction (ATOMIC_REQUESTS / transaction.atomic)."""
+GUCS = ("user_id", "tenant_id", "correlation_id", "request_id", "actor_type", "is_platform", "change_reason")
+
+
+def apply_db_context(ctx: ExecutionContext, using: str = "default", session: bool = False) -> None:
+    """Push the context into PostgreSQL. Transaction-local by default (requests); session-level for
+    long-running Celery tasks that manage their own transactions (cleared by clear_db_context)."""
+    if session:
+        vals = [ctx.user_id or "", ctx.tenant_id or "", ctx.correlation_id or "", ctx.request_id or "", ctx.actor_type,
+                "on" if ctx.is_platform else "", ctx.change_reason or ""]
+        with connections[using].cursor() as cur:
+            cur.execute("SELECT " + ", ".join(f"set_config('app.{g}', %s, false)" for g in GUCS), vals)
+        return
     with connections[using].cursor() as cur:
         cur.execute(
             "SELECT app.set_context(%s::uuid, %s::uuid, %s::uuid, %s::uuid, %s, %s, %s)",
@@ -35,3 +45,8 @@ def write_out_of_band(fn, ctx: ExecutionContext):
     with transaction.atomic(using="logs"):
         apply_db_context(ctx, using="logs")
         return fn("logs")
+
+
+def clear_db_context(using: str = "default") -> None:
+    with connections[using].cursor() as cur:
+        cur.execute("SELECT " + ", ".join(f"set_config('app.{g}', '', false)" for g in GUCS))

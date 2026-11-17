@@ -168,7 +168,7 @@ class AiUsageEvent(models.Model):
     agent = models.ForeignKey('permissions.AiAgentsRegistry', on_delete=models.DO_NOTHING, db_column='agent_id', related_name='+', null=True, blank=True, db_constraint=False)
     input_tokens = models.IntegerField(default=0)
     output_tokens = models.IntegerField(default=0)
-    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, default=0)
+    cost_cents = models.DecimalField(max_digits=24, decimal_places=6, null=True, blank=True, default=NULL)
     idempotency_key = models.TextField(null=True, blank=True)
     correlation_id = models.UUIDField(null=True, blank=True)
     created_at = models.DateTimeField(default=_tz.now)

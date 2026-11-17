@@ -35,3 +35,26 @@ class PilotUsageView(GrowthAPIView):
                     WHERE t.deleted_at IS NULL GROUP BY t.id ORDER BY cost_cents DESC LIMIT 200"""),
             "ai_cost_30d": fetch_one("SELECT coalesce(sum(cost_cents), 0) FROM public.ai_usage_events WHERE created_at > now() - interval '30 days'")[0],
         })
+
+
+from django.http import HttpResponse  # noqa: E402
+
+from .global_report import build_export, dashboard  # noqa: E402
+
+
+class GlobalDashboardView(GrowthAPIView):
+    permission_map = {"GET": "reporting.read"}
+
+    def get(self, request):
+        return Response(dashboard(int(request.query_params.get("days", 30))))
+
+
+class ExportView(GrowthAPIView):
+    permission_map = {"GET": "reporting.export"}
+
+    def get(self, request, fmt):
+        res = build_export(fmt if fmt in ("pdf", "xlsx", "csv") else "pdf", int(request.query_params.get("days", 30)))
+        resp = HttpResponse(res["_data"], content_type=res["_ctype"])
+        resp["Content-Disposition"] = f'attachment; filename="growth-ia-report.{fmt}"'
+        resp["X-Export-Job"] = res["export_job_id"]
+        return resp

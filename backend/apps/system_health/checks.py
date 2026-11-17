@@ -149,3 +149,84 @@ REGISTRY = {
     "auth.health": supabase_auth, "storage.buckets": supabase_storage, "redis.ping": redis_check,
     "celery.ping": celery_workers, "celery.beat": celery_beat, "config.env": config_env, "api.self": api_self,
 }
+
+
+# ───────────── PROMPT 2: connector & automation probes ─────────────
+# Connector checks aggregate the results of REAL provider tests (POST /connector-accounts/{id}/test, sends, syncs, webhooks).
+# A connector without any real test is never reported healthy.
+def _connector_summary(categories: tuple[str, ...] | None = None, providers: tuple[str, ...] | None = None) -> CheckResult:
+    rows, ms = _timed(lambda: _q("""SELECT a.status, count(*), max(a.last_test_at) FROM public.tenant_connector_accounts a
+                                    JOIN public.connector_providers p ON p.id = a.provider_id
+                                    WHERE a.deleted_at IS NULL AND (%s::text[] IS NULL OR p.category = ANY(%s::text[]))
+                                      AND (%s::text[] IS NULL OR p.code = ANY(%s::text[])) GROUP BY a.status""",
+                                 [list(categories) if categories else None, list(categories) if categories else None,
+                                  list(providers) if providers else None, list(providers) if providers else None]))
+    counts = {r[0]: r[1] for r in rows}
+    if not counts:
+        return CheckResult("not_configured", ms, details={"accounts": 0})
+    bad = sum(counts.get(s, 0) for s in ("failed", "expired", "error"))
+    good = sum(counts.get(s, 0) for s in ("tested", "connected"))
+    status = "down" if bad and not good else "degraded" if bad or not good else "healthy"
+    return CheckResult(status, ms, None if status == "healthy" else f"{bad} failing / {good} tested", 
+                       None if status == "healthy" else "Run a connection test from Connectors and fix failing accounts", {"by_status": counts})
+
+
+def ai_providers() -> CheckResult:
+    rows = _q("""SELECT p.code, (c.api_key_ciphertext IS NOT NULL) FROM public.ai_providers p JOIN public.ai_provider_configurations c
+                 ON c.provider_id = p.id AND c.is_enabled AND c.deleted_at IS NULL""")
+    if not rows:
+        return CheckResult("not_configured", error="no AI provider configured", recommendation="PILOTE → Fournisseurs IA")
+    stats = _q("""SELECT count(*) FILTER (WHERE status = 'succeeded'), count(*) FILTER (WHERE status <> 'succeeded')
+                  FROM public.ai_execution_logs WHERE created_at > now() - interval '24 hours'""")[0]
+    if stats[0] == 0 and stats[1] == 0:
+        return CheckResult("unknown", details={"providers": [r[0] for r in rows]}, recommendation="Run 'Tester' from the AI providers page")
+    return CheckResult("healthy" if stats[1] == 0 else "degraded" if stats[0] else "down", details={"ok_24h": stats[0], "errors_24h": stats[1]})
+
+
+def email_send() -> CheckResult:
+    s = _q("""SELECT count(*) FILTER (WHERE status IN ('sent','accepted','delivered')), count(*) FILTER (WHERE status = 'failed')
+              FROM public.email_messages WHERE direction = 'outbound' AND created_at > now() - interval '24 hours'""")[0]
+    base = _connector_summary(categories=("email",))
+    if base.status == "not_configured":
+        return base
+    base.details |= {"sent_24h": s[0], "failed_24h": s[1]}
+    if s[1] and not s[0]:
+        base.status, base.error = "down", f"{s[1]} failed sends in 24h"
+    return base
+
+
+def email_receive() -> CheckResult:
+    boxes = _q("""SELECT receive_mode, count(*), max(last_sync_at), count(*) FILTER (WHERE sync_error IS NOT NULL) FROM public.email_mailboxes
+                  WHERE deleted_at IS NULL AND receive_mode <> 'none' GROUP BY receive_mode""")
+    if not boxes:
+        return CheckResult("not_configured", error="no receiving mailbox", recommendation="Configure a webhook, Gmail, Graph or IMAP mailbox")
+    errors = sum(b[3] for b in boxes)
+    inbound = _q("SELECT count(*) FROM public.email_messages WHERE direction = 'inbound' AND created_at > now() - interval '7 days'")[0][0]
+    return CheckResult("degraded" if errors else "healthy" if inbound else "unknown", details={"modes": {b[0]: b[1] for b in boxes}, "sync_errors": errors,
+                       "inbound_7d": inbound}, recommendation=None if inbound else "No inbound message received yet: send a test reply")
+
+
+def webhooks_recent() -> CheckResult:
+    r = _q("""SELECT count(*) FILTER (WHERE signature_valid), count(*) FILTER (WHERE signature_valid IS FALSE) FROM (
+                SELECT signature_valid FROM public.email_webhook_events WHERE created_at > now() - interval '24 hours'
+                UNION ALL SELECT signature_valid FROM public.whatsapp_webhook_events WHERE created_at > now() - interval '24 hours') x""")[0]
+    if not r[0] and not r[1]:
+        return CheckResult("unknown", details={"events_24h": 0})
+    return CheckResult("degraded" if r[1] else "healthy", details={"valid_24h": r[0], "invalid_signature_24h": r[1]},
+                       recommendation="Invalid signatures: check webhook secrets" if r[1] else None)
+
+
+def scheduler_lag() -> CheckResult:
+    late = _q("SELECT count(*) FROM public.tenant_schedulers WHERE status = 'active' AND deleted_at IS NULL AND next_run_at < now() - interval '10 minutes'")[0][0]
+    stuck = _q("SELECT count(*) FROM public.scheduler_execution_runs WHERE status = 'running' AND started_at < now() - interval '1 hour'")[0][0]
+    return CheckResult("degraded" if late or stuck else "healthy", details={"late": late, "stuck_running": stuck},
+                       recommendation="Check Celery beat/worker" if late or stuck else None)
+
+
+REGISTRY.update({
+    "ai.providers": ai_providers, "email.send": email_send, "email.receive": email_receive, "webhooks.recent": webhooks_recent,
+    "whatsapp.accounts": lambda: _connector_summary(providers=("whatsapp_cloud",)),
+    "cms.wordpress": lambda: _connector_summary(categories=("cms",)),
+    "social.accounts": lambda: _connector_summary(categories=("social",)),
+    "scheduler.lag": scheduler_lag, "connectors.status": lambda: _connector_summary(),
+})

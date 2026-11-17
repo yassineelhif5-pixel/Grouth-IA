@@ -245,7 +245,7 @@ class ProspectCampaign(models.Model):
     segment = models.ForeignKey('prospects.ProspectSegment', on_delete=models.DO_NOTHING, db_column='segment_id', related_name='+', null=True, blank=True, db_constraint=False)
     name = models.TextField()
     status = models.TextField(default='draft', choices=[('draft', 'draft'), ('scheduled', 'scheduled'), ('running', 'running'), ('paused', 'paused'), ('completed', 'completed'), ('archived', 'archived')])
-    mailbox = models.ForeignKey('email_center.EmailMailboxe', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', null=True, blank=True, db_constraint=False)
+    mailbox = models.ForeignKey('email_center.EmailMailbox', on_delete=models.DO_NOTHING, db_column='mailbox_id', related_name='+', null=True, blank=True, db_constraint=False)
     created_at = models.DateTimeField(default=_tz.now)
     updated_at = models.DateTimeField(default=_tz.now)
     created_by = models.UUIDField(null=True, blank=True)

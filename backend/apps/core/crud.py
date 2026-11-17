@@ -70,3 +70,24 @@ class AuditedTenantViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mix
         obj = self.model.objects.select_for_update().get(pk=pk, tenant_id=request.tenant.tenant_id)
         audited_restore(obj, action=f"{self._entity()}.restored", module=self.module, reason=request.data.get("reason", "restore"))
         return Response(self.get_serializer(obj).data)
+
+
+def crud(model_cls, *, module: str, perm: str, write: str = "write", required_module: str | None = None,
+         filters: list[str] | None = None, search: list[str] | None = None, quota: str | None = None, ordering: list[str] | None = None):
+    """Factory for audited tenant CRUD viewsets (history, audit, activity, soft delete, quotas, permissions)."""
+    attrs = {"model": model_cls, "module": module, "perm_prefix": perm, "write_suffix": write, "required_module": required_module or module,
+             "serializer_class": tenant_serializer(model_cls), "filterset_fields": filters or [], "search_fields": search or [],
+             "quota_code": quota, "ordering": ordering or ["-created_at"]}
+    return type(f"{model_cls.__name__}ViewSet", (AuditedTenantViewSet,), attrs)
+
+
+def read_only(model_cls, *, perm: str, required_module: str, filters: list[str] | None = None, ordering: list[str] | None = None):
+    from rest_framework import mixins as m
+
+    def get_queryset(self):
+        return self.model.objects.filter(tenant_id=self.request.tenant.tenant_id).order_by(*self.ordering)
+
+    attrs = {"model": model_cls, "permission_map": {"GET": f"{perm}.read"}, "required_module": required_module,
+             "serializer_class": tenant_serializer(model_cls), "filterset_fields": filters or [], "ordering": ordering or ["-created_at"],
+             "get_queryset": get_queryset}
+    return type(f"{model_cls.__name__}ReadViewSet", (m.ListModelMixin, m.RetrieveModelMixin, GrowthViewSet), attrs)
