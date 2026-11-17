@@ -47,7 +47,7 @@ Un seul projet Vercel sert le site (fichiers statiques `frontend/dist`) et l'API
 |---|---|
 | `vercel.json` | build du frontend, fonction Python (`maxDuration` 60 s), réécritures `/api/*` et SPA |
 | `api/index.py` | point d'entrée WSGI (charge `backend/config`) |
-| `requirements.txt` | dépendances de la fonction (`-r backend/requirements/base.txt`) |
+| `requirements.txt` | dépendances de la fonction (copie de `backend/requirements/base.txt`, vérifiée en CI) |
 | `.vercelignore` | exclut secrets (`.env*`, `.vercel-token`), environnements locaux, tests, docs |
 | `infrastructure/vercel/vercel-env.ps1` | crée le projet si besoin et pousse les variables de `.env.vercel` (API Vercel, upsert, chiffrées, production + preview) |
 | `infrastructure/vercel/vercel-deploy.ps1` | `vercel link` puis `vercel deploy --prod` via `npx` (sortie de la CLI fusionnée par `cmd`, compatible Windows PowerShell 5) |

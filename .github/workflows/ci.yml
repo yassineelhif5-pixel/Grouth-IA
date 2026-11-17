@@ -64,6 +64,8 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip, cache-dependency-path: backend/requirements/*.txt }
       - run: pip install -r requirements/dev.txt
+      - name: Vercel requirements.txt matches requirements/base.txt
+        run: diff <(grep -v '^#' ../requirements.txt) <(grep -v '^#' requirements/base.txt)
       - run: ruff check .
       - run: mypy apps config || true   # informational until django-stubs coverage is complete
       # B608 reviewed: SQL identifiers come from internal whitelists/constants, all values are bound parameters
