@@ -1,7 +1,7 @@
 import { Alert, Badge, Button, Card, Code, CopyButton, Group, Modal, NumberInput, Progress, Select, SimpleGrid, Stack, Table, Text, TextInput } from "@mantine/core";
 import { IconCheck, IconCopy, IconUserPlus } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { PageHeader } from "@/components/PageHeader";
 import { useTenant } from "@/hooks/useMe";
@@ -142,11 +142,11 @@ export function UsersPage() {
 export function PilotLicenseAllocations({ tenantId }: { tenantId: string }) {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["licenses", tenantId, true], queryFn: () => api<Allocation[]>(`/pilot/tenants/${tenantId}/licenses`) });
-  const [draft, setDraft] = useState<Record<string, number>>({});
-  useEffect(() => { if (q.data) setDraft(Object.fromEntries(q.data.map((a) => [a.code, a.quantity]))); }, [q.data]);
+  const [edits, setEdits] = useState<Record<string, number>>({});
+  const draft = { ...Object.fromEntries((q.data ?? []).map((a) => [a.code, a.quantity])), ...edits };
   const save = useMutation({
     mutationFn: () => api<Allocation[]>(`/pilot/tenants/${tenantId}/licenses`, { method: "PUT", body: { quantities: draft, reason: "PILOTE" } }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["licenses", tenantId, true] }),
+    onSuccess: () => { setEdits({}); void qc.invalidateQueries({ queryKey: ["licenses", tenantId, true] }); },
   });
   return (
     <Card>
@@ -161,7 +161,7 @@ export function PilotLicenseAllocations({ tenantId }: { tenantId: string }) {
               <Table.Td><Text size="sm" fw={500}>{a.name}</Text></Table.Td>
               <Table.Td><Text size="xs" c="dimmed">{a.modules.includes("*") ? "Tous" : a.modules.join(", ")}</Text></Table.Td>
               <Table.Td className="gi-num">{a.used}</Table.Td>
-              <Table.Td><NumberInput size="xs" min={a.used} value={draft[a.code] ?? 0} onChange={(v) => setDraft((d) => ({ ...d, [a.code]: Number(v) || 0 }))} aria-label={`Quantité ${a.name}`} /></Table.Td>
+              <Table.Td><NumberInput size="xs" min={a.used} value={draft[a.code] ?? 0} onChange={(v) => setEdits((d) => ({ ...d, [a.code]: Number(v) || 0 }))} aria-label={`Quantité ${a.name}`} /></Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>

@@ -379,6 +379,9 @@ function ChecksTable({ checks }: { checks: Check[] }) {
 }
 
 interface Choice { selected: boolean; frequency: string; times: number }
+const defaultChoice = (rec: Recommendation): Choice => ({
+  selected: rec.status === "proposed" && (rec.priority === "critical" || rec.priority === "high"), frequency: rec.frequency ?? "once", times: rec.times_per_period ?? 1,
+});
 
 export function AuditResultPage() {
   const { tenantId, can } = useTenant();
@@ -390,20 +393,12 @@ export function AuditResultPage() {
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const q = useQuery({ queryKey: ["v-report", auditId], queryFn: () => api<Report>(`/visibility/audits/${auditId}/report`, { tenantId }) });
   const r = q.data;
-  useEffect(() => {
-    if (!r) return;
-    setChoices((prev) => {
-      const next = { ...prev };
-      for (const rec of r.recommendations) {
-        if (!next[rec.id]) next[rec.id] = { selected: rec.status === "proposed" && (rec.priority === "critical" || rec.priority === "high"), frequency: rec.frequency ?? "once", times: rec.times_per_period ?? 1 };
-      }
-      return next;
-    });
-  }, [r]);
+  const picked = useMemo(() => (r?.recommendations ?? []).map((rec) => ({ rec, c: choices[rec.id] ?? defaultChoice(rec) }))
+    .filter(({ rec, c }) => c.selected && rec.status === "proposed"), [choices, r]);
   const validate = useMutation({
     mutationFn: () => api<{ applied: { status: string }[]; errors: { message: string }[] }>("/visibility/recommendations/accept-bulk", {
       method: "POST", tenantId,
-      body: { scheduler_kind: kind, autonomy, items: Object.entries(choices).filter(([id, c]) => c.selected && r?.recommendations.find((x) => x.id === id)?.status === "proposed").map(([id, c]) => ({ id, frequency: c.frequency, times_per_period: c.times })) },
+      body: { scheduler_kind: kind, autonomy, items: picked.map(({ rec, c }) => ({ id: rec.id, frequency: c.frequency, times_per_period: c.times })) },
     }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["v-report", auditId] }),
   });
@@ -414,7 +409,7 @@ export function AuditResultPage() {
     a.href = url; a.download = asset.filename; a.click();
     URL.revokeObjectURL(url);
   };
-  const selectedCount = useMemo(() => Object.entries(choices).filter(([id, c]) => c.selected && r?.recommendations.find((x) => x.id === id)?.status === "proposed").length, [choices, r]);
+  const selectedCount = picked.length;
   if (q.isLoading || !r) return <Loader />;
   const a = r.audit;
   const sum = a.ai_summary as Summary;
@@ -466,7 +461,7 @@ export function AuditResultPage() {
                 <Table.Thead><Table.Tr><Table.Th w={36} /><Table.Th>Action</Table.Th><Table.Th>Priorité</Table.Th><Table.Th>Application</Table.Th><Table.Th w={260}>Fréquence</Table.Th><Table.Th>État</Table.Th></Table.Tr></Table.Thead>
                 <Table.Tbody>
                   {r.recommendations.map((rec) => {
-                    const c = choices[rec.id] ?? { selected: false, frequency: "once", times: 1 };
+                    const c = choices[rec.id] ?? defaultChoice(rec);
                     const editable = rec.status === "proposed";
                     const set = (patch: Partial<Choice>) => setChoices((p) => ({ ...p, [rec.id]: { ...c, ...patch } }));
                     return (

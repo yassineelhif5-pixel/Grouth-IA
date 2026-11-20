@@ -12,12 +12,21 @@ import re
 import secrets
 from collections import Counter
 from datetime import UTC, datetime
+from html import escape as _html_escape
 from urllib import robotparser
 from urllib.parse import urljoin, urlparse
-from xml.sax.saxutils import escape
 
 import requests
 from bs4 import BeautifulSoup
+
+
+def escape(text: str, entities: dict[str, str] | None = None) -> str:
+    """XML/HTML text escaping (&, <, >, plus optional extra entities) for generated files — no XML is ever parsed here."""
+    out = _html_escape(str(text), quote=False)
+    for k, v in (entities or {}).items():
+        out = out.replace(k, v)
+    return out
+
 
 AI_CRAWLERS = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-Web", "PerplexityBot", "Google-Extended",
                "Applebot-Extended", "Bingbot", "Googlebot", "CCBot"]
