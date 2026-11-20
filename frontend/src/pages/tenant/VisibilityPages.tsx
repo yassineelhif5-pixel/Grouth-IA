@@ -693,7 +693,7 @@ export function AiVisibilityPage() {
       <Card>
         <Group justify="space-between" mb="sm">
           <Text fw={600}>Bibliothèque de questions</Text>
-          {can("geo.manage") && plist[0] && <Button size="xs" variant="light" color="aurora" leftSection={<IconRobot size={14} />} loading={seed.isPending} onClick={() => seed.mutate(plist[0].id)}>Générer les questions du secteur</Button>}
+          {can("geo.manage") && plist[0] && <Button size="xs" variant="light" color="aurora" leftSection={<IconRobot size={14} />} loading={seed.isPending} onClick={() => { if (plist[0]) seed.mutate(plist[0].id); }}>Générer les questions du secteur</Button>}
         </Group>
         {can("geo.manage") && (
           <Group mb="md" wrap="nowrap"><TextInput flex={1} placeholder="Ex. Quel est le meilleur CRM pour une PME ?" value={question} onChange={(e) => setQuestion(e.currentTarget.value)} />
