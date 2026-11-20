@@ -411,3 +411,76 @@ class TenantTrialExtension(models.Model):
 
     TRACE_KIND = 'log'
     SECRET_FIELDS = ()
+
+
+class LicenseType(models.Model):
+    """Types de licence utilisateur (Complète, Marketing, Commerciale, Lecture). [ref]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    code = models.TextField()
+    name = models.TextField()
+    description = models.TextField(null=True, blank=True)
+    modules = models.JSONField(default=list, help_text='module codes granted; ["*"] = every module of the tenant\'s plan')
+    sort_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+
+    class Meta:
+        managed = False
+        db_table = 'license_types'
+
+    TRACE_KIND = 'ref'
+    SECRET_FIELDS = ()
+
+
+class TenantLicenseAllocation(models.Model):
+    """Licences disponibles pour un tenant, par type (déclarées par le PILOTE). [conf]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    license_type = models.ForeignKey('licensing.LicenseType', on_delete=models.DO_NOTHING, db_column='license_type_id', related_name='+', db_constraint=False)
+    quantity = models.IntegerField(default=0, help_text='number of seats of this type the tenant may assign (set by the PILOTE)')
+    note = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'tenant_license_allocations'
+
+    TRACE_KIND = 'conf'
+    SECRET_FIELDS = ()
+
+
+class MemberLicenseAssignment(models.Model):
+    """Licence attribuée à un membre (une par membre, historisée). [biz]"""
+
+    id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.DO_NOTHING, db_column='tenant_id', related_name='+', db_constraint=False)
+    member = models.ForeignKey('memberships.TenantMember', on_delete=models.DO_NOTHING, db_column='member_id', related_name='+', db_constraint=False)
+    license_type = models.ForeignKey('licensing.LicenseType', on_delete=models.DO_NOTHING, db_column='license_type_id', related_name='+', db_constraint=False)
+    status = models.TextField(default='active', choices=[('active', 'active'), ('revoked', 'revoked')])
+    assigned_by = models.UUIDField(null=True, blank=True)
+    assigned_at = models.DateTimeField(default=_tz.now)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    reason = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(default=_tz.now)
+    updated_at = models.DateTimeField(default=_tz.now)
+    created_by = models.UUIDField(null=True, blank=True)
+    updated_by = models.UUIDField(null=True, blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    version_number = models.IntegerField(default=1)
+    correlation_id = models.UUIDField(null=True, blank=True)
+
+    class Meta:
+        managed = False
+        db_table = 'member_license_assignments'
+
+    TRACE_KIND = 'biz'
+    SECRET_FIELDS = ()

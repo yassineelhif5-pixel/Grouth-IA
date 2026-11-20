@@ -43,6 +43,9 @@ erDiagram
     tenant_license_quotas { uuid id }
     subscription_usage { uuid id }
     subscription_usage_alerts { uuid id }
+    license_types { uuid id }
+    license_types ||--o{ member_license_assignments : license_type_id
+    license_types ||--o{ tenant_license_allocations : license_type_id
     platform_module_features ||--o{ subscription_plan_features : feature_id
     platform_module_features ||--o{ tenant_license_feature_access : feature_id
     subscription_invoices ||--o{ subscription_payments : invoice_id
@@ -54,6 +57,7 @@ erDiagram
     subscription_plans ||--o{ tenant_subscriptions : plan_id
     subscription_plans ||--o{ trial_activations : plan_id
     subscription_plans ||--o{ trial_conversion_events : to_plan_id
+    tenant_members ||--o{ member_license_assignments : member_id
     tenant_subscriptions ||--o{ subscription_invoices : subscription_id
     tenant_subscriptions ||--o{ tenant_license_overrides : subscription_id
     tenant_subscriptions ||--o{ tenant_subscription_history : subscription_id
@@ -153,6 +157,7 @@ erDiagram
     tenant_roles ||--o{ scheduler_approval_policies : approver_role_id
     tenant_schedulers ||--o{ scheduler_execution_runs : scheduler_id
     tenant_schedulers ||--o{ scheduler_tasks : scheduler_id
+    visibility_profiles ||--o{ tenant_schedulers : visibility_profile_id
 ```
 
 ## P. Reporting
@@ -512,5 +517,19 @@ erDiagram
     whatsapp_accounts ||--o{ whatsapp_webhook_events : account_id
     whatsapp_contacts ||--o{ whatsapp_conversations : contact_id
     whatsapp_conversations ||--o{ whatsapp_messages : conversation_id
+```
+
+## V. Visibilité
+
+```mermaid
+erDiagram
+    products ||--o{ visibility_profiles : product_id
+    visibility_audits ||--o{ tenant_roadmap_items : audit_id
+    visibility_audits ||--o{ visibility_generated_assets : audit_id
+    visibility_audits ||--o{ visibility_recommendations : audit_id
+    visibility_profiles ||--o{ ai_visibility_questions : profile_id
+    visibility_profiles ||--o{ visibility_audits : profile_id
+    visibility_profiles ||--o{ visibility_recommendations : profile_id
+    visibility_recommendations ||--o{ visibility_generated_assets : recommendation_id
 ```
 

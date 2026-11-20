@@ -19,6 +19,7 @@ import spec_platform  # noqa: E402,F401
 import spec_core  # noqa: E402,F401
 import spec_modules  # noqa: E402,F401
 import spec_v2  # noqa: E402,F401
+import spec_v3  # noqa: E402,F401
 
 T = {t.name: t for t in REGISTRY}
 assert len(T) == len(REGISTRY), "duplicate table names"

@@ -27,6 +27,7 @@ api_v1 = [
     path("", include("apps.prospects.urls")),
     path("", include("apps.email_center.urls")),
     path("", include("apps.whatsapp.urls")),
+    path("", include("apps.visibility.urls")),
     path("", include("apps.intelligence.urls")),
     path("", include("apps.thor.urls")),
     path("health/", include("apps.core.urls_health")),

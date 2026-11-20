@@ -556,6 +556,7 @@ CREATE TABLE IF NOT EXISTS public.tenant_invitations (
   deleted_at timestamptz,
   version_number integer NOT NULL DEFAULT 1,
   correlation_id uuid,
+  license_type_code text,
   CONSTRAINT tenant_invitations_tenant_id_id_key UNIQUE (tenant_id, id)
 );
 ALTER TABLE public.tenant_invitations ADD COLUMN IF NOT EXISTS tenant_id uuid,
@@ -574,7 +575,8 @@ ALTER TABLE public.tenant_invitations ADD COLUMN IF NOT EXISTS tenant_id uuid,
   ADD COLUMN IF NOT EXISTS updated_by uuid,
   ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
   ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
-  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS license_type_code text;
 
 CREATE TABLE IF NOT EXISTS public.invitation_tokens (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2314,6 +2316,9 @@ CREATE TABLE IF NOT EXISTS public.tenant_schedulers (
   next_run_at timestamptz,
   last_run_at timestamptz,
   last_status text,
+  scheduler_kind text NOT NULL DEFAULT 'standard' CHECK (scheduler_kind IN ('standard', 'intelligent')),
+  visibility_profile_id uuid,
+  recommendation_ids jsonb DEFAULT '[]',
   CONSTRAINT tenant_schedulers_tenant_id_id_key UNIQUE (tenant_id, id)
 );
 ALTER TABLE public.tenant_schedulers ADD COLUMN IF NOT EXISTS tenant_id uuid,
@@ -2339,7 +2344,10 @@ ALTER TABLE public.tenant_schedulers ADD COLUMN IF NOT EXISTS tenant_id uuid,
   ADD COLUMN IF NOT EXISTS quota_limit integer,
   ADD COLUMN IF NOT EXISTS next_run_at timestamptz,
   ADD COLUMN IF NOT EXISTS last_run_at timestamptz,
-  ADD COLUMN IF NOT EXISTS last_status text;
+  ADD COLUMN IF NOT EXISTS last_status text,
+  ADD COLUMN IF NOT EXISTS scheduler_kind text DEFAULT 'standard' NOT NULL CHECK (scheduler_kind IN ('standard', 'intelligent')),
+  ADD COLUMN IF NOT EXISTS visibility_profile_id uuid,
+  ADD COLUMN IF NOT EXISTS recommendation_ids jsonb DEFAULT '[]';
 
 CREATE TABLE IF NOT EXISTS public.scheduler_retry_policies (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -8384,6 +8392,332 @@ ALTER TABLE public.whatsapp_webhook_events ADD COLUMN IF NOT EXISTS tenant_id uu
   ADD COLUMN IF NOT EXISTS correlation_id uuid,
   ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL;
 
+CREATE TABLE IF NOT EXISTS public.license_types (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL,
+  name text NOT NULL,
+  description text,
+  modules jsonb NOT NULL DEFAULT '[]',
+  sort_order integer NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.license_types ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS description text,
+  ADD COLUMN IF NOT EXISTS modules jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.tenant_license_allocations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  license_type_id uuid NOT NULL,
+  quantity integer NOT NULL DEFAULT 0,
+  note text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT tenant_license_allocations_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.tenant_license_allocations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS license_type_id uuid,
+  ADD COLUMN IF NOT EXISTS quantity integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS note text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.member_license_assignments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  member_id uuid NOT NULL,
+  license_type_id uuid NOT NULL,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
+  assigned_by uuid,
+  assigned_at timestamptz NOT NULL DEFAULT now(),
+  revoked_at timestamptz,
+  reason text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT member_license_assignments_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.member_license_assignments ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS member_id uuid,
+  ADD COLUMN IF NOT EXISTS license_type_id uuid,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'active' NOT NULL CHECK (status IN ('active', 'revoked')),
+  ADD COLUMN IF NOT EXISTS assigned_by uuid,
+  ADD COLUMN IF NOT EXISTS assigned_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS revoked_at timestamptz,
+  ADD COLUMN IF NOT EXISTS reason text,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.visibility_profiles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  product_id uuid,
+  name text NOT NULL,
+  site_urls jsonb NOT NULL DEFAULT '[]',
+  sector text,
+  audience text,
+  offer text,
+  languages jsonb NOT NULL DEFAULT '[]',
+  countries jsonb NOT NULL DEFAULT '[]',
+  competitors jsonb NOT NULL DEFAULT '[]',
+  goals jsonb NOT NULL DEFAULT '[]',
+  answers jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT visibility_profiles_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.visibility_profiles ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS product_id uuid,
+  ADD COLUMN IF NOT EXISTS name text,
+  ADD COLUMN IF NOT EXISTS site_urls jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS sector text,
+  ADD COLUMN IF NOT EXISTS audience text,
+  ADD COLUMN IF NOT EXISTS offer text,
+  ADD COLUMN IF NOT EXISTS languages jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS countries jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS competitors jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS goals jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS answers jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.visibility_audits (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  profile_id uuid,
+  audit_type text NOT NULL DEFAULT 'site' CHECK (audit_type IN ('site', 'tenant_full')),
+  scope jsonb NOT NULL DEFAULT '[]',
+  status text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'succeeded', 'failed')),
+  progress integer NOT NULL DEFAULT 0,
+  step text,
+  site_findings jsonb NOT NULL DEFAULT '{}',
+  competitor_findings jsonb NOT NULL DEFAULT '{}',
+  ai_summary jsonb NOT NULL DEFAULT '{}',
+  score integer,
+  error text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  execution_id uuid,
+  correlation_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT visibility_audits_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.visibility_audits ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS profile_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_type text DEFAULT 'site' NOT NULL CHECK (audit_type IN ('site', 'tenant_full')),
+  ADD COLUMN IF NOT EXISTS scope jsonb DEFAULT '[]' NOT NULL,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'queued' NOT NULL CHECK (status IN ('queued', 'running', 'succeeded', 'failed')),
+  ADD COLUMN IF NOT EXISTS progress integer DEFAULT 0 NOT NULL,
+  ADD COLUMN IF NOT EXISTS step text,
+  ADD COLUMN IF NOT EXISTS site_findings jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS competitor_findings jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS ai_summary jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS score integer,
+  ADD COLUMN IF NOT EXISTS error text,
+  ADD COLUMN IF NOT EXISTS started_at timestamptz,
+  ADD COLUMN IF NOT EXISTS finished_at timestamptz,
+  ADD COLUMN IF NOT EXISTS execution_id uuid,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.visibility_recommendations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  audit_id uuid,
+  profile_id uuid,
+  category text NOT NULL CHECK (category IN ('technical', 'keywords', 'content', 'geo', 'backlinks', 'social', 'prospect')),
+  code text NOT NULL,
+  title text NOT NULL,
+  detail text,
+  priority text NOT NULL DEFAULT 'medium' CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+  impact text,
+  effort text,
+  evidence jsonb NOT NULL DEFAULT '{}',
+  apply_mode text NOT NULL DEFAULT 'manual' CHECK (apply_mode IN ('auto_connector', 'generated_file', 'ai_content', 'manual')),
+  channel text,
+  status text NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed', 'accepted', 'rejected', 'applied', 'failed', 'scheduled')),
+  frequency text,
+  times_per_period integer,
+  applied_result jsonb NOT NULL DEFAULT '{}',
+  applied_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT visibility_recommendations_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.visibility_recommendations ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS profile_id uuid,
+  ADD COLUMN IF NOT EXISTS category text CHECK (category IN ('technical', 'keywords', 'content', 'geo', 'backlinks', 'social', 'prospect')),
+  ADD COLUMN IF NOT EXISTS code text,
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS detail text,
+  ADD COLUMN IF NOT EXISTS priority text DEFAULT 'medium' NOT NULL CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+  ADD COLUMN IF NOT EXISTS impact text,
+  ADD COLUMN IF NOT EXISTS effort text,
+  ADD COLUMN IF NOT EXISTS evidence jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS apply_mode text DEFAULT 'manual' NOT NULL CHECK (apply_mode IN ('auto_connector', 'generated_file', 'ai_content', 'manual')),
+  ADD COLUMN IF NOT EXISTS channel text,
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'proposed' NOT NULL CHECK (status IN ('proposed', 'accepted', 'rejected', 'applied', 'failed', 'scheduled')),
+  ADD COLUMN IF NOT EXISTS frequency text,
+  ADD COLUMN IF NOT EXISTS times_per_period integer,
+  ADD COLUMN IF NOT EXISTS applied_result jsonb DEFAULT '{}' NOT NULL,
+  ADD COLUMN IF NOT EXISTS applied_at timestamptz,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.visibility_generated_assets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  audit_id uuid,
+  recommendation_id uuid,
+  asset_type text NOT NULL CHECK (asset_type IN ('robots_txt', 'sitemap_xml', 'sitemap_images_xml', 'sitemap_news_xml', 'json_ld', 'open_graph', 'hreflang', 'canonical', 'page_404', 'redirects', 'llms_txt', 'article', 'faq', 'linkedin_post')),
+  filename text,
+  content text NOT NULL,
+  content_type text NOT NULL DEFAULT 'text/plain',
+  version_number integer NOT NULL DEFAULT 1,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  correlation_id uuid,
+  CONSTRAINT visibility_generated_assets_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.visibility_generated_assets ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS recommendation_id uuid,
+  ADD COLUMN IF NOT EXISTS asset_type text CHECK (asset_type IN ('robots_txt', 'sitemap_xml', 'sitemap_images_xml', 'sitemap_news_xml', 'json_ld', 'open_graph', 'hreflang', 'canonical', 'page_404', 'redirects', 'llms_txt', 'article', 'faq', 'linkedin_post')),
+  ADD COLUMN IF NOT EXISTS filename text,
+  ADD COLUMN IF NOT EXISTS content text,
+  ADD COLUMN IF NOT EXISTS content_type text DEFAULT 'text/plain' NOT NULL,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.tenant_roadmap_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  audit_id uuid,
+  phase text NOT NULL DEFAULT 'now' CHECK (phase IN ('now', 'next', 'later')),
+  area text NOT NULL CHECK (area IN ('seo', 'geo', 'ai_search', 'content', 'publishing', 'measurement', 'technical')),
+  title text NOT NULL,
+  detail text,
+  priority text NOT NULL DEFAULT 'medium' CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+  status text NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'done', 'dropped')),
+  kpi text,
+  due_date date,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT tenant_roadmap_items_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.tenant_roadmap_items ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS audit_id uuid,
+  ADD COLUMN IF NOT EXISTS phase text DEFAULT 'now' NOT NULL CHECK (phase IN ('now', 'next', 'later')),
+  ADD COLUMN IF NOT EXISTS area text CHECK (area IN ('seo', 'geo', 'ai_search', 'content', 'publishing', 'measurement', 'technical')),
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS detail text,
+  ADD COLUMN IF NOT EXISTS priority text DEFAULT 'medium' NOT NULL CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'todo' NOT NULL CHECK (status IN ('todo', 'in_progress', 'done', 'dropped')),
+  ADD COLUMN IF NOT EXISTS kpi text,
+  ADD COLUMN IF NOT EXISTS due_date date,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
+CREATE TABLE IF NOT EXISTS public.ai_visibility_questions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id uuid NOT NULL,
+  profile_id uuid,
+  question text NOT NULL,
+  intent text CHECK (intent IN ('discovery', 'comparison', 'alternative', 'problem', 'brand')),
+  language text DEFAULT 'fr',
+  source text NOT NULL DEFAULT 'library' CHECK (source IN ('library', 'user', 'ai_suggested')),
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  created_by uuid,
+  updated_by uuid,
+  deleted_at timestamptz,
+  version_number integer NOT NULL DEFAULT 1,
+  correlation_id uuid,
+  CONSTRAINT ai_visibility_questions_tenant_id_id_key UNIQUE (tenant_id, id)
+);
+ALTER TABLE public.ai_visibility_questions ADD COLUMN IF NOT EXISTS tenant_id uuid,
+  ADD COLUMN IF NOT EXISTS profile_id uuid,
+  ADD COLUMN IF NOT EXISTS question text,
+  ADD COLUMN IF NOT EXISTS intent text CHECK (intent IN ('discovery', 'comparison', 'alternative', 'problem', 'brand')),
+  ADD COLUMN IF NOT EXISTS language text DEFAULT 'fr',
+  ADD COLUMN IF NOT EXISTS source text DEFAULT 'library' NOT NULL CHECK (source IN ('library', 'user', 'ai_suggested')),
+  ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now() NOT NULL,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_by uuid,
+  ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+  ADD COLUMN IF NOT EXISTS version_number integer DEFAULT 1 NOT NULL,
+  ADD COLUMN IF NOT EXISTS correlation_id uuid;
+
 -- ── Foreign keys (added after all tables exist: cycle-safe) ──
 DO $$ BEGIN ALTER TABLE public.user_profiles ADD CONSTRAINT user_profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.user_profiles ADD CONSTRAINT user_profiles_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -8643,6 +8977,7 @@ DO $$ BEGIN ALTER TABLE public.tenant_schedulers ADD CONSTRAINT tenant_scheduler
 DO $$ BEGIN ALTER TABLE public.tenant_schedulers ADD CONSTRAINT tenant_schedulers_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.tenant_schedulers ADD CONSTRAINT tenant_schedulers_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.tenant_schedulers ADD CONSTRAINT tenant_schedulers_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_schedulers ADD CONSTRAINT tenant_schedulers_visibility_profile_id_fkey FOREIGN KEY (tenant_id, visibility_profile_id) REFERENCES public.visibility_profiles(tenant_id, id) ON DELETE SET NULL (visibility_profile_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_retry_policies ADD CONSTRAINT scheduler_retry_policies_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_tasks ADD CONSTRAINT scheduler_tasks_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.scheduler_tasks ADD CONSTRAINT scheduler_tasks_scheduler_id_fkey FOREIGN KEY (tenant_id, scheduler_id) REFERENCES public.tenant_schedulers(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -9331,6 +9666,40 @@ DO $$ BEGIN ALTER TABLE public.whatsapp_messages ADD CONSTRAINT whatsapp_message
 DO $$ BEGIN ALTER TABLE public.whatsapp_messages ADD CONSTRAINT whatsapp_messages_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.whatsapp_webhook_events ADD CONSTRAINT whatsapp_webhook_events_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN ALTER TABLE public.whatsapp_webhook_events ADD CONSTRAINT whatsapp_webhook_events_account_id_fkey FOREIGN KEY (tenant_id, account_id) REFERENCES public.whatsapp_accounts(tenant_id, id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_license_allocations ADD CONSTRAINT tenant_license_allocations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_license_allocations ADD CONSTRAINT tenant_license_allocations_license_type_id_fkey FOREIGN KEY (license_type_id) REFERENCES public.license_types(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_license_allocations ADD CONSTRAINT tenant_license_allocations_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_license_allocations ADD CONSTRAINT tenant_license_allocations_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.member_license_assignments ADD CONSTRAINT member_license_assignments_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.member_license_assignments ADD CONSTRAINT member_license_assignments_member_id_fkey FOREIGN KEY (tenant_id, member_id) REFERENCES public.tenant_members(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.member_license_assignments ADD CONSTRAINT member_license_assignments_license_type_id_fkey FOREIGN KEY (license_type_id) REFERENCES public.license_types(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.member_license_assignments ADD CONSTRAINT member_license_assignments_assigned_by_fkey FOREIGN KEY (assigned_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.member_license_assignments ADD CONSTRAINT member_license_assignments_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.member_license_assignments ADD CONSTRAINT member_license_assignments_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_profiles ADD CONSTRAINT visibility_profiles_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_profiles ADD CONSTRAINT visibility_profiles_product_id_fkey FOREIGN KEY (tenant_id, product_id) REFERENCES public.products(tenant_id, id) ON DELETE SET NULL (product_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_profiles ADD CONSTRAINT visibility_profiles_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_profiles ADD CONSTRAINT visibility_profiles_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_audits ADD CONSTRAINT visibility_audits_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_audits ADD CONSTRAINT visibility_audits_profile_id_fkey FOREIGN KEY (tenant_id, profile_id) REFERENCES public.visibility_profiles(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_recommendations ADD CONSTRAINT visibility_recommendations_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_recommendations ADD CONSTRAINT visibility_recommendations_audit_id_fkey FOREIGN KEY (tenant_id, audit_id) REFERENCES public.visibility_audits(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_recommendations ADD CONSTRAINT visibility_recommendations_profile_id_fkey FOREIGN KEY (tenant_id, profile_id) REFERENCES public.visibility_profiles(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_recommendations ADD CONSTRAINT visibility_recommendations_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_recommendations ADD CONSTRAINT visibility_recommendations_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_generated_assets ADD CONSTRAINT visibility_generated_assets_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_generated_assets ADD CONSTRAINT visibility_generated_assets_audit_id_fkey FOREIGN KEY (tenant_id, audit_id) REFERENCES public.visibility_audits(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_generated_assets ADD CONSTRAINT visibility_generated_assets_recommendation_id_fkey FOREIGN KEY (tenant_id, recommendation_id) REFERENCES public.visibility_recommendations(tenant_id, id) ON DELETE SET NULL (recommendation_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_generated_assets ADD CONSTRAINT visibility_generated_assets_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.visibility_generated_assets ADD CONSTRAINT visibility_generated_assets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_roadmap_items ADD CONSTRAINT tenant_roadmap_items_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_roadmap_items ADD CONSTRAINT tenant_roadmap_items_audit_id_fkey FOREIGN KEY (tenant_id, audit_id) REFERENCES public.visibility_audits(tenant_id, id) ON DELETE SET NULL (audit_id); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_roadmap_items ADD CONSTRAINT tenant_roadmap_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.tenant_roadmap_items ADD CONSTRAINT tenant_roadmap_items_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.ai_visibility_questions ADD CONSTRAINT ai_visibility_questions_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id) ON DELETE RESTRICT; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.ai_visibility_questions ADD CONSTRAINT ai_visibility_questions_profile_id_fkey FOREIGN KEY (tenant_id, profile_id) REFERENCES public.visibility_profiles(tenant_id, id) ON DELETE CASCADE; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.ai_visibility_questions ADD CONSTRAINT ai_visibility_questions_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN ALTER TABLE public.ai_visibility_questions ADD CONSTRAINT ai_visibility_questions_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ── Indexes ──
 CREATE INDEX IF NOT EXISTS ix_user_profiles_correlation ON public.user_profiles (correlation_id) WHERE correlation_id IS NOT NULL;
@@ -9632,6 +10001,7 @@ CREATE INDEX IF NOT EXISTS ix_website_scan_results_page_id ON public.website_sca
 CREATE INDEX IF NOT EXISTS ix_website_scan_results_tenant_created ON public.website_scan_results (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_website_scan_results_correlation ON public.website_scan_results (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_tenant_schedulers_product_id ON public.tenant_schedulers (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_tenant_schedulers_visibility_profile_id ON public.tenant_schedulers (tenant_id, visibility_profile_id);
 CREATE INDEX IF NOT EXISTS ix_tenant_schedulers_tenant_created ON public.tenant_schedulers (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_tenant_schedulers_correlation ON public.tenant_schedulers (correlation_id) WHERE correlation_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS ix_tenant_schedulers_status ON public.tenant_schedulers (tenant_id, status);
@@ -10484,6 +10854,42 @@ CREATE UNIQUE INDEX IF NOT EXISTS whatsapp_webhook_events_tenant_id_idempotency_
 CREATE INDEX IF NOT EXISTS ix_whatsapp_webhook_events_account_id ON public.whatsapp_webhook_events (tenant_id, account_id);
 CREATE INDEX IF NOT EXISTS ix_whatsapp_webhook_events_tenant_created ON public.whatsapp_webhook_events (tenant_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_whatsapp_webhook_events_correlation ON public.whatsapp_webhook_events (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS license_types_code_key ON public.license_types (code);
+CREATE UNIQUE INDEX IF NOT EXISTS tenant_license_allocations_tenant_id_license_type_id_key ON public.tenant_license_allocations (tenant_id, license_type_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_tenant_license_allocations_license_type_id ON public.tenant_license_allocations (license_type_id);
+CREATE INDEX IF NOT EXISTS ix_tenant_license_allocations_tenant_created ON public.tenant_license_allocations (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_tenant_license_allocations_correlation ON public.tenant_license_allocations (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS member_license_assignments_tenant_id_member_id_key ON public.member_license_assignments (tenant_id, member_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS ix_member_license_assignments_member_id ON public.member_license_assignments (tenant_id, member_id);
+CREATE INDEX IF NOT EXISTS ix_member_license_assignments_license_type_id ON public.member_license_assignments (license_type_id);
+CREATE INDEX IF NOT EXISTS ix_member_license_assignments_assigned_by ON public.member_license_assignments (assigned_by);
+CREATE INDEX IF NOT EXISTS ix_member_license_assignments_tenant_created ON public.member_license_assignments (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_member_license_assignments_correlation ON public.member_license_assignments (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_member_license_assignments_status ON public.member_license_assignments (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_visibility_profiles_product_id ON public.visibility_profiles (tenant_id, product_id);
+CREATE INDEX IF NOT EXISTS ix_visibility_profiles_tenant_created ON public.visibility_profiles (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_visibility_profiles_correlation ON public.visibility_profiles (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_visibility_audits_profile_id ON public.visibility_audits (tenant_id, profile_id);
+CREATE INDEX IF NOT EXISTS ix_visibility_audits_tenant_created ON public.visibility_audits (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_visibility_audits_correlation ON public.visibility_audits (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_visibility_audits_status ON public.visibility_audits (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_visibility_audits_execution ON public.visibility_audits (execution_id) WHERE execution_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_visibility_recommendations_audit_id ON public.visibility_recommendations (tenant_id, audit_id);
+CREATE INDEX IF NOT EXISTS ix_visibility_recommendations_profile_id ON public.visibility_recommendations (tenant_id, profile_id);
+CREATE INDEX IF NOT EXISTS ix_visibility_recommendations_tenant_created ON public.visibility_recommendations (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_visibility_recommendations_correlation ON public.visibility_recommendations (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_visibility_recommendations_status ON public.visibility_recommendations (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_visibility_generated_assets_audit_id ON public.visibility_generated_assets (tenant_id, audit_id);
+CREATE INDEX IF NOT EXISTS ix_visibility_generated_assets_recommendation_id ON public.visibility_generated_assets (tenant_id, recommendation_id);
+CREATE INDEX IF NOT EXISTS ix_visibility_generated_assets_tenant_created ON public.visibility_generated_assets (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_visibility_generated_assets_correlation ON public.visibility_generated_assets (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_tenant_roadmap_items_audit_id ON public.tenant_roadmap_items (tenant_id, audit_id);
+CREATE INDEX IF NOT EXISTS ix_tenant_roadmap_items_tenant_created ON public.tenant_roadmap_items (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_tenant_roadmap_items_correlation ON public.tenant_roadmap_items (correlation_id) WHERE correlation_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_tenant_roadmap_items_status ON public.tenant_roadmap_items (tenant_id, status);
+CREATE INDEX IF NOT EXISTS ix_ai_visibility_questions_profile_id ON public.ai_visibility_questions (tenant_id, profile_id);
+CREATE INDEX IF NOT EXISTS ix_ai_visibility_questions_tenant_created ON public.ai_visibility_questions (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_ai_visibility_questions_correlation ON public.ai_visibility_questions (correlation_id) WHERE correlation_id IS NOT NULL;
 
 -- ── pgvector columns (only when the extension is available) ──
 DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN ALTER TABLE public.thor_memory ADD COLUMN IF NOT EXISTS embedding extensions.vector(1536); CREATE INDEX IF NOT EXISTS ix_thor_memory_embedding_hnsw ON public.thor_memory USING hnsw (embedding extensions.vector_cosine_ops); END IF; END $$;
@@ -10513,6 +10919,7 @@ COMMENT ON TABLE public.tenant_sso_configurations IS '[A. Identité et utilisate
 COMMENT ON COLUMN public.tenant_sso_configurations.client_secret_ref IS 'référence Vault, jamais la valeur';
 COMMENT ON TABLE public.tenant_sso_group_mappings IS '[A. Identité et utilisateurs] tenant_sso_group_mappings';
 COMMENT ON TABLE public.tenant_invitations IS '[A. Identité et utilisateurs] tenant_invitations';
+COMMENT ON COLUMN public.tenant_invitations.license_type_code IS 'licence attribuée à l''acceptation';
 COMMENT ON TABLE public.invitation_tokens IS '[A. Identité et utilisateurs] invitation_tokens';
 COMMENT ON COLUMN public.invitation_tokens.token_hash IS 'SHA-256 du jeton, jamais le jeton en clair';
 COMMENT ON TABLE public.tenant_invitation_events IS '[A. Identité et utilisateurs] tenant_invitation_events';
@@ -10817,6 +11224,25 @@ COMMENT ON TABLE public.whatsapp_contacts IS '[L2. WhatsApp Center] whatsapp_con
 COMMENT ON TABLE public.whatsapp_conversations IS '[L2. WhatsApp Center] whatsapp_conversations';
 COMMENT ON TABLE public.whatsapp_messages IS '[L2. WhatsApp Center] whatsapp_messages';
 COMMENT ON TABLE public.whatsapp_webhook_events IS '[L2. WhatsApp Center] whatsapp_webhook_events';
+COMMENT ON TABLE public.license_types IS '[B. Licences] Types de licence utilisateur (Complète, Marketing, Commerciale, Lecture).';
+COMMENT ON COLUMN public.license_types.modules IS 'module codes granted; ["*"] = every module of the tenant''s plan';
+COMMENT ON TABLE public.tenant_license_allocations IS '[B. Licences] Licences disponibles pour un tenant, par type (déclarées par le PILOTE).';
+COMMENT ON COLUMN public.tenant_license_allocations.quantity IS 'number of seats of this type the tenant may assign (set by the PILOTE)';
+COMMENT ON TABLE public.member_license_assignments IS '[B. Licences] Licence attribuée à un membre (une par membre, historisée).';
+COMMENT ON TABLE public.visibility_profiles IS '[V. Visibilité] Profil de visibilité d''un SaaS du tenant (cible, offre, concurrents, objectifs).';
+COMMENT ON COLUMN public.visibility_profiles.competitors IS '[{name, url, source: user|ai_suggested}]';
+COMMENT ON COLUMN public.visibility_profiles.answers IS 'réponses à l''assistant SEO/GEO';
+COMMENT ON TABLE public.visibility_audits IS '[V. Visibilité] Audit IA site + concurrents (constats observés vs synthèse IA séparés).';
+COMMENT ON COLUMN public.visibility_audits.scope IS 'seo, geo, prospect';
+COMMENT ON COLUMN public.visibility_audits.site_findings IS 'observé sur le site (pages, mots-clés, technique)';
+COMMENT ON COLUMN public.visibility_audits.competitor_findings IS 'observé chez les concurrents';
+COMMENT ON COLUMN public.visibility_audits.ai_summary IS 'synthèse IA (marquée générée par IA)';
+COMMENT ON TABLE public.visibility_recommendations IS '[V. Visibilité] Actions recommandées ; l''utilisateur valide et choisit la fréquence.';
+COMMENT ON COLUMN public.visibility_recommendations.channel IS 'wordpress, linkedin, medium...';
+COMMENT ON COLUMN public.visibility_recommendations.frequency IS 'once, daily, weekly, monthly';
+COMMENT ON TABLE public.visibility_generated_assets IS '[V. Visibilité] Fichiers et contenus générés prêts à déployer (versionnés).';
+COMMENT ON TABLE public.tenant_roadmap_items IS '[V. Visibilité] Roadmap de développement de la visibilité du tenant.';
+COMMENT ON TABLE public.ai_visibility_questions IS '[V. Visibilité] Bibliothèque de questions testées sur les moteurs IA.';
 
 -- >>> 0003_functions.sql
 -- Growth IA — Migration 0003 — security helpers & traceability trigger functions
@@ -12622,6 +13048,57 @@ DROP TRIGGER IF EXISTS trg_00_context ON public.whatsapp_webhook_events;
 CREATE TRIGGER trg_00_context BEFORE INSERT ON public.whatsapp_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
 DROP TRIGGER IF EXISTS trg_01_append_only ON public.whatsapp_webhook_events;
 CREATE TRIGGER trg_01_append_only BEFORE UPDATE OR DELETE ON public.whatsapp_webhook_events FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_00_context ON public.license_types;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.license_types FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.license_types;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.license_types FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_00_context ON public.tenant_license_allocations;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.tenant_license_allocations FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.tenant_license_allocations;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.tenant_license_allocations FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.tenant_license_allocations;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.tenant_license_allocations FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.member_license_assignments;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.member_license_assignments FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.member_license_assignments;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.member_license_assignments FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.member_license_assignments;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.member_license_assignments FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.visibility_profiles;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.visibility_profiles FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.visibility_profiles;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.visibility_profiles FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.visibility_profiles;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.visibility_profiles FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.visibility_audits;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.visibility_audits FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
+DROP TRIGGER IF EXISTS trg_01_append_only ON public.visibility_audits;
+DROP TRIGGER IF EXISTS trg_01_no_delete ON public.visibility_audits;
+CREATE TRIGGER trg_01_no_delete BEFORE DELETE ON public.visibility_audits FOR EACH ROW EXECUTE FUNCTION app.tg_append_only();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.visibility_audits;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.visibility_audits FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_00_context ON public.visibility_recommendations;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.visibility_recommendations FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.visibility_recommendations;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.visibility_recommendations FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.visibility_recommendations;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.visibility_recommendations FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.visibility_generated_assets;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.visibility_generated_assets FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context();
+DROP TRIGGER IF EXISTS trg_01_touch ON public.visibility_generated_assets;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.visibility_generated_assets FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_00_context ON public.tenant_roadmap_items;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.tenant_roadmap_items FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.tenant_roadmap_items;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.tenant_roadmap_items FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.tenant_roadmap_items;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.tenant_roadmap_items FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
+DROP TRIGGER IF EXISTS trg_00_context ON public.ai_visibility_questions;
+CREATE TRIGGER trg_00_context BEFORE INSERT ON public.ai_visibility_questions FOR EACH ROW EXECUTE FUNCTION app.tg_fill_context('versioned');
+DROP TRIGGER IF EXISTS trg_01_touch ON public.ai_visibility_questions;
+CREATE TRIGGER trg_01_touch BEFORE UPDATE ON public.ai_visibility_questions FOR EACH ROW EXECUTE FUNCTION app.tg_touch();
+DROP TRIGGER IF EXISTS trg_90_history ON public.ai_visibility_questions;
+CREATE TRIGGER trg_90_history AFTER INSERT OR UPDATE OR DELETE ON public.ai_visibility_questions FOR EACH ROW EXECUTE FUNCTION app.tg_entity_history();
 
 -- >>> 0005_rls.sql
 -- GENERATED by database/schema/generate.py — DO NOT EDIT BY HAND
@@ -16527,6 +17004,124 @@ DROP POLICY IF EXISTS p_backend_write ON public.whatsapp_webhook_events;
 CREATE POLICY p_auth_read ON public.whatsapp_webhook_events FOR SELECT TO authenticated USING ((app.is_tenant_admin(tenant_id)) OR app.is_platform_admin());
 CREATE POLICY p_backend_read ON public.whatsapp_webhook_events FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.whatsapp_webhook_events FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- license_types [ref/global]
+ALTER TABLE public.license_types ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.license_types FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.license_types FROM authenticated;
+GRANT SELECT ON public.license_types TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.license_types TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.license_types;
+DROP POLICY IF EXISTS p_backend_read ON public.license_types;
+DROP POLICY IF EXISTS p_backend_write ON public.license_types;
+CREATE POLICY p_auth_read ON public.license_types FOR SELECT TO authenticated USING (true);
+CREATE POLICY p_backend_read ON public.license_types FOR SELECT TO app_backend USING (true);
+CREATE POLICY p_backend_write ON public.license_types FOR ALL TO app_backend USING (true) WITH CHECK (true);
+
+-- tenant_license_allocations [conf/member]
+ALTER TABLE public.tenant_license_allocations ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.tenant_license_allocations FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.tenant_license_allocations FROM authenticated;
+GRANT SELECT ON public.tenant_license_allocations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.tenant_license_allocations TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.tenant_license_allocations;
+DROP POLICY IF EXISTS p_backend_read ON public.tenant_license_allocations;
+DROP POLICY IF EXISTS p_backend_write ON public.tenant_license_allocations;
+CREATE POLICY p_auth_read ON public.tenant_license_allocations FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.tenant_license_allocations FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.tenant_license_allocations FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- member_license_assignments [biz/member]
+ALTER TABLE public.member_license_assignments ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.member_license_assignments FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.member_license_assignments FROM authenticated;
+GRANT SELECT ON public.member_license_assignments TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.member_license_assignments TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.member_license_assignments;
+DROP POLICY IF EXISTS p_backend_read ON public.member_license_assignments;
+DROP POLICY IF EXISTS p_backend_write ON public.member_license_assignments;
+CREATE POLICY p_auth_read ON public.member_license_assignments FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.member_license_assignments FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.member_license_assignments FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_profiles [biz/member]
+ALTER TABLE public.visibility_profiles ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_profiles FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_profiles FROM authenticated;
+GRANT SELECT ON public.visibility_profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.visibility_profiles TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_profiles;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_profiles;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_profiles;
+CREATE POLICY p_auth_read ON public.visibility_profiles FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_profiles FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_profiles FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_audits [run/member]
+ALTER TABLE public.visibility_audits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_audits FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_audits FROM authenticated;
+GRANT SELECT ON public.visibility_audits TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.visibility_audits TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.visibility_audits FROM app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_audits;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_audits;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_audits;
+CREATE POLICY p_auth_read ON public.visibility_audits FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_audits FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_audits FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_recommendations [biz/member]
+ALTER TABLE public.visibility_recommendations ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_recommendations FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_recommendations FROM authenticated;
+GRANT SELECT ON public.visibility_recommendations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.visibility_recommendations TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_recommendations;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_recommendations;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_recommendations;
+CREATE POLICY p_auth_read ON public.visibility_recommendations FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_recommendations FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_recommendations FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_generated_assets [biz/member]
+ALTER TABLE public.visibility_generated_assets ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_generated_assets FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_generated_assets FROM authenticated;
+GRANT SELECT ON public.visibility_generated_assets TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.visibility_generated_assets TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_generated_assets;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_generated_assets;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_generated_assets;
+CREATE POLICY p_auth_read ON public.visibility_generated_assets FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_generated_assets FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_generated_assets FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- tenant_roadmap_items [biz/member]
+ALTER TABLE public.tenant_roadmap_items ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.tenant_roadmap_items FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.tenant_roadmap_items FROM authenticated;
+GRANT SELECT ON public.tenant_roadmap_items TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.tenant_roadmap_items TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.tenant_roadmap_items;
+DROP POLICY IF EXISTS p_backend_read ON public.tenant_roadmap_items;
+DROP POLICY IF EXISTS p_backend_write ON public.tenant_roadmap_items;
+CREATE POLICY p_auth_read ON public.tenant_roadmap_items FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.tenant_roadmap_items FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.tenant_roadmap_items FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- ai_visibility_questions [biz/member]
+ALTER TABLE public.ai_visibility_questions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.ai_visibility_questions FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.ai_visibility_questions FROM authenticated;
+GRANT SELECT ON public.ai_visibility_questions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ai_visibility_questions TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.ai_visibility_questions;
+DROP POLICY IF EXISTS p_backend_read ON public.ai_visibility_questions;
+DROP POLICY IF EXISTS p_backend_write ON public.ai_visibility_questions;
+CREATE POLICY p_auth_read ON public.ai_visibility_questions FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.ai_visibility_questions FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.ai_visibility_questions FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
 
 -- >>> 0006_partitions_and_seeds.sql

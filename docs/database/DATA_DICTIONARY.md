@@ -342,6 +342,7 @@ Unique: `(tenant_id, sso_configuration_id, external_group)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
+| license_type_code | text | yes |  |  | licence attribuée à l'acceptation |
 
 ### `invitation_tokens`
 
@@ -686,6 +687,65 @@ Unique: `(tenant_id, plan_id)`
 | reason | text |  |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+
+### `license_types`
+
+Types de licence utilisateur (Complète, Marketing, Commerciale, Lecture). — kind `ref`, RLS read `global`, app `licensing`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| code | text |  |  | unique |  |
+| name | text |  |  |  |  |
+| description | text | yes |  |  |  |
+| modules | jsonb |  | '[]' |  | module codes granted; ["*"] = every module of the tenant's plan |
+| sort_order | integer |  | 0 |  |  |
+| is_active | boolean |  | true |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+
+### `tenant_license_allocations`
+
+Licences disponibles pour un tenant, par type (déclarées par le PILOTE). — kind `conf`, RLS read `member`, app `licensing`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| license_type_id | uuid |  |  | → license_types (restrict) |  |
+| quantity | integer |  | 0 |  | number of seats of this type the tenant may assign (set by the PILOTE) |
+| note | text | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, license_type_id)`
+
+### `member_license_assignments`
+
+Licence attribuée à un membre (une par membre, historisée). — kind `biz`, RLS read `member`, app `licensing`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| member_id | uuid |  |  | → tenant_members (cascade) |  |
+| license_type_id | uuid |  |  | → license_types (restrict) |  |
+| status | text |  | 'active' | in(active, revoked) |  |
+| assigned_by | uuid | yes |  | → auth.users (setnull) |  |
+| assigned_at | timestamptz |  | now() |  |  |
+| revoked_at | timestamptz | yes |  |  |  |
+| reason | text | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+Unique: `(tenant_id, member_id)`
 
 ## C. Autorisations
 
@@ -1626,6 +1686,9 @@ Unique: `(tenant_id, website_id, name)`
 | next_run_at | timestamptz | yes |  |  |  |
 | last_run_at | timestamptz | yes |  |  |  |
 | last_status | text | yes |  |  |  |
+| scheduler_kind | text |  | 'standard' | in(standard, intelligent) |  |
+| visibility_profile_id | uuid | yes |  | → visibility_profiles (setnull) |  |
+| recommendation_ids | jsonb | yes | '[]' |  |  |
 
 ### `scheduler_retry_policies`
 
@@ -5634,4 +5697,155 @@ Unique: `(tenant_id, account_id, contact_id)`
 | payload | jsonb |  |  |  |  |
 | correlation_id | uuid | yes |  |  |  |
 | created_at | timestamptz |  | now() |  |  |
+
+## V. Visibilité
+
+### `visibility_profiles`
+
+Profil de visibilité d'un SaaS du tenant (cible, offre, concurrents, objectifs). — kind `biz`, RLS read `member`, app `visibility`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| product_id | uuid | yes |  | → products (setnull) |  |
+| name | text |  |  |  |  |
+| site_urls | jsonb |  | '[]' |  |  |
+| sector | text | yes |  |  |  |
+| audience | text | yes |  |  |  |
+| offer | text | yes |  |  |  |
+| languages | jsonb |  | '[]' |  |  |
+| countries | jsonb |  | '[]' |  |  |
+| competitors | jsonb |  | '[]' |  | [{name, url, source: user|ai_suggested}] |
+| goals | jsonb |  | '[]' |  |  |
+| answers | jsonb |  | '{}' |  | réponses à l'assistant SEO/GEO |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+### `visibility_audits`
+
+Audit IA site + concurrents (constats observés vs synthèse IA séparés). — kind `run`, RLS read `member`, app `visibility`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| profile_id | uuid | yes |  | → visibility_profiles (cascade) |  |
+| audit_type | text |  | 'site' | in(site, tenant_full) |  |
+| scope | jsonb |  | '[]' |  | seo, geo, prospect |
+| status | text |  | 'queued' | in(queued, running, succeeded, failed) |  |
+| progress | integer |  | 0 |  |  |
+| step | text | yes |  |  |  |
+| site_findings | jsonb |  | '{}' |  | observé sur le site (pages, mots-clés, technique) |
+| competitor_findings | jsonb |  | '{}' |  | observé chez les concurrents |
+| ai_summary | jsonb |  | '{}' |  | synthèse IA (marquée générée par IA) |
+| score | integer | yes |  |  |  |
+| error | text | yes |  |  |  |
+| started_at | timestamptz | yes |  |  |  |
+| finished_at | timestamptz | yes |  |  |  |
+| execution_id | uuid | yes |  |  |  |
+| correlation_id | uuid | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+
+### `visibility_recommendations`
+
+Actions recommandées ; l'utilisateur valide et choisit la fréquence. — kind `biz`, RLS read `member`, app `visibility`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| audit_id | uuid | yes |  | → visibility_audits (cascade) |  |
+| profile_id | uuid | yes |  | → visibility_profiles (cascade) |  |
+| category | text |  |  | in(technical, keywords, content, geo, backlinks, social, prospect) |  |
+| code | text |  |  |  |  |
+| title | text |  |  |  |  |
+| detail | text | yes |  |  |  |
+| priority | text |  | 'medium' | in(critical, high, medium, low) |  |
+| impact | text | yes |  |  |  |
+| effort | text | yes |  |  |  |
+| evidence | jsonb |  | '{}' |  |  |
+| apply_mode | text |  | 'manual' | in(auto_connector, generated_file, ai_content, manual) |  |
+| channel | text | yes |  |  | wordpress, linkedin, medium... |
+| status | text |  | 'proposed' | in(proposed, accepted, rejected, applied, failed, scheduled) |  |
+| frequency | text | yes |  |  | once, daily, weekly, monthly |
+| times_per_period | integer | yes |  |  |  |
+| applied_result | jsonb |  | '{}' |  |  |
+| applied_at | timestamptz | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+### `visibility_generated_assets`
+
+Fichiers et contenus générés prêts à déployer (versionnés). — kind `biz`, RLS read `member`, app `visibility`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| audit_id | uuid | yes |  | → visibility_audits (cascade) |  |
+| recommendation_id | uuid | yes |  | → visibility_recommendations (setnull) |  |
+| asset_type | text |  |  | in(robots_txt, sitemap_xml, sitemap_images_xml, sitemap_news_xml, json_ld, open_graph, hreflang, canonical, page_404, redirects, llms_txt, article, faq, linkedin_post) |  |
+| filename | text | yes |  |  |  |
+| content | text |  |  |  |  |
+| content_type | text |  | 'text/plain' |  |  |
+| version_number | integer |  | 1 |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+### `tenant_roadmap_items`
+
+Roadmap de développement de la visibilité du tenant. — kind `biz`, RLS read `member`, app `visibility`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| audit_id | uuid | yes |  | → visibility_audits (setnull) |  |
+| phase | text |  | 'now' | in(now, next, later) |  |
+| area | text |  |  | in(seo, geo, ai_search, content, publishing, measurement, technical) |  |
+| title | text |  |  |  |  |
+| detail | text | yes |  |  |  |
+| priority | text |  | 'medium' | in(critical, high, medium, low) |  |
+| status | text |  | 'todo' | in(todo, in_progress, done, dropped) |  |
+| kpi | text | yes |  |  |  |
+| due_date | date | yes |  |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
+
+### `ai_visibility_questions`
+
+Bibliothèque de questions testées sur les moteurs IA. — kind `biz`, RLS read `member`, app `visibility`
+
+| Column | Type | Null | Default | Constraint | Notes |
+|---|---|---|---|---|---|
+| tenant_id | uuid |  |  | → tenants (restrict) |  |
+| profile_id | uuid | yes |  | → visibility_profiles (cascade) |  |
+| question | text |  |  |  |  |
+| intent | text | yes |  | in(discovery, comparison, alternative, problem, brand) |  |
+| language | text | yes | 'fr' |  |  |
+| source | text |  | 'library' | in(library, user, ai_suggested) |  |
+| is_active | boolean |  | true |  |  |
+| created_at | timestamptz |  | now() |  |  |
+| updated_at | timestamptz |  | now() |  |  |
+| created_by | uuid | yes |  | → auth.users (setnull) |  |
+| updated_by | uuid | yes |  | → auth.users (setnull) |  |
+| deleted_at | timestamptz | yes |  |  |  |
+| version_number | integer |  | 1 |  |  |
+| correlation_id | uuid | yes |  |  |  |
 

@@ -36,6 +36,9 @@ class TenantScheduler(models.Model):
     next_run_at = models.DateTimeField(null=True, blank=True)
     last_run_at = models.DateTimeField(null=True, blank=True)
     last_status = models.TextField(null=True, blank=True)
+    scheduler_kind = models.TextField(default='standard', choices=[('standard', 'standard'), ('intelligent', 'intelligent')])
+    visibility_profile = models.ForeignKey('visibility.VisibilityProfile', on_delete=models.DO_NOTHING, db_column='visibility_profile_id', related_name='+', null=True, blank=True, db_constraint=False)
+    recommendation_ids = models.JSONField(null=True, blank=True, default=list)
 
     class Meta:
         managed = False

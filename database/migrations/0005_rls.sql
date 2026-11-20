@@ -3902,3 +3902,121 @@ CREATE POLICY p_auth_read ON public.whatsapp_webhook_events FOR SELECT TO authen
 CREATE POLICY p_backend_read ON public.whatsapp_webhook_events FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
 CREATE POLICY p_backend_write ON public.whatsapp_webhook_events FOR INSERT TO app_backend WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
 
+-- license_types [ref/global]
+ALTER TABLE public.license_types ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.license_types FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.license_types FROM authenticated;
+GRANT SELECT ON public.license_types TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.license_types TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.license_types;
+DROP POLICY IF EXISTS p_backend_read ON public.license_types;
+DROP POLICY IF EXISTS p_backend_write ON public.license_types;
+CREATE POLICY p_auth_read ON public.license_types FOR SELECT TO authenticated USING (true);
+CREATE POLICY p_backend_read ON public.license_types FOR SELECT TO app_backend USING (true);
+CREATE POLICY p_backend_write ON public.license_types FOR ALL TO app_backend USING (true) WITH CHECK (true);
+
+-- tenant_license_allocations [conf/member]
+ALTER TABLE public.tenant_license_allocations ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.tenant_license_allocations FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.tenant_license_allocations FROM authenticated;
+GRANT SELECT ON public.tenant_license_allocations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.tenant_license_allocations TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.tenant_license_allocations;
+DROP POLICY IF EXISTS p_backend_read ON public.tenant_license_allocations;
+DROP POLICY IF EXISTS p_backend_write ON public.tenant_license_allocations;
+CREATE POLICY p_auth_read ON public.tenant_license_allocations FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.tenant_license_allocations FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.tenant_license_allocations FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- member_license_assignments [biz/member]
+ALTER TABLE public.member_license_assignments ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.member_license_assignments FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.member_license_assignments FROM authenticated;
+GRANT SELECT ON public.member_license_assignments TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.member_license_assignments TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.member_license_assignments;
+DROP POLICY IF EXISTS p_backend_read ON public.member_license_assignments;
+DROP POLICY IF EXISTS p_backend_write ON public.member_license_assignments;
+CREATE POLICY p_auth_read ON public.member_license_assignments FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.member_license_assignments FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.member_license_assignments FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_profiles [biz/member]
+ALTER TABLE public.visibility_profiles ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_profiles FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_profiles FROM authenticated;
+GRANT SELECT ON public.visibility_profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.visibility_profiles TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_profiles;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_profiles;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_profiles;
+CREATE POLICY p_auth_read ON public.visibility_profiles FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_profiles FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_profiles FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_audits [run/member]
+ALTER TABLE public.visibility_audits ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_audits FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_audits FROM authenticated;
+GRANT SELECT ON public.visibility_audits TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON public.visibility_audits TO app_backend;
+REVOKE DELETE, TRUNCATE ON public.visibility_audits FROM app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_audits;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_audits;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_audits;
+CREATE POLICY p_auth_read ON public.visibility_audits FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_audits FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_audits FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_recommendations [biz/member]
+ALTER TABLE public.visibility_recommendations ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_recommendations FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_recommendations FROM authenticated;
+GRANT SELECT ON public.visibility_recommendations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.visibility_recommendations TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_recommendations;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_recommendations;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_recommendations;
+CREATE POLICY p_auth_read ON public.visibility_recommendations FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_recommendations FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_recommendations FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- visibility_generated_assets [biz/member]
+ALTER TABLE public.visibility_generated_assets ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.visibility_generated_assets FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.visibility_generated_assets FROM authenticated;
+GRANT SELECT ON public.visibility_generated_assets TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.visibility_generated_assets TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.visibility_generated_assets;
+DROP POLICY IF EXISTS p_backend_read ON public.visibility_generated_assets;
+DROP POLICY IF EXISTS p_backend_write ON public.visibility_generated_assets;
+CREATE POLICY p_auth_read ON public.visibility_generated_assets FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.visibility_generated_assets FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.visibility_generated_assets FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- tenant_roadmap_items [biz/member]
+ALTER TABLE public.tenant_roadmap_items ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.tenant_roadmap_items FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.tenant_roadmap_items FROM authenticated;
+GRANT SELECT ON public.tenant_roadmap_items TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.tenant_roadmap_items TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.tenant_roadmap_items;
+DROP POLICY IF EXISTS p_backend_read ON public.tenant_roadmap_items;
+DROP POLICY IF EXISTS p_backend_write ON public.tenant_roadmap_items;
+CREATE POLICY p_auth_read ON public.tenant_roadmap_items FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.tenant_roadmap_items FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.tenant_roadmap_items FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+
+-- ai_visibility_questions [biz/member]
+ALTER TABLE public.ai_visibility_questions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.ai_visibility_questions FROM anon;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON public.ai_visibility_questions FROM authenticated;
+GRANT SELECT ON public.ai_visibility_questions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ai_visibility_questions TO app_backend;
+DROP POLICY IF EXISTS p_auth_read ON public.ai_visibility_questions;
+DROP POLICY IF EXISTS p_backend_read ON public.ai_visibility_questions;
+DROP POLICY IF EXISTS p_backend_write ON public.ai_visibility_questions;
+CREATE POLICY p_auth_read ON public.ai_visibility_questions FOR SELECT TO authenticated USING ((app.is_tenant_member(tenant_id)) OR app.is_platform_admin());
+CREATE POLICY p_backend_read ON public.ai_visibility_questions FOR SELECT TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform() OR app.backend_user_is_member(tenant_id));
+CREATE POLICY p_backend_write ON public.ai_visibility_questions FOR ALL TO app_backend USING (tenant_id = app.current_tenant_id() OR app.current_is_platform()) WITH CHECK (tenant_id = app.current_tenant_id() OR app.current_is_platform());
+

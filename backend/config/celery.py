@@ -34,4 +34,4 @@ app.conf.beat_schedule = {
 }
 app.autodiscover_tasks(lambda: ["apps.system_health", "apps.notifications", "apps.licensing", "apps.observability", "apps.integrations",
                                 "apps.products", "apps.seo", "apps.geo", "apps.content", "apps.opportunities", "apps.prospects",
-                                "apps.email_center", "apps.scheduler"])
+                                "apps.email_center", "apps.scheduler", "apps.visibility"])

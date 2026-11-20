@@ -26,7 +26,8 @@ def _event(invitation_id, tenant_id, event_type: str, meta: dict | None = None) 
               [tenant_id, invitation_id, event_type, get_context().user_id, __import__("json").dumps(meta or {})])
 
 
-def create_invitation(tenant_id: str, email: str, role_code: str, message: str | None = None) -> tuple[TenantInvitation, str]:
+def create_invitation(tenant_id: str, email: str, role_code: str, message: str | None = None,
+                      license_code: str | None = None) -> tuple[TenantInvitation, str]:
     from apps.licensing.services import check_quota
     check_quota(tenant_id, "members.max")
     email = email.strip().lower()
@@ -38,8 +39,15 @@ def create_invitation(tenant_id: str, email: str, role_code: str, message: str |
     token = secrets.token_urlsafe(32)
     expires = timezone.now() + timezone.timedelta(hours=settings.GROWTH["INVITATION_TTL_HOURS"])
     with transaction.atomic():
+        if license_code:
+            from apps.memberships.licenses import allocations
+            pool = {a["code"]: a for a in allocations(tenant_id)}
+            if license_code not in pool:
+                raise BusinessError("Type de licence inconnu", "invalid_license_type")
+            if pool[license_code]["available"] <= 0:
+                raise BusinessError(f"Plus aucune licence « {pool[license_code]['name']} » disponible.", "license_exhausted", status_code=409)
         inv = TenantInvitation.objects.create(tenant_id=tenant_id, email=email, role_id=role[0], invited_by=get_context().user_id,
-                                              expires_at=expires, message=message)
+                                              expires_at=expires, message=message, license_type_code=license_code)
         fetch_one("INSERT INTO public.invitation_tokens (invitation_id, token_hash, expires_at) VALUES (%s, %s, %s) RETURNING id",
                   [inv.id, hash_token(token), expires])
         _event(inv.id, tenant_id, "created", {"role": role_code})
@@ -103,6 +111,14 @@ def accept_invitation(user, token: str) -> str:
         set_context(ctx)
         apply_db_context(ctx)
         _event(inv_id, tenant_id, "accepted")
+        lic = fetch_one("SELECT license_type_code FROM public.tenant_invitations WHERE id = %s", [inv_id])
+        if lic and lic[0]:
+            from apps.memberships.licenses import assign_license
+            try:
+                assign_license(tenant_id, str(member), lic[0], "licence prévue par l'invitation")
+            except BusinessError as e:  # pool exhausted since the invitation: the member joins, an admin assigns later
+                record_audit("license.assign_deferred", "licensing", entity_type="tenant_members", entity_id=member,
+                             status="warning", description=e.message if hasattr(e, "message") else str(e))
         record_audit("invitation.accepted", "invitations", entity_type="tenant_invitations", entity_id=inv_id,
                      after={"member_id": str(member)})
         record_activity("member.joined", "memberships", entity_type="tenant_members", entity_id=member,

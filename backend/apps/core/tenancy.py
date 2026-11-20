@@ -59,3 +59,9 @@ def module_enabled(tenant_id: str, module_code: str) -> bool:
                              AND (a.expires_at IS NULL OR a.expires_at > now()) AND m.is_enabled)""",
         [tenant_id, module_code])
     return bool(row and row[0])
+
+
+def member_license_allows(tenant_id: str, user_id: str, module_code: str) -> bool:
+    """User licence check (app.member_license_allows): owners/admins and tenants without licence allocations are never restricted."""
+    row = fetch_one("SELECT app.member_license_allows(%s::uuid, %s::uuid, %s)", [tenant_id, user_id, module_code])
+    return bool(row and row[0])

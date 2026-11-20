@@ -61,6 +61,13 @@ def next_run(freq: str, value: str | None, tz: str, after: datetime | None = Non
 
 # ─────────────────────────── Handlers (shared by schedulers and workflow nodes) ───────────────────────────
 def _h_seo(p):
+    if p.get("visibility_profile_id"):  # intelligent programme: weekly re-audit, plan re-prioritised from new observations
+        from apps.visibility.services import execute_audit as visibility_audit
+        from apps.visibility.services import launch_audit as visibility_launch
+        vid = visibility_launch(p["visibility_profile_id"], p.get("scope") or ["seo", "geo"])
+        if fetch_one("SELECT status FROM public.visibility_audits WHERE id = %s", [vid])[0] == "queued":
+            return visibility_audit(vid) | {"visibility_audit_id": vid}
+        return {"visibility_audit_id": vid}
     from apps.seo.services import execute_audit, launch_audit
     aid = launch_audit(p["project_id"], p.get("audit_type", "full"), p.get("pages_limit"))
     if fetch_one("SELECT status FROM public.seo_audits WHERE id = %s", [aid])[0] == "queued":

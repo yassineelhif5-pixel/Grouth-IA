@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from .context import set_context
 from .db import apply_db_context
 from .exceptions import ModuleNotAuthorized
-from .tenancy import has_permission, is_platform_admin, module_enabled, resolve_tenant
+from .tenancy import has_permission, is_platform_admin, member_license_allows, module_enabled, resolve_tenant
 
 
 class GrowthContextMixin:
@@ -47,6 +47,10 @@ class GrowthContextMixin:
                 raise PermissionDenied(f"Missing permission {perm}")
             if self.required_module and not module_enabled(access.tenant_id, self.required_module):
                 raise ModuleNotAuthorized(f"Module {self.required_module} is not included in your licence")
+            if (self.required_module and not is_platform_admin(user.id)
+                    and not member_license_allows(access.tenant_id, user.id, self.required_module)):
+                raise ModuleNotAuthorized(f"Votre licence utilisateur n'inclut pas le module {self.required_module} : "
+                                          "demandez à l'administrateur du tenant de vous attribuer une licence adaptée.")
         request.growth_ctx = ctx
         set_context(ctx)
         apply_db_context(ctx)

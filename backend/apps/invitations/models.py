@@ -29,6 +29,7 @@ class TenantInvitation(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
+    license_type_code = models.TextField(null=True, blank=True, help_text="licence attribuée à l'acceptation")
 
     class Meta:
         managed = False
