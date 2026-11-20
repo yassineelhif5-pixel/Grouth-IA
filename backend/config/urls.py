@@ -1,6 +1,8 @@
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.core.cron import CronTickView
+
 api_v1 = [
     path("", include("apps.accounts.urls")),
     path("", include("apps.tenants.urls")),
@@ -28,6 +30,7 @@ api_v1 = [
     path("", include("apps.intelligence.urls")),
     path("", include("apps.thor.urls")),
     path("health/", include("apps.core.urls_health")),
+    path("internal/cron/tick", CronTickView.as_view()),  # periodic tasks without Celery Beat (serverless)
     path("schema", SpectacularAPIView.as_view(), name="schema"),
     path("docs", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
 ]

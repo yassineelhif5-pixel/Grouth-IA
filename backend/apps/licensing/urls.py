@@ -9,6 +9,6 @@ urlpatterns = [
     path("pilot/tenants/<uuid:tenant_id>/license", PilotTenantLicenseView.as_view()),
 ]
 
-from .billing import CheckoutView, StripeWebhookView  # noqa: E402
+from .billing import CheckoutView, PlanCatalogView, StripeWebhookView  # noqa: E402
 
-urlpatterns += [path("billing/checkout", CheckoutView.as_view()), path("webhooks/stripe", StripeWebhookView.as_view())]
+urlpatterns += [path("billing/plans", PlanCatalogView.as_view()), path("billing/checkout", CheckoutView.as_view()), path("webhooks/stripe", StripeWebhookView.as_view())]

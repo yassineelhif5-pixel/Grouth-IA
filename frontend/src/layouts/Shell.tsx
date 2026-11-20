@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 
+import { Credit } from "@/components/Credit";
 import { Preferences } from "@/components/Preferences";
 import { useMe } from "@/hooks/useMe";
 import { supabase } from "@/services/supabase";
@@ -14,7 +15,7 @@ export interface NavItem {
   icon?: ReactNode;
 }
 
-export function Shell({ nav, header }: { nav: NavItem[]; header?: ReactNode }) {
+export function Shell({ nav, header, banner }: { nav: NavItem[]; header?: ReactNode; banner?: ReactNode }) {
   const [opened, { toggle }] = useDisclosure();
   const { t } = useTranslation();
   const loc = useLocation();
@@ -39,8 +40,10 @@ export function Shell({ nav, header }: { nav: NavItem[]; header?: ReactNode }) {
         {nav.map((n) => (
           <NavLink key={n.to} component={Link} to={n.to} label={n.label} leftSection={n.icon} active={loc.pathname === n.to || loc.pathname.startsWith(`${n.to}/`)} />
         ))}
+        <div style={{ marginTop: "auto", paddingTop: 12 }}><Credit /></div>
       </AppShell.Navbar>
       <AppShell.Main>
+        {banner}
         <Outlet />
       </AppShell.Main>
     </AppShell>

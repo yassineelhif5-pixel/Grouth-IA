@@ -12,6 +12,7 @@ import { Preferences } from "@/components/Preferences";
 import { useMe } from "@/hooks/useMe";
 import { api } from "@/services/api";
 import { supabase } from "@/services/supabase";
+import { Credit } from "@/components/Credit";
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -22,6 +23,7 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
           {children}
           <Preferences />
         </Stack>
+        <Credit />
       </Paper>
     </Center>
   );
@@ -228,8 +230,8 @@ export function AcceptInvitationPage() {
 export function HomeRedirect() {
   const { data, isLoading } = useMe();
   if (isLoading || !data) return <FullLoader />;
+  if (data.user.is_pilot) return <Navigate to="/pilot" replace />;
   const first = data.tenants[0];
   if (first) return <Navigate to={`/t/${first.id}/dashboard`} replace />;
-  if (data.user.is_pilot) return <Navigate to="/pilot" replace />;
   return <Navigate to="/onboarding" replace />;
 }

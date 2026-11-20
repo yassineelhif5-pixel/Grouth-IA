@@ -613,7 +613,7 @@ ALTER TABLE public.tenant_invitation_events ADD COLUMN IF NOT EXISTS tenant_id u
 
 CREATE TABLE IF NOT EXISTS public.subscription_plans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code text NOT NULL CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE')),
+  code text NOT NULL CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE', 'OFFRE_STARTER', 'OFFRE_PRO', 'OFFRE_PROFESSIONNELLE')),
   name text NOT NULL,
   description text,
   is_trial boolean NOT NULL DEFAULT false,
@@ -626,7 +626,7 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-ALTER TABLE public.subscription_plans ADD COLUMN IF NOT EXISTS code text CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE')),
+ALTER TABLE public.subscription_plans ADD COLUMN IF NOT EXISTS code text CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE', 'OFFRE_STARTER', 'OFFRE_PRO', 'OFFRE_PROFESSIONNELLE')),
   ADD COLUMN IF NOT EXISTS name text,
   ADD COLUMN IF NOT EXISTS description text,
   ADD COLUMN IF NOT EXISTS is_trial boolean DEFAULT false NOT NULL,
@@ -17190,3 +17190,39 @@ END $$;
 GRANT EXECUTE ON FUNCTION app.login_email(text) TO app_backend;
 GRANT EXECUTE ON FUNCTION app.username_taken(text, uuid) TO app_backend;
 GRANT EXECUTE ON FUNCTION app.normalize_username(text) TO app_backend;
+
+-- >>> 0013_paid_plans.sql
+-- Growth IA - offres payantes TTC mensuelles : Starter 20 EUR, Pro 50 EUR, Professionnelle 200 EUR (appliquee le 18/11/2026).
+-- Modules et quotas copies de STARTER / GROWTH / GROWTH_ENTREPRISE. Idempotent.
+ALTER TABLE public.subscription_plans DROP CONSTRAINT IF EXISTS subscription_plans_code_check;
+ALTER TABLE public.subscription_plans ADD CONSTRAINT subscription_plans_code_check CHECK (code = ANY (ARRAY['DEMO','STARTER','GROWTH','GROWTH_ENTREPRISE','OFFRE_STARTER','OFFRE_PRO','OFFRE_PROFESSIONNELLE']));
+
+INSERT INTO public.subscription_plans (code, name, description, is_trial, trial_duration_hours, price_monthly_cents, currency, is_active, sort_order)
+VALUES
+  ('OFFRE_STARTER', 'Starter', 'Offre Starter - 20 EUR TTC / mois', false, NULL, 2000, 'EUR', true, 40),
+  ('OFFRE_PRO', 'Pro', 'Offre Pro - 50 EUR TTC / mois', false, NULL, 5000, 'EUR', true, 50),
+  ('OFFRE_PROFESSIONNELLE', 'Professionnelle', 'Offre Professionnelle - 200 EUR TTC / mois', false, NULL, 20000, 'EUR', true, 60)
+ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description,
+  price_monthly_cents = EXCLUDED.price_monthly_cents, is_active = true, sort_order = EXCLUDED.sort_order, updated_at = now();
+
+WITH map(new_code, src_code) AS (VALUES ('OFFRE_STARTER', 'STARTER'), ('OFFRE_PRO', 'GROWTH'), ('OFFRE_PROFESSIONNELLE', 'GROWTH_ENTREPRISE'))
+INSERT INTO public.subscription_plan_features (plan_id, feature_id, enabled)
+SELECT n.id, f.feature_id, f.enabled
+  FROM map JOIN public.subscription_plans n ON n.code = map.new_code
+           JOIN public.subscription_plans s ON s.code = map.src_code
+           JOIN public.subscription_plan_features f ON f.plan_id = s.id
+ WHERE NOT EXISTS (SELECT 1 FROM public.subscription_plan_features x WHERE x.plan_id = n.id AND x.feature_id = f.feature_id);
+
+WITH map(new_code, src_code) AS (VALUES ('OFFRE_STARTER', 'STARTER'), ('OFFRE_PRO', 'GROWTH'), ('OFFRE_PROFESSIONNELLE', 'GROWTH_ENTREPRISE'))
+INSERT INTO public.subscription_plan_quotas (plan_id, quota_code, limit_value, period)
+SELECT n.id, q.quota_code, q.limit_value, q.period
+  FROM map JOIN public.subscription_plans n ON n.code = map.new_code
+           JOIN public.subscription_plans s ON s.code = map.src_code
+           JOIN public.subscription_plan_quotas q ON q.plan_id = s.id
+ WHERE NOT EXISTS (SELECT 1 FROM public.subscription_plan_quotas x WHERE x.plan_id = n.id AND x.quota_code = q.quota_code);
+
+-- >>> 0014_trial_48h.sql
+-- Growth IA - essai gratuit de 2 jours (48 h) pour tout nouvel utilisateur (plan DEMO).
+-- A APPLIQUER AU MOMENT DU DEPLOIEMENT (la base est partagee avec la production).
+UPDATE public.subscription_plans SET trial_duration_hours = 48, name = 'Essai gratuit (2 jours)', updated_at = now()
+ WHERE code = 'DEMO';

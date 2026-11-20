@@ -18,26 +18,50 @@ from apps.integrations.gateway import http
 
 from .services import change_plan
 
+PAID_PLANS = ["OFFRE_STARTER", "OFFRE_PRO", "OFFRE_PROFESSIONNELLE"]
+
 
 class CheckoutSerializer(serializers.Serializer):
-    plan_code = serializers.ChoiceField(choices=["STARTER", "GROWTH", "GROWTH_ENTREPRISE"])
+    plan_code = serializers.ChoiceField(choices=PAID_PLANS + ["STARTER", "GROWTH", "GROWTH_ENTREPRISE"])
+
+
+class PlanCatalogView(GrowthAPIView):
+    """Paid offers shown on the « Abonnement » page (monthly price incl. VAT)."""
+    tenant_scoped = False
+
+    def get(self, request):
+        from apps.core.db import fetch_all_dict
+        rows = fetch_all_dict("""SELECT code, name, description, price_monthly_cents, currency FROM public.subscription_plans
+                                  WHERE code = ANY(%s) AND is_active ORDER BY sort_order""", [PAID_PLANS])
+        return Response({"plans": rows, "online_payment": bool(settings.STRIPE_SECRET_KEY)})
 
 
 class CheckoutView(GrowthAPIView):
     permission_map = {"POST": "billing.manage"}
+    allow_without_subscription = True  # paying must stay possible once the trial is over
 
     def post(self, request):
         ser = CheckoutSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         plan = ser.validated_data["plan_code"]
+        if not settings.STRIPE_SECRET_KEY:
+            raise BusinessError("Le paiement en ligne n'est pas encore activé (clés Stripe manquantes). Contactez-nous pour souscrire.",
+                                "billing_not_configured", status_code=409)
         price = settings.STRIPE_PRICE_IDS.get(plan)
-        if not settings.STRIPE_SECRET_KEY or not price:
-            raise BusinessError("Online payment is not configured (Stripe keys / price ids)", "billing_not_configured", status_code=409)
+        row = fetch_one("SELECT name, price_monthly_cents, currency FROM public.subscription_plans WHERE code = %s AND is_active", [plan])
+        if not price and not (row and row[1]):
+            raise BusinessError("Aucun prix n'est défini pour cette offre", "billing_not_configured", status_code=409)
+        line = ({"line_items[0][price]": price} if price else {  # no Stripe price id: price built from the plan (monthly, VAT incl.)
+            "line_items[0][price_data][currency]": (row[2] or "EUR").lower(),
+            "line_items[0][price_data][unit_amount]": row[1],
+            "line_items[0][price_data][recurring][interval]": "month",
+            "line_items[0][price_data][product_data][name]": f"Growth IA - {row[0]}"})
         tid = request.tenant.tenant_id
         front = settings.GROWTH["FRONTEND_URL"]
         resp = http("POST", "https://api.stripe.com/v1/checkout/sessions", provider="stripe", operation="checkout",
                     headers={"Authorization": f"Bearer {settings.STRIPE_SECRET_KEY}"},
-                    data={"mode": "subscription", "line_items[0][price]": price, "line_items[0][quantity]": 1,
+                    data={"mode": "subscription", **line, "line_items[0][quantity]": 1,
+                          "subscription_data[metadata][tenant_id]": tid, "subscription_data[metadata][plan_code]": plan,
                           "client_reference_id": tid, "metadata[tenant_id]": tid, "metadata[plan_code]": plan,
                           "success_url": f"{front}/t/{tid}/subscription?checkout=success",
                           "cancel_url": f"{front}/t/{tid}/subscription?checkout=cancel"})
@@ -83,5 +107,13 @@ class StripeWebhookView(PublicWebhookView):
                          source="webhook")
             from apps.notifications.service import notify
             notify("report.ready", {"title": f"Abonnement {plan} activé"}, permission="licenses.read", tenant_id=tenant_id)
+        elif event["type"] in ("customer.subscription.deleted", "invoice.payment_failed"):
+            sub_id = obj.get("id") if event["type"] == "customer.subscription.deleted" else obj.get("subscription")
+            new_status = "expired" if event["type"] == "customer.subscription.deleted" else "past_due"
+            if tenant_id or sub_id:
+                fetch_one("""UPDATE public.tenant_subscriptions SET status = %s, updated_at = now()
+                              WHERE external_subscription_id = %s AND deleted_at IS NULL RETURNING 1""", [new_status, sub_id])
+                record_audit(f"billing.subscription_{new_status}", "licensing", after={"subscription": sub_id, "event": event["id"]},
+                             tenant_id=tenant_id, source="webhook")
         _ = get_context()
         return Response({"status": "processed"})

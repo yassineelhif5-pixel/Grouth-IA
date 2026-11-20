@@ -23,7 +23,8 @@ class PilotTenantCreateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120)
     slug = serializers.SlugField(max_length=63)
     owner_user_id = serializers.UUIDField(required=False, allow_null=True)
-    plan_code = serializers.ChoiceField(choices=["DEMO", "STARTER", "GROWTH", "GROWTH_ENTREPRISE"], default="STARTER")
+    plan_code = serializers.ChoiceField(choices=["DEMO", "STARTER", "GROWTH", "GROWTH_ENTREPRISE", "OFFRE_STARTER", "OFFRE_PRO", "OFFRE_PROFESSIONNELLE"],
+                                        default="OFFRE_STARTER")
 
 
 class ReasonSerializer(serializers.Serializer):

@@ -9,12 +9,38 @@ import { DataTable } from "@/components/DataTable";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { HistoryCentre } from "@/features/HistoryCentre";
-import { api } from "@/services/api";
+import { api, ApiError } from "@/services/api";
 import type { HealthCheck, Paged } from "@/types/api";
 import { formatDate } from "@/utils/format";
 
 type Row = Record<string, unknown> & { id: string };
-const PLANS = ["DEMO", "STARTER", "GROWTH", "GROWTH_ENTREPRISE"];
+
+/** Opens a tenant workspace as PILOTE: grants full access server-side (audited), refreshes /me, then navigates. */
+function useEnterTenant() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<{ tenant_id: string }>(`/pilot/tenants/${id}/enter`, { method: "POST", body: {} }),
+    onSuccess: async (r) => { await qc.invalidateQueries({ queryKey: ["me"] }); navigate(`/t/${r.tenant_id}/dashboard`); },
+  });
+}
+const PLANS = [
+  { value: "OFFRE_STARTER", label: "Starter — 20 € / mois" }, { value: "OFFRE_PRO", label: "Pro — 50 € / mois" },
+  { value: "OFFRE_PROFESSIONNELLE", label: "Professionnelle — 200 € / mois" }, { value: "DEMO", label: "Essai gratuit" },
+  { value: "STARTER", label: "STARTER (ancien)" }, { value: "GROWTH", label: "GROWTH (ancien)" }, { value: "GROWTH_ENTREPRISE", label: "GROWTH_ENTREPRISE (ancien)" },
+];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** "Café Dupont & Fils" -> "cafe-dupont-fils" : seuls a-z, 0-9 et "-" sont acceptés par l'API. */
+const slugify = (v: string): string =>
+  v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 63);
+
+/** Turns an API validation error into one readable line per field. */
+const apiErrorText = (e: unknown): string => {
+  if (!(e instanceof ApiError)) return String((e as Error)?.message ?? e);
+  const fields = Object.entries(e.details ?? {}).map(([k, v]) => `${k} : ${Array.isArray(v) ? v.join(" ") : String(v)}`);
+  return fields.length ? fields.join(" — ") : e.message;
+};
 
 export function PilotOverviewPage() {
   const { t } = useTranslation();
@@ -37,25 +63,38 @@ export function PilotTenantsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [opened, { open, close }] = useDisclosure(false);
-  const [form, setForm] = useState({ name: "", slug: "", plan_code: "STARTER", owner_user_id: "" });
+  const [form, setForm] = useState({ name: "", slug: "", plan_code: "OFFRE_STARTER", owner_user_id: "" });
+  const [slugTouched, setSlugTouched] = useState(false);
+  const owner = form.owner_user_id.trim();
+  const ownerInvalid = owner !== "" && !UUID_RE.test(owner);
+  const canCreate = form.name.trim() !== "" && form.slug !== "" && !ownerInvalid;
   const q = useQuery({ queryKey: ["pilot-tenants", search], queryFn: () => api<Paged<Row>>("/pilot/tenants", { query: { search } }) });
+  const enter = useEnterTenant();
   const create = useMutation({
-    mutationFn: () => api("/pilot/tenants", { method: "POST", body: { ...form, owner_user_id: form.owner_user_id || null } }),
-    onSuccess: () => { close(); void qc.invalidateQueries({ queryKey: ["pilot-tenants"] }); },
+    mutationFn: () => api<Row>("/pilot/tenants", { method: "POST", body: { ...form, name: form.name.trim(), slug: slugify(form.slug), owner_user_id: owner || null } }),
+    onSuccess: (r) => { close(); navigate(`/pilot/tenants/${r.id}`); setForm({ name: "", slug: "", plan_code: "OFFRE_STARTER", owner_user_id: "" }); setSlugTouched(false); void qc.invalidateQueries({ queryKey: ["pilot-tenants"] }); },
   });
   return (
     <>
       <PageHeader title={t("nav.tenants")} actions={<Group><TextInput placeholder={t("app.search")} value={search} onChange={(e) => setSearch(e.currentTarget.value)} /><Button onClick={open}>{t("pilot.newTenant")}</Button></Group>} />
       <DataTable rows={q.data?.results} loading={q.isLoading} error={q.error} onRowClick={(r) => navigate(`/pilot/tenants/${r.id}`)} columns={[
         { key: "name", label: "Nom" }, { key: "slug", label: "Slug" }, { key: "status", label: "Statut", render: (r) => <StatusBadge value={r.status as string} /> },
-        { key: "is_demo", label: "DEMO", render: (r) => (r.is_demo ? "✓" : "") }, { key: "created_at", label: "Créé", render: (r) => formatDate(r.created_at as string) }]} />
+        { key: "is_demo", label: "DEMO", render: (r) => (r.is_demo ? "✓" : "") }, { key: "created_at", label: "Créé", render: (r) => formatDate(r.created_at as string) },
+        { key: "open", label: "", render: (r) => r.status === "active" && (
+          <Button size="xs" variant="light" loading={enter.isPending && enter.variables === r.id}
+            onClick={(e) => { e.stopPropagation(); enter.mutate(r.id); }}>Ouvrir l'espace</Button>) }]} />
       <Modal opened={opened} onClose={close} title={t("pilot.newTenant")}>
         <Stack>
-          <TextInput label="Nom" value={form.name} onChange={(e) => setForm({ ...form, name: e.currentTarget.value })} />
-          <TextInput label="Slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.currentTarget.value })} />
-          <TextInput label="Owner user id (optionnel)" value={form.owner_user_id} onChange={(e) => setForm({ ...form, owner_user_id: e.currentTarget.value })} />
-          <Select label={t("license.plan")} data={PLANS} value={form.plan_code} onChange={(v) => setForm({ ...form, plan_code: v ?? "STARTER" })} />
-          <Button onClick={() => create.mutate()} loading={create.isPending}>{t("app.create")}</Button>
+          <TextInput label="Nom" required value={form.name}
+            onChange={(e) => { const name = e.currentTarget.value; setForm({ ...form, name, slug: slugTouched ? form.slug : slugify(name) }); }} />
+          <TextInput label="Slug" required description="Généré depuis le nom : minuscules, chiffres et tirets uniquement" value={form.slug}
+            onChange={(e) => { setSlugTouched(true); setForm({ ...form, slug: slugify(e.currentTarget.value) }); }} />
+          <TextInput label="Owner user id (optionnel)" description="Identifiant (UUID) d'un utilisateur existant, ou laisser vide"
+            value={form.owner_user_id} error={ownerInvalid ? "Format attendu : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" : undefined}
+            onChange={(e) => setForm({ ...form, owner_user_id: e.currentTarget.value })} />
+          <Select label={t("license.plan")} data={PLANS} value={form.plan_code} onChange={(v) => setForm({ ...form, plan_code: v ?? "OFFRE_STARTER" })} />
+          {create.isError && <Alert color="red">{apiErrorText(create.error)}</Alert>}
+          <Button onClick={() => create.mutate()} loading={create.isPending} disabled={!canCreate}>{t("app.create")}</Button>
         </Stack>
       </Modal>
     </>
@@ -80,11 +119,19 @@ export function PilotTenantDetailPage() {
   const [quota, setQuota] = useState<{ code: string | null; limit: number | string }>({ code: null, limit: "" });
   const [module, setModule] = useState("");
   const s = tenant.data;
+  const enter = useEnterTenant();
   return (
     <>
       <PageHeader title={(s?.name as string) ?? ""} subtitle={s?.slug as string} actions={s && (s.status === "suspended"
         ? <Button color="green" onClick={() => status.mutate("reactivate")}>{t("pilot.reactivate")}</Button>
-        : <Button color="red" onClick={() => status.mutate("suspend")}>{t("pilot.suspend")}</Button>)} />
+        : <Group>
+            <Button onClick={() => enter.mutate(tenantId)} loading={enter.isPending}>Ouvrir l'espace du tenant</Button>
+            <Button color="red" variant="light" onClick={() => status.mutate("suspend")}>{t("pilot.suspend")}</Button>
+          </Group>)} />
+      {s?.status !== "suspended" && <Alert color="blue" mb="md">
+        « Ouvrir l'espace du tenant » vous donne un accès complet à ce tenant (tracé dans l'audit) : utilisateurs et invitations,
+        scheduler SEO / GEO / Smart Prospect, produits, sites, connecteurs, paramètres…
+      </Alert>}
       {s?.status === "suspended" && <Alert color="red" mb="md">{String(s.suspended_reason ?? "")}</Alert>}
       <SimpleGrid cols={{ base: 1, lg: 2 }}>
         <Card withBorder>

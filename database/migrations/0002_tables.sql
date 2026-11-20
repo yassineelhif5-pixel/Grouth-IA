@@ -519,7 +519,7 @@ ALTER TABLE public.tenant_invitation_events ADD COLUMN IF NOT EXISTS tenant_id u
 
 CREATE TABLE IF NOT EXISTS public.subscription_plans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  code text NOT NULL CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE')),
+  code text NOT NULL CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE', 'OFFRE_STARTER', 'OFFRE_PRO', 'OFFRE_PROFESSIONNELLE')),
   name text NOT NULL,
   description text,
   is_trial boolean NOT NULL DEFAULT false,
@@ -532,7 +532,7 @@ CREATE TABLE IF NOT EXISTS public.subscription_plans (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-ALTER TABLE public.subscription_plans ADD COLUMN IF NOT EXISTS code text CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE')),
+ALTER TABLE public.subscription_plans ADD COLUMN IF NOT EXISTS code text CHECK (code IN ('DEMO', 'STARTER', 'GROWTH', 'GROWTH_ENTREPRISE', 'OFFRE_STARTER', 'OFFRE_PRO', 'OFFRE_PROFESSIONNELLE')),
   ADD COLUMN IF NOT EXISTS name text,
   ADD COLUMN IF NOT EXISTS description text,
   ADD COLUMN IF NOT EXISTS is_trial boolean DEFAULT false NOT NULL,

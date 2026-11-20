@@ -12,7 +12,7 @@ class SubscriptionPlan(models.Model):
     """subscription_plans [ref]"""
 
     id = models.UUIDField(primary_key=True, default=_uuid.uuid4, editable=False)
-    code = models.TextField(choices=[('DEMO', 'DEMO'), ('STARTER', 'STARTER'), ('GROWTH', 'GROWTH'), ('GROWTH_ENTREPRISE', 'GROWTH_ENTREPRISE')])
+    code = models.TextField(choices=[('DEMO', 'DEMO'), ('STARTER', 'STARTER'), ('GROWTH', 'GROWTH'), ('GROWTH_ENTREPRISE', 'GROWTH_ENTREPRISE'), ('OFFRE_STARTER', 'OFFRE_STARTER'), ('OFFRE_PRO', 'OFFRE_PRO'), ('OFFRE_PROFESSIONNELLE', 'OFFRE_PROFESSIONNELLE')])
     name = models.TextField()
     description = models.TextField(null=True, blank=True)
     is_trial = models.BooleanField(default=False)

@@ -1,4 +1,10 @@
+import { Alert, Anchor } from "@mantine/core";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+
+import { api } from "@/services/api";
 
 import { useMe, useTenant } from "@/hooks/useMe";
 
@@ -41,5 +47,33 @@ export function TenantLayout() {
     { to: `${b}/settings`, label: t("nav.settings"), show: true },
     { to: "/pilot", label: t("nav.pilot"), show: !!data?.user.is_pilot },
   ];
-  return <Shell nav={items.filter((i) => i.show)} header={<TenantSwitcher current={tenantId} />} />;
+  return <Shell nav={items.filter((i) => i.show)} header={<TenantSwitcher current={tenantId} />} banner={<TrialBanner tenantId={tenantId} />} />;
+}
+
+/** Trial / subscription banner: countdown during the free trial, read-only notice once it is over. */
+function TrialBanner({ tenantId }: { tenantId: string }) {
+  const q = useQuery({
+    queryKey: ["license", tenantId], retry: false,
+    queryFn: () => api<{ subscription: { status: string; trial_ends_at: string | null; plan_name: string } | null }>("/license", { tenantId }),
+  });
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const id = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(id); }, []);
+  const s = q.data?.subscription;
+  if (!s) return null;
+  const link = <Anchor component={Link} to={`/t/${tenantId}/subscription`} fw={600}>Choisir mon abonnement</Anchor>;
+  const end = s.trial_ends_at ? new Date(s.trial_ends_at) : null;
+  const over = ["expired", "suspended", "cancelled"].includes(s.status) || (s.status === "trialing" && end !== null && end.getTime() < now);
+  if (over) {
+    return <Alert color="red" mb="md" title="Votre période d'essai est terminée">
+      L'espace est en lecture seule jusqu'à la souscription d'une offre (Starter 20 €, Pro 50 € ou Professionnelle 200 € TTC / mois). {link}
+    </Alert>;
+  }
+  if (s.status === "past_due") return <Alert color="orange" mb="md">Le dernier paiement a échoué : mettez à jour votre moyen de paiement. {link}</Alert>;
+  if (s.status === "trialing" && end) {
+    const hours = Math.max(0, Math.round((end.getTime() - now) / 3_600_000));
+    return <Alert color="blue" mb="md">
+      Essai gratuit : il reste {hours >= 24 ? `${Math.floor(hours / 24)} j ${hours % 24} h` : `${hours} h`} (fin le {end.toLocaleString("fr-FR")}). {link}
+    </Alert>;
+  }
+  return null;
 }

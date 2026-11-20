@@ -41,13 +41,19 @@ def effective_limit(tenant_id: str, quota_code: str) -> int | None:
 
 
 def ensure_active_subscription(tenant_id: str) -> None:
+    from apps.core.tenancy import is_platform_admin
+    uid = get_context().user_id
+    if uid and is_platform_admin(str(uid)):
+        return  # the PILOTE is never blocked by a tenant's subscription (support, set-up, recovery)
     row = fetch_one("""SELECT status, trial_ends_at FROM public.tenant_subscriptions WHERE tenant_id = %s
                         AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1""", [tenant_id])
     if not row:
         raise BusinessError("No active subscription", "no_subscription", status_code=402)
     status, trial_end = row
     if status in ("expired", "suspended", "cancelled") or (status == "trialing" and trial_end and trial_end < timezone.now()):
-        raise BusinessError("Your subscription is not active", "subscription_inactive", status_code=402)
+        raise BusinessError("Votre essai gratuit est terminé ou votre abonnement n'est pas actif : choisissez une offre dans "
+                            "« Abonnement » pour continuer. L'espace reste consultable en lecture seule.", "subscription_inactive",
+                            status_code=402)
 
 
 def check_quota(tenant_id: str, quota_code: str, increment: int = 1) -> None:

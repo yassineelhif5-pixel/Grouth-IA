@@ -378,7 +378,7 @@ Unique: `(tenant_id, sso_configuration_id, external_group)`
 
 | Column | Type | Null | Default | Constraint | Notes |
 |---|---|---|---|---|---|
-| code | text |  |  | unique in(DEMO, STARTER, GROWTH, GROWTH_ENTREPRISE) |  |
+| code | text |  |  | unique in(DEMO, STARTER, GROWTH, GROWTH_ENTREPRISE, OFFRE_STARTER, OFFRE_PRO, OFFRE_PROFESSIONNELLE) |  |
 | name | text |  |  |  |  |
 | description | text | yes |  |  |  |
 | is_trial | boolean |  | false |  |  |

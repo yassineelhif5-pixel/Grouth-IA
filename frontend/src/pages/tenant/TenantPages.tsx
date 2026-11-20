@@ -105,6 +105,15 @@ export function MembersPage() {
   );
 }
 
+const INVITE_ROLES = [
+  { value: "tenant_admin", label: "Administrateur" }, { value: "tenant_manager", label: "Responsable du tenant" },
+  { value: "marketing_manager", label: "Responsable marketing" }, { value: "seo_manager", label: "Responsable SEO" },
+  { value: "content_manager", label: "Responsable contenu" }, { value: "social_media_manager", label: "Community manager" },
+  { value: "sales_manager", label: "Responsable commercial" }, { value: "sales_rep", label: "Commercial" },
+  { value: "analyst", label: "Analyste" }, { value: "tenant_member", label: "Membre" }, { value: "tenant_viewer", label: "Lecteur" },
+];
+const ROLE_LABEL: Record<string, string> = Object.fromEntries(INVITE_ROLES.map((r) => [r.value, r.label]));
+
 export function InvitationsPage() {
   const { t } = useTranslation();
   const { tenantId } = useTenant();
@@ -112,9 +121,10 @@ export function InvitationsPage() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string | null>("tenant_member");
   const q = useQuery({ queryKey: ["invitations", tenantId], queryFn: () => api<Row[]>("/invitations", { tenantId }) });
+  const [link, setLink] = useState<string | null>(null);
   const inv = useMutation({
-    mutationFn: () => api("/invitations", { method: "POST", body: { email, role_code: role }, tenantId }),
-    onSuccess: () => { setEmail(""); void qc.invalidateQueries({ queryKey: ["invitations", tenantId] }); },
+    mutationFn: () => api<{ accept_path?: string }>("/invitations", { method: "POST", body: { email, role_code: role }, tenantId }),
+    onSuccess: (r) => { setLink(r.accept_path ? `${window.location.origin}${r.accept_path}` : null); setEmail(""); void qc.invalidateQueries({ queryKey: ["invitations", tenantId] }); },
   });
   const revoke = useMutation({
     mutationFn: (id: string) => api(`/invitations/${id}/revoke`, { method: "POST", body: { reason: "UI" }, tenantId }),
@@ -125,11 +135,17 @@ export function InvitationsPage() {
       <PageHeader title={t("nav.invitations")} />
       <Group mb="md" align="flex-end">
         <TextInput label={t("auth.email")} value={email} onChange={(e) => setEmail(e.currentTarget.value)} />
-        <Select label="Rôle" value={role} onChange={setRole} data={["tenant_admin", "tenant_member", "tenant_viewer"]} />
+        <Select label="Profil" value={role} onChange={setRole} w={240} data={INVITE_ROLES} />
         <Button onClick={() => inv.mutate()} loading={inv.isPending} disabled={!email}>{t("app.create")}</Button>
       </Group>
+      {link && <Alert color="green" mb="md" withCloseButton onClose={() => setLink(null)} title="Invitation créée">
+        Aucun serveur d'e-mail n'est configuré : transmettez ce lien à la personne invitée (valable une seule fois). Elle crée son
+        compte avec cette adresse e-mail et choisit elle-même son mot de passe.
+        <Group mt="xs"><TextInput readOnly value={link} style={{ flex: 1 }} onFocus={(e) => e.currentTarget.select()} />
+          <Button variant="light" onClick={() => void navigator.clipboard?.writeText(link)}>Copier</Button></Group>
+      </Alert>}
       <DataTable rows={q.data} loading={q.isLoading} error={q.error} columns={[
-        { key: "email", label: "E-mail" }, { key: "role", label: "Rôle" }, { key: "status", label: "Statut", render: (r) => <StatusBadge value={r.status as string} /> },
+        { key: "email", label: "E-mail" }, { key: "role", label: "Profil", render: (r) => ROLE_LABEL[r.role as string] ?? String(r.role) }, { key: "status", label: "Statut", render: (r) => <StatusBadge value={r.status as string} /> },
         { key: "expires_at", label: "Expire", render: (r) => formatDate(r.expires_at as string) },
         { key: "a", label: "", render: (r) => r.status === "pending" && <Button size="xs" variant="subtle" color="red" onClick={() => revoke.mutate(r.id)}>Révoquer</Button> }]} />
     </>
@@ -137,6 +153,37 @@ export function InvitationsPage() {
 }
 
 interface License { subscription: Row | null; quotas: { quota_code: string; effective_limit: number | null; used: number | null }[]; modules: { code: string; name: string; status: string }[] }
+
+interface Offer { code: string; name: string; description: string | null; price_monthly_cents: number; currency: string }
+
+function Offers({ tenantId, current }: { tenantId: string; current?: string }) {
+  const catalog = useQuery({ queryKey: ["billing-plans"], queryFn: () => api<{ plans: Offer[]; online_payment: boolean }>("/billing/plans") });
+  const back = new URLSearchParams(window.location.search).get("checkout");
+  const pay = useMutation({
+    mutationFn: (plan_code: string) => api<{ url: string }>("/billing/checkout", { method: "POST", body: { plan_code }, tenantId }),
+    onSuccess: (r) => { if (r.url) window.location.href = r.url; },
+  });
+  const eur = (c: number) => (c / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  return (
+    <>
+      {back === "success" && <Alert color="green" mb="md">Paiement reçu : votre abonnement est activé (quelques secondes peuvent être nécessaires).</Alert>}
+      {back === "cancel" && <Alert color="gray" mb="md">Paiement annulé : aucun montant n'a été débité.</Alert>}
+      {catalog.data && !catalog.data.online_payment && <Alert color="yellow" mb="md">Le paiement en ligne sera bientôt disponible.</Alert>}
+      {pay.isError && <Alert color="red" mb="md">{(pay.error as Error).message}</Alert>}
+      <SimpleGrid cols={{ base: 1, md: 3 }} mb="lg">
+        {catalog.data?.plans.map((p) => (
+          <Card key={p.code} withBorder padding="lg" style={current === p.code ? { borderColor: "var(--mantine-color-indigo-6)", borderWidth: 2 } : undefined}>
+            <Title order={4}>{p.name}</Title>
+            <Text size="xl" fw={700} mt="xs">{eur(p.price_monthly_cents)} <Text span size="sm" c="dimmed">TTC / mois</Text></Text>
+            <Text size="sm" c="dimmed" mt="xs" mb="md">Sans engagement, résiliable à tout moment.</Text>
+            <Button fullWidth disabled={current === p.code || !catalog.data?.online_payment} loading={pay.isPending && pay.variables === p.code}
+              onClick={() => pay.mutate(p.code)}>{current === p.code ? "Offre actuelle" : "Choisir cette offre"}</Button>
+          </Card>
+        ))}
+      </SimpleGrid>
+    </>
+  );
+}
 
 export function SubscriptionPage() {
   const { t } = useTranslation();
@@ -146,6 +193,7 @@ export function SubscriptionPage() {
   return (
     <>
       <PageHeader title={t("nav.subscription")} />
+      <Offers tenantId={tenantId} current={s?.plan as string | undefined} />
       {s && <Card withBorder mb="md"><Group><Text fw={600}>{String(s.plan_name)}</Text><StatusBadge value={s.status as string} />
         {s.trial_ends_at ? <Text size="sm">{t("license.trialEnds")}: {formatDate(s.trial_ends_at as string)}</Text> : null}</Group></Card>}
       <Title order={4} mb="sm">{t("license.quotas")}</Title>

@@ -13,7 +13,7 @@ export interface TenantSummary {
 }
 
 export interface Me {
-  user: { id: string; email: string; email_verified: boolean; aal: string; is_pilot: boolean };
+  user: { id: string; email: string; email_verified: boolean; aal: string; is_pilot: boolean; pilot_mfa_required?: boolean };
   profile: { full_name: string | null; username: string | null; locale: "fr" | "en"; theme: "light" | "dark" | "system"; version_number: number } | null;
   tenants: TenantSummary[];
 }

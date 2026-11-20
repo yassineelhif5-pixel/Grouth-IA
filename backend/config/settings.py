@@ -172,7 +172,7 @@ GROWTH = {
     "INVITATION_TTL_HOURS": int(env("INVITATION_TTL_HOURS", "168")),
     "EXPORT_LINK_TTL_SECONDS": int(env("EXPORT_LINK_TTL_SECONDS", "900")),
     "PILOT_REQUIRE_MFA": env_bool("PILOT_REQUIRE_MFA", True),
-    "FRONTEND_URL": env("FRONTEND_URL", VERCEL_ORIGIN or "http://localhost:5173"),
+    "FRONTEND_URL": env("FRONTEND_URL", "https://growthai.zirconai.fr"),
 }
 
 # ── E-mail (notifications) ──
@@ -185,9 +185,12 @@ EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Growth IA <no-reply@example.com>")
 
 # ── PROMPT 2 ──
-PUBLIC_API_URL = env("PUBLIC_API_URL", VERCEL_ORIGIN or "http://localhost:8000").rstrip("/")  # OAuth callbacks & webhooks
+PUBLIC_API_URL = env("PUBLIC_API_URL", "https://growthai.zirconai.fr").rstrip("/")  # OAuth callbacks & webhooks
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET")
+# Periodic tasks without Celery Beat (Vercel): /api/v1/internal/cron/tick called by Vercel Cron or an external cron
+CRON_SECRET = env("CRON_SECRET")
+CRON_TIME_BUDGET_SECONDS = float(env("CRON_TIME_BUDGET_SECONDS", "45"))
 STRIPE_PRICE_IDS = {k: env(f"STRIPE_PRICE_{k}") for k in ("STARTER", "GROWTH", "GROWTH_ENTREPRISE")}
 CRAWLER_USER_AGENT = env("CRAWLER_USER_AGENT", "GrowthIA-Bot/1.0 (+https://growth-ia.example/bot)")
 CRAWLER_MAX_PAGES = int(env("CRAWLER_MAX_PAGES", "200"))

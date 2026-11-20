@@ -58,3 +58,25 @@ Variables (fichier local `.env.vercel`, jamais commité) : `DJANGO_SECRET_KEY` (
 Limites de l'hébergement serverless : pas de worker ni de Celery Beat (programmations, synchro e-mail, campagnes et sondes planifiées ne tournent pas d'elles-mêmes), traitements limités à 60 s par requête (audits SEO volumineux), cache et limitation de débit par instance. Pour ces fonctions, héberger l'API et les workers sur un serveur (Docker Compose) et ne garder que le site sur Vercel.
 
 Supabase Auth : ajouter le domaine Vercel dans *Authentication → URL Configuration* (Site URL et Redirect URLs `https://<domaine>/onboarding`, `https://<domaine>/reset-password`).
+
+## Tâches planifiées sans Celery Beat (Vercel)
+Sur Vercel il n'y a ni worker ni Celery Beat (`REDIS_URL=memory://`, `CELERY_TASK_ALWAYS_EAGER=true`). Les tâches
+périodiques de `config/celery.py` (séances du Multi-Scheduler SEO / GEO / Smart Prospect, relances de campagnes,
+synchronisation des boîtes e-mail, notifications programmées, expiration des essais, sondes System Health,
+partitions, rétention) sont exécutées par `GET|POST /api/v1/internal/cron/tick`.
+
+- Protection : en-tête `Authorization: Bearer <CRON_SECRET>` (variable `CRON_SECRET`, sans elle l'URL répond 503).
+- Une seule exécution par période et par tâche (créneau réservé dans `idempotency_keys`), verrou consultatif
+  PostgreSQL contre les appels simultanés, budget de 45 s (`CRON_TIME_BUDGET_SECONDS`) puis report au passage suivant.
+- Vercel Cron (déclaré dans `vercel.json`) l'appelle une fois par jour : limite de l'offre gratuite. Pour un
+  déclenchement toutes les 5 minutes, configurer un service de cron externe (ex. cron-job.org) sur
+  `https://growthai.zirconai.fr/api/v1/internal/cron/tick` avec l'en-tête ci-dessus, ou passer à Vercel Pro.
+- Avec un vrai worker + Celery Beat (Docker), cette URL est inutile : laisser `CRON_SECRET` vide.
+
+## Offres payantes et essai
+Offres `OFFRE_STARTER` (20 €), `OFFRE_PRO` (50 €), `OFFRE_PROFESSIONNELLE` (200 €), TTC mensuels (migration `0013`).
+Essai gratuit de 48 h (migration `0014`). À la fin de l'essai l'espace passe en lecture seule (HTTP 402
+`subscription_inactive` sur toute écriture) sauf le paiement ; le PILOTE n'est jamais bloqué. Le paiement Stripe
+Checkout construit le prix depuis l'offre (pas d'identifiant de prix Stripe à créer) ; il suffit de
+`STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET` (webhook `/api/v1/webhooks/stripe`, événements
+`checkout.session.completed`, `invoice.payment_failed`, `customer.subscription.deleted`).

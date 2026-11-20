@@ -331,7 +331,65 @@ export function WhatsAppPage() {
 }
 
 // ───────────── Scheduler & Workflows ─────────────
+type Pick = { value: string; label: string };
+const asList = (d: unknown): Row[] => (Array.isArray(d) ? d : ((d as { results?: Row[] })?.results ?? [])) as Row[];
+const labelOf = (r: Row): string => String(r.name ?? r.title ?? r.domain ?? r.url ?? r.id);
+
+/** Guided scheduling of SEO / GEO / Smart Prospect sessions: pick the target in a list, no JSON. */
+type SessionKind = { label: string; source: string; param: string; target: string };
+const SEO_KIND: SessionKind = { label: "Audit SEO", source: "/seo/projects", param: "project_id", target: "Projet SEO" };
+const SESSION_KINDS: Record<string, SessionKind> = {
+  seo: SEO_KIND,
+  geo: { label: "Visibilité GEO (IA)", source: "/products", param: "product_id", target: "Produit" },
+  prospects: { label: "Smart Prospect (campagne)", source: "/campaigns", param: "campaign_id", target: "Campagne" },
+};
+
+function QuickScheduleCard() {
+  const { tenantId } = useTenant();
+  const qc = useQueryClient();
+  const [kind, setKind] = useState("seo");
+  const [target, setTarget] = useState<string | null>(null);
+  const [freq, setFreq] = useState("daily");
+  const [value, setValue] = useState("08:30");
+  const [mode, setMode] = useState("automatic");
+  const [name, setName] = useState("");
+  const k = SESSION_KINDS[kind] ?? SEO_KIND;
+  const targets = useQuery({ queryKey: [k.source, tenantId, "pick"], queryFn: () => api<unknown>(k.source, { tenantId, query: { page_size: 200 } }) });
+  const options: Pick[] = asList(targets.data).map((r) => ({ value: String(r.id), label: labelOf(r) }));
+  const create = useMutation({
+    mutationFn: () => api<Row>("/schedulers", { method: "POST", tenantId, body: {
+      name: name.trim() || `${k.label} — ${options.find((o) => o.value === target)?.label ?? ""}`,
+      category: kind, frequency_type: freq, frequency_value: freq === "hourly" ? null : value, timezone: "Europe/Paris", mode,
+      product: kind === "geo" ? target : undefined, params: { [k.param]: target } } }),
+    onSuccess: () => { setTarget(null); setName(""); notifications.show({ color: "green", message: "Séance programmée" }); void qc.invalidateQueries({ queryKey: ["/schedulers"] }); },
+  });
+  const hint: Record<string, string> = { daily: "Heure HH:MM, ex. 08:30", weekly: "Jour et heure, ex. monday 08:30", monthly: "Jour et heure, ex. 1 08:30",
+    every_x_hours: "Nombre d'heures, ex. 6", cron: "Expression cron, ex. 0 8 * * 1-5" };
+  return (
+    <Card withBorder mb="md">
+      <Title order={5} mb="sm">Programmer une séance SEO, GEO ou Smart Prospect</Title>
+      <SimpleGrid cols={{ base: 1, md: 3 }}>
+        <Select label="Type de séance" value={kind} allowDeselect={false} onChange={(v) => { setKind(v ?? "seo"); setTarget(null); }}
+          data={Object.entries(SESSION_KINDS).map(([v, x]) => ({ value: v, label: x.label }))} />
+        <Select label={k.target} value={target} onChange={setTarget} data={options} searchable
+          placeholder={targets.isLoading ? "Chargement…" : options.length ? "Choisir" : `Aucun élément : créez d'abord un ${k.target.toLowerCase()}`} />
+        <TextInput label="Nom (optionnel)" value={name} onChange={(e) => setName(e.currentTarget.value)} />
+        <Select label="Fréquence" value={freq} allowDeselect={false} onChange={(v) => setFreq(v ?? "daily")} data={[
+          { value: "hourly", label: "Toutes les heures" }, { value: "every_x_hours", label: "Toutes les X heures" },
+          { value: "daily", label: "Chaque jour" }, { value: "weekly", label: "Chaque semaine" }, { value: "monthly", label: "Chaque mois" },
+          { value: "cron", label: "Avancé (cron)" }]} />
+        {freq !== "hourly" && <TextInput label="Quand" description={hint[freq]} value={value} onChange={(e) => setValue(e.currentTarget.value)} />}
+        <Select label="Mode" value={mode} allowDeselect={false} onChange={(v) => setMode(v ?? "automatic")} data={[
+          { value: "automatic", label: "Automatique" }, { value: "approval", label: "Avec validation" }, { value: "analysis", label: "Analyse seule" }]} />
+      </SimpleGrid>
+      <Group mt="md"><Button onClick={() => create.mutate()} loading={create.isPending} disabled={!target}>Programmer</Button></Group>
+    </Card>
+  );
+}
+
 export const SchedulerV2Page = () => (
+  <>
+  <QuickScheduleCard />
   <ModulePage title="Multi-Scheduler" endpoint="/schedulers" module="scheduler" writePerm="scheduler.manage"
     columns={[{ key: "name", label: "Programmation" }, { key: "category", label: "Catégorie" }, { key: "frequency_type", label: "Fréquence" }, { key: "mode", label: "Mode" }, statusCol(),
       dateCol("next_run_at", "Prochaine"), dateCol("last_run_at", "Dernière"), { key: "last_status", label: "Résultat", render: (r) => <StatusBadge value={r.last_status as string} /> }]}
@@ -343,6 +401,7 @@ export const SchedulerV2Page = () => (
       { name: "params", label: "Paramètres (JSON)", type: "json" }]}
     defaultValues={{ timezone: "Europe/Paris", frequency_type: "daily", frequency_value: "08:30", mode: "approval", params: "{}" }}
     actions={[{ label: "Exécuter", path: (r) => `/schedulers/${r.id}/run` }, { label: "Historique", path: (r) => `/schedulers/${r.id}/runs`, method: "GET" }]} />
+  </>
 );
 
 export const WorkflowsPage = () => (

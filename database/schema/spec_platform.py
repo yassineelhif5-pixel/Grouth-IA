@@ -173,7 +173,7 @@ metadata json! =\'{}\'
 # ───────────────────────── B. LICENCES ─────────────────────────
 t = domain("B. Licences", "licensing")
 t("subscription_plans", """
-code text! uniq in(DEMO,STARTER,GROWTH,GROWTH_ENTREPRISE)
+code text! uniq in(DEMO,STARTER,GROWTH,GROWTH_ENTREPRISE,OFFRE_STARTER,OFFRE_PRO,OFFRE_PROFESSIONNELLE)
 name text!
 description text
 is_trial bool! =false

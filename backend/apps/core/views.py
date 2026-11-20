@@ -22,6 +22,7 @@ class GrowthContextMixin:
 
     tenant_scoped = True
     platform_scoped = False
+    allow_without_subscription = False  # True on the views that must keep working when the trial is over (payment…)
     permission_map: dict[str, str] = {}
     required_module: str | None = None
 
@@ -49,6 +50,10 @@ class GrowthContextMixin:
         request.growth_ctx = ctx
         set_context(ctx)
         apply_db_context(ctx)
+        if (self.tenant_scoped and not self.platform_scoped and not self.allow_without_subscription
+                and request.method not in ("GET", "HEAD", "OPTIONS") and not is_platform_admin(user.id)):
+            from apps.licensing.services import ensure_active_subscription  # late import: licensing depends on core
+            ensure_active_subscription(ctx.tenant_id)  # 402 subscription_inactive → the space is read-only until payment
 
 
 class GrowthAPIView(GrowthContextMixin, APIView):

@@ -21,12 +21,12 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** PILOTE routes: platform role + MFA (aal2). The backend enforces the same rules. */
+/** PILOTE routes: platform role + MFA (aal2) unless disabled (PILOT_REQUIRE_MFA=false). The backend enforces the same rules. */
 export function RequirePilot({ children }: { children: ReactNode }) {
   const { data, isLoading } = useMe();
   if (isLoading) return <FullLoader />;
   if (!data?.user.is_pilot) return <Navigate to="/" replace />;
-  if (data.user.aal !== "aal2") return <Navigate to="/mfa" replace />;
+  if (data.user.pilot_mfa_required !== false && data.user.aal !== "aal2") return <Navigate to="/mfa" replace />;
   return <>{children}</>;
 }
 

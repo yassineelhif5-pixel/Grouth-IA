@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.response import Response
 
@@ -30,7 +31,11 @@ class InvitationListView(GrowthAPIView):
         inv, token = create_invitation(request.tenant.tenant_id, **ser.validated_data)
         from apps.notifications.tasks import send_invitation_email
         send_invitation_email.delay_traced(str(inv.id), token)  # token travels only in the e-mail
-        return Response({"id": str(inv.id), "status": inv.status, "expires_at": inv.expires_at}, status=201)
+        body = {"id": str(inv.id), "status": inv.status, "expires_at": inv.expires_at}
+        if not getattr(settings, "EMAIL_HOST", ""):
+            # No mail server configured: the inviter gets the one-time link to hand over (shown once, never stored in clear).
+            body["accept_path"] = f"/invitations/accept?token={token}"
+        return Response(body, status=201)
 
 
 class InvitationRevokeView(GrowthAPIView):

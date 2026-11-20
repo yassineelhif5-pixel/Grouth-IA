@@ -252,7 +252,8 @@ def test_parcours_7_smart_prospect_campaign_reply_classification_crm(tenant_user
     dup, _ = _inbound(client, mb["id"], "<r1@client.test>", out[0], "Oui")
     assert dup.json()["status"] in ("duplicate",)
     conv_id = ok.json()["conversation_id"]
-    conv_out = admin_conn.execute("SELECT conversation_id FROM public.email_messages WHERE provider_message_id = 'pm-123'").fetchone()[0]
+    conv_out = admin_conn.execute("SELECT conversation_id FROM public.email_messages WHERE provider_message_id = 'pm-123' AND tenant_id = %s",
+                                  [a["tenant_id"]]).fetchone()[0]
     assert str(conv_out) == conv_id  # threaded by In-Reply-To, not by subject
     folder = c.get("/api/v1/email/folders/demo_requested").json()
     assert any(f["id"] == conv_id for f in folder)

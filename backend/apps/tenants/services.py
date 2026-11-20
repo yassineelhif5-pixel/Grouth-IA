@@ -56,3 +56,38 @@ def set_tenant_status(tenant: Tenant, status: str, reason: str) -> Tenant:
         changes |= {"suspended_reason": reason, "suspended_at": timezone.now()}
     return audited_update(tenant, changes, action=f"tenant.{status}", module="tenants", reason=reason,
                           description=f"Tenant status → {status}: {reason}")
+
+
+def ensure_pilot_access(tenant_id: str, user_id: str) -> bool:
+    """Gives the PILOTE full access to a tenant: active member with the tenant_owner role (audited, idempotent).
+    Every tenant screen, permission check and RLS policy then works unchanged for the pilot.
+    Returns True when access was granted now, False when it already existed."""
+    ctx = get_context()
+    with transaction.atomic():
+        set_context(ctx.with_(tenant_id=tenant_id))
+        apply_db_context(get_context())
+        try:
+            row = fetch_one("""SELECT m.id, m.status FROM public.tenant_members m
+                                WHERE m.tenant_id = %s AND m.user_id = %s AND m.deleted_at IS NULL""", [tenant_id, user_id])
+            if row is None:
+                member_id = fetch_one("INSERT INTO public.tenant_members (tenant_id, user_id) VALUES (%s, %s) RETURNING id",
+                                      [tenant_id, user_id])[0]
+            else:
+                member_id = row[0]
+                if row[1] != "active":
+                    fetch_one("UPDATE public.tenant_members SET status = 'active', updated_at = now() WHERE id = %s RETURNING id",
+                              [member_id])
+            granted = fetch_one("""INSERT INTO public.tenant_memberships (tenant_id, member_id, role_id, granted_reason)
+                                   SELECT %s, %s, r.id, 'PILOTE support access' FROM public.tenant_roles r
+                                    WHERE r.tenant_id IS NULL AND r.code = 'tenant_owner'
+                                      AND NOT EXISTS (SELECT 1 FROM public.tenant_memberships ms
+                                                       WHERE ms.tenant_id = %s AND ms.member_id = %s AND ms.role_id = r.id
+                                                         AND ms.deleted_at IS NULL)
+                                   RETURNING id""", [tenant_id, member_id, tenant_id, member_id])
+            if granted:
+                record_audit("pilot.tenant.access_granted", "tenants", entity_type="tenants", entity_id=tenant_id,
+                             description="Accès complet PILOTE (rôle propriétaire) au tenant", tenant_id=tenant_id)
+            return bool(granted)
+        finally:
+            set_context(ctx)
+            apply_db_context(ctx)

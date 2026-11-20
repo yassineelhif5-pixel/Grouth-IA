@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.response import Response
@@ -43,7 +44,8 @@ class MeView(GrowthAPIView):
                 GROUP BY t.id ORDER BY t.name""", [uid, uid])
         return Response({
             "user": {"id": uid, "email": request.user.email, "email_verified": request.user.email_verified,
-                     "aal": request.user.aal, "is_pilot": is_platform_admin(uid)},
+                     "aal": request.user.aal, "is_pilot": is_platform_admin(uid),
+                     "pilot_mfa_required": settings.GROWTH["PILOT_REQUIRE_MFA"]},
             "profile": UserProfileSerializer(profile).data if profile else None,
             "tenants": tenants,
         })

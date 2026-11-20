@@ -4,12 +4,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.audit.services import record_audit
+from apps.core.exceptions import BusinessError
 from apps.core.services import audited_create, audited_update
 from apps.core.views import GrowthAPIView, GrowthViewSet
 
 from .models import Tenant, TenantSetting
 from .serializers import PilotTenantCreateSerializer, ReasonSerializer, TenantSerializer, TenantSettingSerializer
-from .services import pilot_create_tenant, set_tenant_status
+from .services import ensure_pilot_access, pilot_create_tenant, set_tenant_status
 
 
 class CurrentTenantView(GrowthAPIView):
@@ -59,9 +60,22 @@ class PilotTenantViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, Growt
         ser = PilotTenantCreateSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         d = ser.validated_data
+        if Tenant.objects.filter(slug=d["slug"], deleted_at__isnull=True).exists():
+            raise BusinessError(f"Le slug « {d['slug']} » est déjà utilisé par un autre tenant.", code="slug_taken",
+                                details={"slug": ["Ce slug est déjà utilisé."]}, status_code=409)
         tenant = pilot_create_tenant(d["name"], d["slug"], str(d["owner_user_id"]) if d.get("owner_user_id") else None,
                                      d["plan_code"])
+        ensure_pilot_access(str(tenant.pk), str(request.user.id))  # the pilot can configure the new tenant right away
         return Response(TenantSerializer(tenant).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"])
+    def enter(self, request, pk=None):
+        """Opens the tenant workspace for the PILOTE (full access, audited)."""
+        tenant = self.get_object()
+        if tenant.status in ("suspended", "archived"):
+            raise BusinessError(f"Le tenant est {tenant.status} : réactivez-le avant d'ouvrir son espace.", code="tenant_inactive")
+        granted = ensure_pilot_access(str(tenant.pk), str(request.user.id))
+        return Response({"tenant_id": str(tenant.pk), "granted": granted})
 
     @action(detail=True, methods=["post"])
     def suspend(self, request, pk=None):

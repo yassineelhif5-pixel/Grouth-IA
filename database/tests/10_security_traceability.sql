@@ -48,8 +48,8 @@ DO $$ BEGIN
 EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'ok - unverified e-mail rejected';
 END $$;
 RESET ROLE;
-SELECT pg_temp.ok((SELECT status = 'trialing' AND trial_ends_at BETWEEN now() + interval '71 hours' AND now() + interval '73 hours'
-                     FROM tenant_subscriptions WHERE tenant_id = pg_temp.g('ta')), 'DEMO subscription trialing for 72h');
+SELECT pg_temp.ok((SELECT status = 'trialing' AND trial_ends_at BETWEEN now() + interval '47 hours' AND now() + interval '49 hours'
+                     FROM tenant_subscriptions WHERE tenant_id = pg_temp.g('ta')), 'DEMO subscription trialing for 48h (2-day free trial)');
 SELECT pg_temp.ok((SELECT limit_value = 3 FROM tenant_license_quotas WHERE tenant_id = pg_temp.g('ta') AND quota_code = 'scheduler.configurations'),
                   'DEMO limited to 3 scheduler configurations');
 SELECT pg_temp.ok(app.has_tenant_role(pg_temp.g('ta'), pg_temp.g('a'), ARRAY['tenant_owner']), 'signup user is tenant owner');
