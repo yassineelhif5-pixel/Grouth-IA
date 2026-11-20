@@ -159,7 +159,8 @@ class AssistantView(GrowthAPIView):
 
     def post(self, request):
         return Response(services.assistant_reply(request.data.get("profile_id"), str(request.data.get("message") or "")[:4000],
-                                                 request.data.get("history") or []))
+                                                 request.data.get("history") or [],
+                                                 request.data.get("answers") if isinstance(request.data.get("answers"), dict) else None))
 
     def get(self, request):
         return Response({"questions": [{"key": k, "question": q} for k, q in services.FUNDAMENTAL_QUESTIONS], "channels": services.CHANNELS})

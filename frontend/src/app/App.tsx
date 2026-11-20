@@ -9,6 +9,8 @@ import { AcceptInvitationPage, HomeRedirect, LoginPage, MfaPage, OnboardingPage,
 import * as P from "@/pages/pilot/PilotPages";
 import * as M from "@/pages/tenant/ModulePages";
 import * as T from "@/pages/tenant/TenantPages";
+import { UsersPage } from "@/pages/tenant/UsersPage";
+import * as V from "@/pages/tenant/VisibilityPages";
 
 function TenantHistory() {
   const { tenantId, can } = useTenant();
@@ -28,7 +30,14 @@ export function App() {
         <Route path="/" element={<RequireAuth><HomeRedirect /></RequireAuth>} />
         <Route path="/t/:tenantId" element={<RequireAuth><RequireTenant><TenantLayout /></RequireTenant></RequireAuth>}>
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<T.DashboardPage />} />
+          <Route path="dashboard" element={<V.HomeDashboardPage />} />
+          <Route path="activity" element={<T.DashboardPage />} />
+          <Route path="visibility" element={<RequirePermission perm="seo.read" module="seo"><V.ProgrammesPage /></RequirePermission>} />
+          <Route path="visibility/new" element={<RequirePermission perm="seo.manage" module="seo"><V.ProgrammeWizardPage /></RequirePermission>} />
+          <Route path="visibility/audit/:auditId" element={<RequirePermission perm="seo.read" module="seo"><V.AuditResultPage /></RequirePermission>} />
+          <Route path="audit" element={<RequirePermission perm="seo.read" module="seo"><V.TenantAuditPage /></RequirePermission>} />
+          <Route path="ai-visibility" element={<RequirePermission perm="geo.read" module="geo"><V.AiVisibilityPage /></RequirePermission>} />
+          <Route path="users" element={<RequirePermission perm="members.read"><UsersPage /></RequirePermission>} />
           <Route path="products" element={<RequirePermission perm="products.read" module="products"><T.ProductsPage /></RequirePermission>} />
           <Route path="websites" element={<RequirePermission perm="websites.read" module="websites"><T.WebsitesPage /></RequirePermission>} />
           <Route path="scheduler" element={<RequirePermission perm="scheduler.read" module="scheduler"><M.SchedulerV2Page /></RequirePermission>} />

@@ -1,7 +1,8 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+import "./global.css";
 
-import { createTheme, MantineProvider } from "@mantine/core";
+import { MantineProvider } from "@mantine/core";
 import { Notifications, notifications } from "@mantine/notifications";
 import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useEffect } from "react";
@@ -10,7 +11,8 @@ import { ApiError } from "@/services/api";
 import { supabase } from "@/services/supabase";
 import { useSessionStore } from "@/stores/session";
 
-const theme = createTheme({ primaryColor: "indigo", defaultRadius: "md", fontFamily: "Inter, system-ui, sans-serif" });
+import { theme } from "./theme";
+
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: (n, e) => !(e instanceof ApiError && e.status < 500) && n < 2 } },
@@ -39,7 +41,7 @@ function SessionSync() {
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <MantineProvider theme={theme} defaultColorScheme="auto">
+    <MantineProvider theme={theme} defaultColorScheme="dark">
       <Notifications position="top-right" />
       <QueryClientProvider client={queryClient}>
         <SessionSync />

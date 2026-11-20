@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from urllib.parse import urlparse
 
@@ -71,7 +72,11 @@ def create_profile(data: dict) -> str:
         raise BusinessError("Indiquez au moins un lien vers votre site.", "site_url_required")
     urls = [u if "://" in u else f"https://{u}" for u in urls]
     product_id = data.get("product_id") or _ensure_product(data.get("name") or urlparse(urls[0]).netloc, urls[0])
+    ans = data.get("answers") or {}
     competitors = [_norm_comp(c) for c in data.get("competitors") or [] if c]
+    if not competitors and ans.get("competitors"):  # answers given to the assistant pre-fill the profile
+        competitors = [_norm_comp(c.strip()) for c in re.split(r"[,;\n]", str(ans["competitors"])) if c.strip()][:5]
+    data = {**data, "audience": data.get("audience") or ans.get("audience"), "offer": data.get("offer") or ans.get("offer")}
     pid = fetch_one("""INSERT INTO public.visibility_profiles (tenant_id, product_id, name, site_urls, sector, audience, offer,
                          languages, countries, competitors, goals, answers)
                        VALUES (%s,%s,%s,%s::jsonb,%s,%s,%s,%s::jsonb,%s::jsonb,%s::jsonb,%s::jsonb,%s::jsonb) RETURNING id""",
@@ -498,19 +503,22 @@ def create_intelligent_watch(profile_id: str, product_id: str, name: str) -> str
 
 
 # ───────────────────────────── assistant ─────────────────────────────
-def assistant_reply(profile_id: str | None, message: str, history: list[dict]) -> dict:
-    """SEO/GEO assistant used during configuration. Works without AI (guided questionnaire); answers with AI when configured."""
+def assistant_reply(profile_id: str | None, message: str, history: list[dict], client_answers: dict | None = None) -> dict:
+    """SEO/GEO assistant used during configuration. Works without AI (guided questionnaire); answers with AI when configured.
+    Before the programme exists the answers travel with the client and are saved when the programme is created."""
     from apps.ai_providers.gateway import AINotConfigured, complete, wrap_untrusted
-    answers = {}
+    keys = {k for k, _ in FUNDAMENTAL_QUESTIONS}
+    answers = {k: str(v)[:2000] for k, v in (client_answers or {}).items() if k in keys and v}
     if profile_id:
         row = fetch_one("SELECT answers FROM public.visibility_profiles WHERE id = %s AND tenant_id = %s", [profile_id, get_context().tenant_id])
-        answers = (row[0] if row else {}) or {}
+        answers = {**answers, **((row[0] if row else {}) or {})}
     asked = [k for k, _ in FUNDAMENTAL_QUESTIONS if k in answers]
     last_q = next((k for k, _ in FUNDAMENTAL_QUESTIONS if k not in answers), None)
-    if profile_id and last_q and message.strip() and history:
+    if last_q and message.strip() and history:
         answers[last_q] = message.strip()[:2000]
-        fetch_one("UPDATE public.visibility_profiles SET answers = %s::jsonb WHERE id = %s RETURNING 1", [json.dumps(answers), profile_id])
         asked.append(last_q)
+        if profile_id:
+            fetch_one("UPDATE public.visibility_profiles SET answers = %s::jsonb WHERE id = %s RETURNING 1", [json.dumps(answers), profile_id])
     nxt = next(((k, q) for k, q in FUNDAMENTAL_QUESTIONS if k not in answers), None)
     try:
         res = complete("visibility_assistant", [*[{"role": h["role"], "content": h["content"][:4000]} for h in history[-10:]

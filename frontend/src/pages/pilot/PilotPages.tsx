@@ -12,6 +12,7 @@ import { HistoryCentre } from "@/features/HistoryCentre";
 import { api, ApiError } from "@/services/api";
 import type { HealthCheck, Paged } from "@/types/api";
 import { formatDate } from "@/utils/format";
+import { PilotLicenseAllocations, UsersManager } from "@/pages/tenant/UsersPage";
 
 type Row = Record<string, unknown> & { id: string };
 
@@ -162,6 +163,10 @@ export function PilotTenantDetailPage() {
             { key: "a", label: "", render: (r) => <Button size="xs" variant="light" onClick={() => connector.mutate({ provider_code: r.code, status: r.status === "enabled" ? "disabled" : "enabled", reason: ask(t("pilot.authorizeConnector")) })}>{r.status === "enabled" ? "Disable" : "Enable"}</Button> }]} />
         </Card>
       </SimpleGrid>
+      <Stack mt="lg" gap="lg">
+        <PilotLicenseAllocations tenantId={tenantId} />
+        <UsersManager tenantId={tenantId} pilot canManage />
+      </Stack>
     </>
   );
 }
