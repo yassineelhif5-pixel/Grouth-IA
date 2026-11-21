@@ -37,10 +37,9 @@ function AccountState({ a }: { a: Account }) {
 }
 
 /** Guided form for an api_key / basic provider: named fields with inline help, no JSON. */
-function ConfigureModal({ provider, opened, onClose, onDone }: { provider: Provider; opened: boolean; onClose: () => void; onDone: () => void }) {
+function ConfigureModal({ provider, onClose, onDone }: { provider: Provider; onClose: () => void; onDone: () => void }) {
   const { tenantId } = useTenant();
-  const [values, setValues] = useState<Record<string, string>>({});
-  useEffect(() => { if (opened) setValues(provider.account?.settings ?? {}); }, [opened, provider]);
+  const [values, setValues] = useState<Record<string, string>>(() => provider.account?.settings ?? {});
   const save = useMutation({
     mutationFn: async () => {
       const r = await api<{ account_id: string }>("/connectors/connect", { method: "POST", tenantId, body: { provider_code: provider.code, method: "api_key" } });
@@ -58,7 +57,7 @@ function ConfigureModal({ provider, opened, onClose, onDone }: { provider: Provi
   });
   const missing = provider.fields.concat(provider.settings_fields).some((f) => f.required && !values[f.name]);
   return (
-    <Modal opened={opened} onClose={onClose} title={<Text fw={600}>Configurer {provider.name}</Text>}>
+    <Modal opened onClose={onClose} title={<Text fw={600}>Configurer {provider.name}</Text>}>
       <Stack gap="sm">
         {provider.help_url && <Text size="xs" c="dimmed">Où trouver ces informations : <Anchor href={provider.help_url} target="_blank" rel="noreferrer">documentation du fournisseur <IconExternalLink size={11} /></Anchor></Text>}
         {provider.settings_fields.map((f) => (
@@ -132,7 +131,7 @@ function ProviderCard({ provider, onChanged }: { provider: Provider; onChanged: 
           )}
         </Group>
       )}
-      {provider.method !== "oauth" && provider.method !== "unsupported" && <ConfigureModal provider={provider} opened={configure} onClose={() => setConfigure(false)} onDone={onChanged} />}
+      {configure && <ConfigureModal provider={provider} onClose={() => setConfigure(false)} onDone={onChanged} />}
       {provider.method === "oauth" && !provider.oauth_available && !disabled && <Text size="xs" c="dimmed" mt={6}>Connexion en un clic à activer par le PILOTE.</Text>}
     </Card>
   );
