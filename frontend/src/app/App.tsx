@@ -11,6 +11,7 @@ import * as M from "@/pages/tenant/ModulePages";
 import * as T from "@/pages/tenant/TenantPages";
 import { UsersPage } from "@/pages/tenant/UsersPage";
 import * as V from "@/pages/tenant/VisibilityPages";
+import { ConnectorsPage } from "@/pages/tenant/ConnectorsPage";
 
 function TenantHistory() {
   const { tenantId, can } = useTenant();
@@ -41,7 +42,7 @@ export function App() {
           <Route path="products" element={<RequirePermission perm="products.read" module="products"><T.ProductsPage /></RequirePermission>} />
           <Route path="websites" element={<RequirePermission perm="websites.read" module="websites"><T.WebsitesPage /></RequirePermission>} />
           <Route path="scheduler" element={<RequirePermission perm="scheduler.read" module="scheduler"><M.SchedulerV2Page /></RequirePermission>} />
-          <Route path="connectors" element={<RequirePermission perm="connectors.read"><M.ConnectorsV2Page /></RequirePermission>} />
+          <Route path="connectors" element={<RequirePermission perm="connectors.read"><ConnectorsPage /></RequirePermission>} />
           <Route path="seo" element={<RequirePermission perm="seo.read" module="seo"><M.SeoPage /></RequirePermission>} />
           <Route path="geo" element={<RequirePermission perm="geo.read" module="geo"><M.GeoPage /></RequirePermission>} />
           <Route path="content" element={<RequirePermission perm="content.read" module="content"><M.ContentPage /></RequirePermission>} />
@@ -77,6 +78,7 @@ export function App() {
           <Route path="health" element={<P.SystemHealthPage />} />
           <Route path="incidents" element={<P.PilotIncidentsPage />} />
           <Route path="ai" element={<P.PilotAIPage />} />
+          <Route path="connectors" element={<P.PilotConnectorsPage />} />
           <Route path="global" element={<P.PilotGlobalPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

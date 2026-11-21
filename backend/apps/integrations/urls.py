@@ -19,5 +19,7 @@ urlpatterns += [
     path("connector-accounts/<uuid:account_id>/oauth/start", v2.OAuthStartView.as_view()),
     path("connectors/oauth/callback", v2.OAuthCallbackView.as_view()),
     path("connectors/status", v2.ConnectorStatusView.as_view()),
+    path("connectors/catalog", v2.ConnectorCatalogV2View.as_view()),
+    path("connectors/connect", v2.ConnectorConnectView.as_view()),
     path("pilot/oauth-clients", v2.PilotOAuthClientView.as_view()),
 ]

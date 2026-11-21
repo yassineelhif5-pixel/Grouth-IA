@@ -11,7 +11,7 @@ from apps.core.secrets import encrypt_json
 from apps.core.views import GrowthAPIView
 from apps.core.webhooks import PublicWebhookView
 
-from .gateway import load_account, set_status, store_credentials
+from .gateway import NotConfigured, load_account, set_status, store_credentials
 from .providers import oauth_callback, oauth_start, test_connection
 
 SECRET_FIELDS = {"api_key", "password", "application_password", "access_token", "admin_api_key", "app_secret", "webhook_secret",
@@ -104,16 +104,60 @@ class ConnectorStatusView(GrowthAPIView):
 
 
 class PilotOAuthClientView(GrowthAPIView):
+    """PILOTE registers the OAuth app once per family (Google, GitHub, Microsoft…); all its providers reuse it."""
     platform_scoped = True
 
+    def get(self, request):
+        from .catalog import pilot_oauth_families
+        return Response(pilot_oauth_families())
+
     def post(self, request):
-        code, client_id, secret = request.data.get("provider_code"), request.data.get("client_id"), request.data.get("client_secret")
+        from .providers import family_of, family_representative
+        code = request.data.get("family") or request.data.get("provider_code")
+        client_id, secret = request.data.get("client_id"), request.data.get("client_secret")
         if not (code and client_id and secret):
-            raise BusinessError("provider_code, client_id and client_secret are required", "invalid")
-        fetch_one("""INSERT INTO public.connector_global_configurations (provider_id, client_id, client_secret_ciphertext, redirect_uri)
-                     SELECT id, %s, %s, %s FROM public.connector_providers WHERE code = %s
+            raise BusinessError("family, client_id and client_secret are required", "invalid")
+        store_code = family_representative(family_of(code))  # store the family's config under its representative provider
+        fetch_one("""INSERT INTO public.connector_global_configurations (provider_id, client_id, client_secret_ciphertext, redirect_uri, is_enabled)
+                     SELECT id, %s, %s, %s, true FROM public.connector_providers WHERE code = %s
                      ON CONFLICT (provider_id) WHERE deleted_at IS NULL DO UPDATE SET client_id = EXCLUDED.client_id,
-                       client_secret_ciphertext = EXCLUDED.client_secret_ciphertext RETURNING id""",
-                  [client_id, encrypt_json({"client_secret": secret}), f"{settings.PUBLIC_API_URL}/api/v1/connectors/oauth/callback", code])
-        record_audit("pilot.oauth_client_configured", "integrations", after={"provider": code})
+                       client_secret_ciphertext = EXCLUDED.client_secret_ciphertext, is_enabled = true RETURNING id""",
+                  [client_id, encrypt_json({"client_secret": secret}), f"{settings.PUBLIC_API_URL}/api/v1/connectors/oauth/callback", store_code])
+        record_audit("pilot.oauth_client_configured", "integrations", after={"family": family_of(code)})
         return Response({"status": "configured"})
+
+
+class ConnectorCatalogV2View(GrowthAPIView):
+    """Simplified gallery: method (oauth / api_key / oauth_or_key), guided fields, OAuth availability, current account."""
+    permission_map = {"GET": "connectors.read"}
+
+    def get(self, request):
+        from .catalog import catalog
+        return Response(catalog(request.tenant.tenant_id))
+
+
+class ConnectorConnectView(GrowthAPIView):
+    """One entry point the gallery calls: ensures the tenant's account for a provider, then either returns the
+    provider authorization URL (OAuth) or the account id so the guided form can save its fields."""
+    permission_map = {"POST": "connectors.manage"}
+
+    def post(self, request):
+        from .catalog import FORMS
+        from .connect import ensure_account
+        from .providers import PROVIDER_OAUTH
+        code = request.data.get("provider_code")
+        prefer = request.data.get("method")  # "oauth" | "api_key" (for providers that support both, e.g. GitHub)
+        if not code:
+            raise BusinessError("provider_code is required", "invalid")
+        account_id = ensure_account(request, code)
+        use_oauth = code in PROVIDER_OAUTH and prefer != "api_key"
+        if use_oauth:
+            try:
+                return Response({"account_id": account_id, "authorization_url": oauth_start(account_id, request.data.get("return_to"))})
+            except NotConfigured:
+                if code not in FORMS:  # pure OAuth provider, OAuth app not registered yet by the PILOTE
+                    raise BusinessError("La connexion en un clic n'est pas encore configurée par le PILOTE pour ce fournisseur.",
+                                        "oauth_not_configured") from None
+        if code not in FORMS:
+            raise BusinessError("Ce connecteur n'est pas encore disponible", "unsupported")
+        return Response({"account_id": account_id, "method": "api_key"})

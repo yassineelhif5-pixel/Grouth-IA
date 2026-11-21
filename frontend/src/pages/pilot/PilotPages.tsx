@@ -12,6 +12,7 @@ import { HistoryCentre } from "@/features/HistoryCentre";
 import { api, ApiError } from "@/services/api";
 import type { HealthCheck, Paged } from "@/types/api";
 import { formatDate } from "@/utils/format";
+import { PilotOAuthClientsCard } from "@/pages/tenant/ConnectorsPage";
 import { PilotLicenseAllocations, UsersManager } from "@/pages/tenant/UsersPage";
 
 type Row = Record<string, unknown> & { id: string };
@@ -339,6 +340,15 @@ export function PilotGlobalPage() {
       <DataTable rows={q.data?.ai_costs.map((x, i): Row => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "provider_code", label: "Fournisseur" }, { key: "model_code", label: "Modèle" }, { key: "calls", label: "Appels" }, { key: "cost_cents", label: "Coût (cts)" }]} />
       <Title order={5} mt="md">Programmations</Title>
       <DataTable rows={q.data?.schedulers.map((x, i): Row => ({ ...x, id: String(i) }))} columns={[{ key: "tenant", label: "Tenant" }, { key: "category", label: "Catégorie" }, { key: "n", label: "Nombre" }, { key: "failing", label: "En échec" }]} />
+    </>
+  );
+}
+
+export function PilotConnectorsPage() {
+  return (
+    <>
+      <PageHeader title="Connecteurs OAuth" subtitle="Enregistrez les applications OAuth (Google, GitHub, Microsoft, LinkedIn…) pour que les tenants connectent leurs comptes en un clic." />
+      <PilotOAuthClientsCard />
     </>
   );
 }

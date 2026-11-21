@@ -42,9 +42,25 @@ PROVIDER_OAUTH = {
 }
 
 
+def family_of(provider: str) -> str:
+    return PROVIDER_OAUTH[provider][0] if provider in PROVIDER_OAUTH else provider
+
+
+def family_codes(family: str) -> list[str]:
+    """Every provider code sharing one OAuth app (so the PILOTE registers Google once for Gmail, Analytics, Search Console…)."""
+    return [c for c, (f, _s) in PROVIDER_OAUTH.items() if f == family] or [family]
+
+
+def family_representative(family: str) -> str:
+    return family_codes(family)[0]
+
+
 def _global_client(provider: str) -> tuple[str, str]:
+    codes = family_codes(family_of(provider))
     row = fetch_one("""SELECT g.client_id, g.client_secret_ciphertext FROM public.connector_global_configurations g
-                         JOIN public.connector_providers p ON p.id = g.provider_id WHERE p.code = %s AND g.is_enabled""", [provider])
+                         JOIN public.connector_providers p ON p.id = g.provider_id
+                        WHERE p.code = ANY(%s) AND g.is_enabled AND g.client_id IS NOT NULL AND g.deleted_at IS NULL
+                        ORDER BY (p.code = %s) DESC LIMIT 1""", [codes, provider])
     if not row or not row[0] or not row[1]:
         raise NotConfigured(f"OAuth client for {provider} is not configured by the PILOTE")
     return row[0], decrypt_json(row[1]).get("client_secret", "")

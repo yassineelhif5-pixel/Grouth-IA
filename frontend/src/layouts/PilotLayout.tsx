@@ -1,6 +1,6 @@
 import {
   IconActivityHeartbeat, IconAlertTriangle, IconArrowBack, IconBuildingSkyscraper, IconChartBar, IconGauge, IconHistory, IconListDetails,
-  IconRobot, IconSitemap, IconTicket,
+  IconPlugConnected, IconRobot, IconSitemap, IconTicket,
 } from "@tabler/icons-react";
 import { useTranslation } from "react-i18next";
 
@@ -17,6 +17,7 @@ export function PilotLayout() {
       { group: "Clients", to: "/pilot/plans", label: t("nav.plans"), icon: i(IconListDetails) },
       { group: "Clients", to: "/pilot/usage", label: t("nav.usage"), icon: i(IconChartBar) },
       { group: "Exploitation", to: "/pilot/ai", label: "Fournisseurs IA", icon: i(IconRobot) },
+      { group: "Exploitation", to: "/pilot/connectors", label: "Connecteurs OAuth", icon: i(IconPlugConnected) },
       { group: "Exploitation", to: "/pilot/health", label: t("nav.health"), icon: i(IconActivityHeartbeat) },
       { group: "Exploitation", to: "/pilot/incidents", label: t("nav.incidents"), icon: i(IconTicket) },
       { group: "Exploitation", to: "/pilot/errors", label: t("nav.errors"), icon: i(IconAlertTriangle) },
