@@ -4,11 +4,12 @@ import {
 import { notifications } from "@mantine/notifications";
 import { IconAlertTriangle, IconCheck, IconExternalLink, IconKey, IconPlugConnected, IconRefresh, IconX } from "@tabler/icons-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/PageHeader";
 import { RobotLoader } from "@/components/RobotLoader";
-import { useTenant } from "@/hooks/useMe";
+import { useMe, useTenant } from "@/hooks/useMe";
 import { api, ApiError } from "@/services/api";
 
 interface Field { name: string; label: string; secret: boolean; type: string; required: boolean; help: string; placeholder: string }
@@ -84,6 +85,8 @@ function ConfigureModal({ provider, onClose, onDone }: { provider: Provider; onC
 
 function ProviderCard({ provider, onChanged }: { provider: Provider; onChanged: () => void }) {
   const { tenantId, can } = useTenant();
+  const { data: me } = useMe();
+  const isPilot = !!me?.user.is_pilot;
   const manage = can("connectors.manage");
   const [configure, setConfigure] = useState(false);
   const act = useMutation({
@@ -119,8 +122,11 @@ function ProviderCard({ provider, onChanged }: { provider: Provider; onChanged: 
               <Button size="compact-sm" variant="subtle" color="red" onClick={disconnect}>Déconnecter</Button>
             </>
           ) : provider.method === "oauth" ? (
-            <Button size="compact-sm" leftSection={<IconPlugConnected size={14} />} loading={act.isPending} disabled={!provider.oauth_available}
-              onClick={() => connect("oauth")}>Se connecter avec {provider.family_label}</Button>
+            provider.oauth_available
+              ? <Button size="compact-sm" leftSection={<IconPlugConnected size={14} />} loading={act.isPending} onClick={() => connect("oauth")}>Se connecter avec {provider.family_label}</Button>
+              : isPilot
+                ? <Button size="compact-sm" variant="light" component={Link} to="/pilot/connectors" leftSection={<IconPlugConnected size={14} />}>Activer l'OAuth {provider.family_label}</Button>
+                : <Text size="xs" c="dimmed">Connexion en un clic à activer par le PILOTE.</Text>
           ) : provider.method === "oauth_or_key" ? (
             <>
               <Button size="compact-sm" leftSection={<IconPlugConnected size={14} />} loading={act.isPending} disabled={!provider.oauth_available} onClick={() => connect("oauth")}>Se connecter avec {provider.family_label}</Button>
@@ -132,7 +138,6 @@ function ProviderCard({ provider, onChanged }: { provider: Provider; onChanged: 
         </Group>
       )}
       {configure && <ConfigureModal provider={provider} onClose={() => setConfigure(false)} onDone={onChanged} />}
-      {provider.method === "oauth" && !provider.oauth_available && !disabled && <Text size="xs" c="dimmed" mt={6}>Connexion en un clic à activer par le PILOTE.</Text>}
     </Card>
   );
 }
