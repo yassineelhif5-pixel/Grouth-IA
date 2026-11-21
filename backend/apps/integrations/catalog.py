@@ -89,7 +89,7 @@ FORMS: dict[str, dict] = {
                        "secrets": [_field("access_token", "Jeton d'accès", secret=True, help="Meta → WhatsApp → jeton permanent (System User).")]},
     "pagespeed": {"settings": [_field("test_url", "URL à tester par défaut", type="url", required=False, placeholder="https://votre-site.fr")],
                   "secrets": [_field("api_key", "Clé API Google", secret=True, help="Google Cloud Console → Identifiants → Clé API (API PageSpeed Insights activée).")]},
-    "github": {"settings": [_field("repo", "Dépôt (propriétaire/nom)", required=False, placeholder="acme/site")],
+    "github": {"settings": [_field("repo", "Dépôt du site", required=False, placeholder="https://github.com/acme/site ou acme/site", help="Lien GitHub du dépôt ou propriétaire/nom. Facultatif ici ; requis pour la correction forcée.")],
                "secrets": [_field("token", "Jeton d'accès GitHub (fine-grained)", secret=True,
                                   help="GitHub → Settings → Developer settings → Fine-grained tokens, permissions Contents + Pull requests sur le dépôt.")]},
 }

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import imaplib
+import re
 import smtplib
 import ssl
 from base64 import b64encode
@@ -53,6 +54,22 @@ def family_codes(family: str) -> list[str]:
 
 def family_representative(family: str) -> str:
     return family_codes(family)[0]
+
+
+_REPO_URL = re.compile(r"github\.com[/:]([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)", re.I)
+
+
+def normalize_repo(value: str | None) -> str:
+    """Accept a full GitHub URL (https://github.com/owner/name(.git)) or a plain 'owner/name' and return 'owner/name'."""
+    v = (value or "").strip()
+    if not v:
+        return ""
+    m = _REPO_URL.search(v)
+    if m:
+        v = m.group(1)
+    v = v.removesuffix(".git").strip("/")
+    parts = [p for p in v.split("/") if p]
+    return "/".join(parts[:2])
 
 
 def _global_client(provider: str) -> tuple[str, str]:
@@ -241,7 +258,7 @@ GITHUB_API = "https://api.github.com"
 def _t_github(a):
     h = {"Authorization": f"Bearer {access_token(a.id)}", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
     http("GET", f"{GITHUB_API}/user", provider=a.provider, operation="test", account_id=a.id, headers=h)
-    repo = a.settings.get("repo")
+    repo = normalize_repo(a.settings.get("repo"))
     if repo:
         r = http("GET", f"{GITHUB_API}/repos/{repo}", provider=a.provider, operation="test_repo", account_id=a.id, headers=h).json()
         if not (r.get("permissions") or {}).get("push"):

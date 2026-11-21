@@ -111,8 +111,10 @@ def repos(account_id: str) -> list[dict]:
 def configure(account_id: str, repo: str, branch: str | None, base_path: str, mode: str) -> dict:
     from apps.integrations.providers import test_connection
     _own(account_id)
-    if not REPO_RE.match(repo or ""):
-        raise BusinessError("Dépôt invalide (format propriétaire/nom)", "invalid_repo")
+    from apps.integrations.providers import normalize_repo
+    repo = normalize_repo(repo)
+    if not REPO_RE.match(repo):
+        raise BusinessError("Dépôt invalide : indiquez le lien GitHub ou propriétaire/nom", "invalid_repo")
     base_path = (base_path or "").strip().strip("/")
     if not PATH_RE.match(base_path) or ".." in base_path:
         raise BusinessError("Dossier invalide", "invalid_path")
