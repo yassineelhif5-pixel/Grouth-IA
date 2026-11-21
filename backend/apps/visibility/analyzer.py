@@ -368,3 +368,82 @@ def gen_llms_txt(name: str, root: str, description: str, key_pages: list[tuple[s
     lines = [f"# {name}", "", f"> {description[:300]}", "", "## Pages clés"]
     lines += [f"- [{t or u}]({u})" for u, t in key_pages[:30]]
     return "\n".join(lines) + "\n"
+
+
+# ───────────────────────────── competitor discovery (observed on the site) ─────────────────────────────
+_COMPARE_HINT = re.compile(r"(compar|alternative|versus|-vs-|/vs/|concurren|competitor|pricing|tarif|why-|pourquoi)", re.I)
+_IGNORED_DOMAINS = (
+    "facebook.com", "twitter.com", "x.com", "linkedin.com", "instagram.com", "youtube.com", "youtu.be", "tiktok.com", "github.com",
+    "google.com", "googleapis.com", "gstatic.com", "googletagmanager.com", "apple.com", "microsoft.com", "wordpress.org", "w3.org",
+    "schema.org", "cloudflare.com", "jsdelivr.net", "unpkg.com", "gravatar.com", "medium.com", "wikipedia.org", "stripe.com", "hubspot.com",
+    "calendly.com", "typeform.com", "intercom.io", "crisp.chat", "vimeo.com", "pinterest.com", "reddit.com", "trustpilot.com", "g2.com",
+    "capterra.com", "capterra.fr", "producthunt.com", "apps.apple.com", "play.google.com", "mailchimp.com", "zapier.com", "notion.so",
+)
+_MENTION_PATTERNS = [
+    re.compile(r"\balternatives?\s+(?:à|a|to|de)\s+([A-Z][\w.&\-]{1,30})"),
+    re.compile(r"\b([A-Z][\w.&\-]{1,30})\s+vs\.?\s+([A-Z][\w.&\-]{1,30})"),
+    re.compile(r"\b(?:comparé à|comparativement à|par rapport à|contrairement à|compared to|versus|plutôt que)\s+([A-Z][\w.&\-]{1,30})"),
+]
+_STOP_NAMES = {"Google", "Bing", "ChatGPT", "Excel", "France", "Europe", "Nous", "Notre", "Vous", "The", "Les", "Une", "Un", "La", "Le", "Our", "We"}
+
+
+def find_competitor_mentions(site_url: str, user_agent: str, max_pages: int = 8, session: requests.Session | None = None) -> list[dict]:
+    """Competitors the site itself names (comparison / alternative / pricing pages, outbound links from those pages).
+    Everything returned was observed on the site and carries its evidence."""
+    s = session or requests.Session()
+    s.headers.update({"User-Agent": user_agent})
+    root = site_url if "://" in site_url else f"https://{site_url}"
+    own = urlparse(root).netloc.lower().removeprefix("www.")
+    home = _get(s, root)
+    if not home or home.status_code >= 400:
+        return []
+    soup = BeautifulSoup(home.content, "html.parser")  # bytes: BeautifulSoup detects the charset (accents in « comparé à »)
+    pages = [(root, home.content)]
+    links = []
+    for a in soup.find_all("a", href=True):
+        u = urljoin(home.url, a["href"]).split("#")[0]
+        if urlparse(u).netloc.lower().removeprefix("www.") == own and _COMPARE_HINT.search(u) and u not in links:
+            links.append(u)
+    for u in links[: max_pages - 1]:
+        r = _get(s, u, timeout=10)
+        if r is not None and r.status_code < 400 and "html" in r.headers.get("content-type", "html"):
+            pages.append((u, r.content))
+    found: dict[str, dict] = {}
+
+    def add(name: str, url: str, evidence: str) -> None:
+        name = name.strip(" .,-")
+        if not name or name in _STOP_NAMES or own.split(".")[0] in name.lower().replace(" ", ""):
+            return
+        host = urlparse(url).netloc.lower().removeprefix("www.") if url else ""
+        if host == own:
+            return
+        key = host.split(".")[0] if host else re.sub(r"[^a-z0-9]", "", name.lower())  # "Pipedrive" and pipedrive.com merge
+        item = found.setdefault(key, {"name": name, "url": url, "source": "site_mentions", "evidence": [], "mentions": 0})
+        item["mentions"] += 1
+        if url and not item["url"]:
+            item["url"] = url
+        if len(item["evidence"]) < 2:
+            item["evidence"].append(evidence[:200])
+
+    for url, html in pages:
+        psoup = BeautifulSoup(html, "html.parser")
+        path = urlparse(url).path or "/"
+        compare_page = bool(_COMPARE_HINT.search(url))
+        if compare_page:  # outbound links on a comparison page are very likely competitors
+            for a in psoup.find_all("a", href=True):
+                u = urljoin(url, a["href"])
+                host = urlparse(u).netloc.lower().removeprefix("www.")
+                if not host or host == own or any(host == d or host.endswith("." + d) for d in _IGNORED_DOMAINS):
+                    continue
+                add((a.get_text(" ", strip=True) or host)[:40], f"https://{host}", f"Lien sortant sur {path}")
+        for t in psoup(["script", "style", "noscript"]):
+            t.decompose()
+        text = psoup.get_text(" ", strip=True)[:60000]
+        for pat in _MENTION_PATTERNS:
+            for m in pat.finditer(text):
+                for g in m.groups():
+                    if g:
+                        start = max(0, m.start() - 40)
+                        add(g, "", f"Cité sur {path} : « …{text[start:m.end() + 20]}… »")
+    out = sorted(found.values(), key=lambda x: -x["mentions"])
+    return [o for o in out if o["url"] or o["mentions"] >= 1][:10]

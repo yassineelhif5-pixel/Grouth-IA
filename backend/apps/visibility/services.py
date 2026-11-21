@@ -14,6 +14,7 @@ import re
 import time
 from urllib.parse import urlparse
 
+import requests
 from django.conf import settings
 from django.db import transaction
 
@@ -397,7 +398,7 @@ def _build_roadmap(aid: str, recs: list[dict], summary: dict) -> None:
 
 # ───────────────────────────── validation & application ─────────────────────────────
 def accept_recommendation(rec_id: str, frequency: str | None, times: int | None, scheduler_kind: str = "standard",
-                          autonomy: str = "approval") -> dict:
+                          autonomy: str = "approval", run_now: bool = False) -> dict:
     """User validated the action: apply it now when possible, schedule it when recurring."""
     tid = get_context().tenant_id
     r = fetch_all_dict("""SELECT r.*, p.product_id, p.name AS profile_name FROM public.visibility_recommendations r
@@ -420,6 +421,9 @@ def accept_recommendation(rec_id: str, frequency: str | None, times: int | None,
     elif r["apply_mode"] in ("ai_content", "auto_connector"):
         sched = create_programme_scheduler(r, frequency, times, scheduler_kind, autonomy)
         result |= {"status": "scheduled", "scheduler_id": sched}
+        if run_now:
+            from apps.scheduler.engine import enqueue_run
+            result["run_id"] = enqueue_run(sched, "manual")
         new_status = "scheduled"
     else:
         result |= {"status": "accepted", "how_to_apply": "Action manuelle ajoutée à la roadmap."}
@@ -463,6 +467,8 @@ def create_programme_scheduler(r: dict, frequency: str, times: int, kind: str, a
     tid = get_context().tenant_id
     check_quota(tid, "scheduler.configurations")
     ftype, fval = FREQ_TO_SCHEDULER.get(frequency, ("weekly", "0 09:00"))
+    if frequency == "once":  # single execution: event-type scheduler, run at the next 09:00 (or immediately on request)
+        ftype, fval = "event", "visibility.once"
     if times > 1 and frequency == "daily":
         ftype, fval = "every_x_hours", str(max(1, 24 // times))
     ev = r["evidence"] or {}
@@ -479,7 +485,7 @@ def create_programme_scheduler(r: dict, frequency: str, times: int, kind: str, a
                          frequency_value, params, mode, next_run_at, scheduler_kind, visibility_profile_id, recommendation_ids)
                        VALUES (%s,%s,%s,%s,'Europe/Paris','active',%s,%s,%s,%s::jsonb,%s,%s,%s,%s,%s::jsonb) RETURNING id""",
                     [tid, r["product_id"], r["title"][:200], r["detail"], category, ftype, fval, json.dumps(params), mode,
-                     next_run(ftype, fval, "Europe/Paris"), kind, r["profile_id"], json.dumps([str(r["id"])])])[0]
+                     next_run("daily", "09:00", "Europe/Paris") if ftype == "event" else next_run(ftype, fval, "Europe/Paris"), kind, r["profile_id"], json.dumps([str(r["id"])])])[0]
     record_activity("scheduler.created", "scheduler", entity_type="tenant_schedulers", entity_id=sid,
                     description=f"Programmation {'intelligente' if kind == 'intelligent' else 'standard'} : {r['title'][:120]}")
     return str(sid)
@@ -646,3 +652,103 @@ def audit_report(aid: str) -> dict:
                                  WHERE audit_id = %s AND deleted_at IS NULL ORDER BY CASE phase WHEN 'now' THEN 0 WHEN 'next' THEN 1 ELSE 2 END,
                                  CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END""", [aid])
     return {"audit": a, "recommendations": recs, "assets": assets, "roadmap": roadmap, "channels": CHANNELS, "kpis": kpis()}
+
+
+# ───────────────────────────── competitor discovery & execution tracking ─────────────────────────────
+def discover_competitors(site_url: str, name: str | None = None, sector: str | None = None) -> dict:
+    """Candidates shown to the user right after the site link is entered, each labelled with where it comes from:
+    site_mentions (observed on the site), known (already declared in another programme), ai_suggested (to be verified)."""
+    url = site_url if "://" in site_url else f"https://{site_url}"
+    own = urlparse(url).netloc.lower().removeprefix("www.")
+    ua = getattr(settings, "CRAWLER_USER_AGENT", "GrowthIA-Bot/1.0")
+    out: dict[str, dict] = {}
+
+    def key(c: dict) -> str:
+        return urlparse(c.get("url") or "").netloc.lower().removeprefix("www.") or c["name"].lower()
+
+    for c in analyzer.find_competitor_mentions(url, ua):
+        out.setdefault(key(c), c)
+    rows = fetch_all_dict("SELECT competitors FROM public.visibility_profiles WHERE tenant_id = %s AND deleted_at IS NULL",
+                          [get_context().tenant_id])
+    for r in rows:
+        for c in r["competitors"] or []:
+            if isinstance(c, dict) and c.get("name"):
+                out.setdefault(key(c), {"name": c["name"], "url": c.get("url") or "", "source": "known",
+                                        "evidence": ["Déjà déclaré dans un autre programme"], "mentions": 0})
+    ai_available = True
+    home = analyzer._get(requests.Session(), url, timeout=10)
+    keywords = []
+    if home is not None and home.status_code < 400:
+        info = analyzer.inspect_home(home.text, home.url)
+        keywords = analyzer.extract_keywords([(info["text"], 1.0), (info.get("title") or "", 3.0)], top=15)
+        name = name or (info.get("title") or own).split("|")[0].split("-")[0].strip()[:80]
+    suggestions = _ai_suggest_competitors(name or own, sector, None, keywords, url, None)
+    if not suggestions:
+        from apps.ai_providers.gateway import routes
+        ai_available = bool(routes("visibility_competitors", get_context().tenant_id))
+    for c in suggestions:
+        c = {**c, "evidence": ["Suggéré par l'IA, à vérifier"], "mentions": 0}
+        out.setdefault(key(c), c)
+    cands = [c for k, c in out.items() if k and k != own][:12]
+    return {"site": url, "name": name, "candidates": cands, "ai_available": ai_available,
+            "note": None if cands else "Aucun concurrent n'est cité sur le site. Ajoutez-les manuellement ou configurez un fournisseur IA pour des suggestions."}
+
+
+def _run_state(run: dict | None, rec: dict) -> tuple[str, int, str]:
+    if rec["status"] in ("accepted", "applied") and rec["apply_mode"] in ("generated_file", "manual"):
+        return ("ready", 100, "Fichier prêt à déployer" if rec["apply_mode"] == "generated_file" else "Ajouté à la roadmap")
+    if not run:
+        return ("planned", 0, "Programmé")
+    st, steps = run["status"], run["steps"] or 0
+    if st == "queued":
+        return ("queued", 10, "En file d'attente")
+    if st in ("running", "retrying"):
+        return ("running", min(90, 30 + 20 * steps), "Exécution en cours")
+    if st == "succeeded":
+        if (run.get("result") or {}).get("pending_approval"):
+            return ("awaiting_approval", 90, "En attente de votre validation avant publication")
+        return ("succeeded", 100, "Exécuté")
+    if st == "cancelled":
+        return ("cancelled", 0, run.get("error_message") or "Annulé")
+    return ("failed", 100, run.get("error_message") or "Échec")
+
+
+def execution_status(audit_id: str | None) -> list[dict]:
+    """Progress of validated actions: the latest scheduler run of each one (queued → running → succeeded / awaiting approval / failed)."""
+    tid = get_context().tenant_id
+    rows = fetch_all_dict("""
+        SELECT r.id, r.title, r.status, r.apply_mode, r.channel, r.frequency, r.times_per_period, r.applied_result,
+               s.id AS scheduler_id, s.next_run_at, s.frequency_type, s.mode, s.status AS scheduler_status,
+               lr.id AS run_id, lr.status AS run_status, lr.started_at, lr.completed_at, lr.error_message, lr.result, lr.triggered_by,
+               (SELECT count(*) FROM public.scheduler_execution_steps st WHERE st.run_id = lr.id) AS steps
+          FROM public.visibility_recommendations r
+          LEFT JOIN public.tenant_schedulers s ON s.id = nullif(r.applied_result->>'scheduler_id', '')::uuid AND s.deleted_at IS NULL
+          LEFT JOIN LATERAL (SELECT * FROM public.scheduler_execution_runs x WHERE x.scheduler_id = s.id ORDER BY x.created_at DESC LIMIT 1) lr ON true
+         WHERE r.tenant_id = %s AND r.deleted_at IS NULL AND r.status IN ('accepted','scheduled','applied')
+           AND (%s::uuid IS NULL OR r.audit_id = %s::uuid)
+         ORDER BY r.updated_at DESC NULLS LAST LIMIT 200""", [tid, audit_id, audit_id])
+    out = []
+    for r in rows:
+        run = None if not r["run_id"] else {"status": r["run_status"], "steps": r["steps"], "result": r["result"], "error_message": r["error_message"]}
+        state, pct, label = _run_state(run, r)
+        res = r["result"] or {}
+        out.append({"id": str(r["id"]), "title": r["title"], "apply_mode": r["apply_mode"], "channel": r["channel"], "frequency": r["frequency"],
+                    "times_per_period": r["times_per_period"], "scheduler_id": str(r["scheduler_id"]) if r["scheduler_id"] else None,
+                    "next_run_at": r["next_run_at"] if r["frequency_type"] != "event" or not r["run_id"] else None,
+                    "autonomy": r["mode"], "run_id": str(r["run_id"]) if r["run_id"] else None, "state": state, "progress": pct, "label": label,
+                    "started_at": r["started_at"], "completed_at": r["completed_at"], "content_id": res.get("content_id"),
+                    "can_run_now": bool(r["scheduler_id"]) and state not in ("queued", "running") and r["scheduler_status"] == "active"})
+    return out
+
+
+def run_now(rec_id: str) -> dict:
+    from apps.scheduler.engine import enqueue_run
+    row = fetch_one("""SELECT applied_result->>'scheduler_id' FROM public.visibility_recommendations
+                        WHERE id = %s AND tenant_id = %s AND deleted_at IS NULL""", [rec_id, get_context().tenant_id])
+    if not row or not row[0]:
+        raise BusinessError("Cette action n'a pas d'exécution programmée", "not_schedulable")
+    run_id = enqueue_run(row[0], "manual")
+    if not run_id:
+        raise BusinessError("La programmation est en pause ou supprimée", "scheduler_inactive")
+    record_audit("visibility.run_now", "visibility", entity_type="visibility_recommendations", entity_id=rec_id, after={"run_id": run_id})
+    return {"run_id": run_id}

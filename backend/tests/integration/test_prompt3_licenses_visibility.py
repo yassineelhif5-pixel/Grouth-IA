@@ -192,3 +192,35 @@ def test_visibility_programme_end_to_end(tenant_user, make_user, sites, admin_co
     ai = c.get("/api/v1/visibility/ai").json()
     assert ai["responses"] == 0 and ai["mention_rate"] is None and "Aucun chiffre n'est estimé" in ai["disclaimer"]
     assert c.post("/api/v1/visibility/ai", {"profile_id": pid}, format="json").json()["created"] >= 5
+
+
+def test_competitor_discovery_and_immediate_execution_progress(tenant_user, make_user, sites, admin_conn):
+    site, rival = sites
+    owner, pilot = tenant_user(), make_user(pilot=True)
+    _enterprise(pilot, owner["tenant_id"])
+    c = owner["client"]
+    r = c.post("/api/v1/visibility/programmes", {"name": "Acme", "site_urls": [site], "competitors": [{"name": "Rival", "url": rival}],
+                                                 "scope": ["seo"]}, format="json")
+    aid = r.json()["audit_id"]
+    # competitors are listed right after the link is entered, each with its source
+    d = c.post("/api/v1/visibility/competitors/discover", {"site_url": site}, format="json")
+    assert d.status_code == 200, d.content
+    cands = {x["name"]: x for x in d.json()["candidates"]}
+    assert cands["Rival"]["source"] == "known" and cands["Rival"]["evidence"]
+    assert d.json()["ai_available"] is False                                # nothing is suggested without an AI provider
+
+    rec = next(x for x in c.get(f"/api/v1/visibility/audits/{aid}/report").json()["recommendations"] if x["code"] == "pillar_article")
+    bulk = c.post("/api/v1/visibility/recommendations/accept-bulk",
+                  {"items": [{"id": rec["id"], "frequency": "once"}], "autonomy": "approval", "run_now": True}, format="json").json()
+    applied = bulk["applied"][0]
+    assert applied["status"] == "scheduled" and applied["run_id"], bulk
+    ftype = admin_conn.execute("SELECT frequency_type FROM public.tenant_schedulers WHERE id = %s", [applied["scheduler_id"]]).fetchone()[0]
+    assert ftype == "event"                                                 # "une fois" never recurs
+    ex = {x["id"]: x for x in c.get("/api/v1/visibility/recommendations/execution", {"audit_id": aid}).json()}[rec["id"]]
+    assert ex["run_id"] == applied["run_id"] and ex["progress"] == 100
+    assert ex["state"] in ("succeeded", "failed", "awaiting_approval") and ex["label"]  # no AI → the run reports its real failure
+    again = c.post(f"/api/v1/visibility/recommendations/{rec['id']}/run-now", {}, format="json")
+    assert again.status_code == 200 and again.json()["run_id"] != applied["run_id"]
+    runs = admin_conn.execute("SELECT count(*), count(*) FILTER (WHERE triggered_by = 'manual') FROM public.scheduler_execution_runs "
+                              "WHERE scheduler_id = %s", [applied["scheduler_id"]]).fetchone()
+    assert runs == (2, 2)

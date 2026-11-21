@@ -1,6 +1,6 @@
 import {
   ActionIcon, Affix, Alert, Anchor, Badge, Box, Button, Card, Checkbox, Divider, Drawer, Grid, Group, Loader, NumberInput, Paper,
-  Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack, Stepper, Table, Tabs, Text, Textarea, TextInput, ThemeIcon, Title,
+  Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack, Stepper, Switch, Table, Tabs, Text, Textarea, TextInput, ThemeIcon, Title,
   Tooltip, UnstyledButton,
 } from "@mantine/core";
 import {
@@ -35,6 +35,9 @@ interface RoadmapItem { id: string; phase: "now" | "next" | "later"; area: strin
 interface Channel { code: string; name: string; why: string; connector: string[] }
 interface Report { audit: Audit; recommendations: Recommendation[]; assets: Asset[]; roadmap: RoadmapItem[]; channels: Channel[]; kpis: KpiResponse }
 interface Profile { id: string; name: string; site_urls: string[]; created_at: string }
+interface Candidate { name: string; url: string; source: "site_mentions" | "known" | "ai_suggested"; evidence?: string[]; mentions?: number }
+interface DiscoverResult { site: string; name: string | null; candidates: Candidate[]; ai_available: boolean; note: string | null }
+interface Execution { id: string; title: string; apply_mode: string; channel: string | null; frequency: string | null; times_per_period: number | null; scheduler_id: string | null; next_run_at: string | null; autonomy: string | null; run_id: string | null; state: "ready" | "planned" | "queued" | "running" | "succeeded" | "awaiting_approval" | "failed" | "cancelled"; progress: number; label: string; started_at: string | null; completed_at: string | null; content_id: string | null; can_run_now: boolean }
 
 const PRIORITY: Record<Recommendation["priority"], { color: string; label: string }> = {
   critical: { color: "red", label: "Critique" }, high: { color: "orange", label: "Haute" }, medium: { color: "yellow", label: "Moyenne" }, low: { color: "gray", label: "Basse" },
@@ -272,11 +275,27 @@ export function ProgrammeWizardPage() {
   const [competitors, setCompetitors] = useState<string[]>([""]);
   const [sector, setSector] = useState("");
   const [launched, setLaunched] = useState<{ profile_id: string; audit_id: string } | null>(null);
+  const [found, setFound] = useState<Candidate[]>([]);
+  const [picked, setPicked] = useState<Record<string, boolean>>({});
+  const discover = useMutation({
+    mutationFn: (site: string) => api<DiscoverResult>("/visibility/competitors/discover", { method: "POST", tenantId, body: { site_url: site, name: name || undefined, sector: sector || undefined } }),
+    onSuccess: (r) => {
+      setFound(r.candidates);
+      setPicked(Object.fromEntries(r.candidates.map((c) => [c.name, true])));
+      if (!name && r.name) setName(r.name);
+    },
+  });
+  const discoveredFor = useRef("");
+  const runDiscovery = () => {
+    const first = urls.find((u) => /\.[a-z]{2,}/i.test(u.trim()))?.trim();
+    if (first && first !== discoveredFor.current) { discoveredFor.current = first; discover.mutate(first); }
+  };
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const launch = useMutation({
     mutationFn: () => api<{ profile_id: string; audit_id: string }>("/visibility/programmes", {
       method: "POST", tenantId,
-      body: { name: name || undefined, site_urls: urls.filter((u) => u.trim()), competitors: competitors.filter((c) => c.trim()), scheduler_kind: kind, scope, sector: sector || undefined, answers },
+      body: { name: name || undefined, site_urls: urls.filter((u) => u.trim()),
+        competitors: [...found.filter((c) => picked[c.name]).map((c) => ({ name: c.name, url: c.url, source: c.source })), ...competitors.filter((c) => c.trim())], scheduler_kind: kind, scope, sector: sector || undefined, answers },
     }),
     onSuccess: (r) => { setLaunched(r); setActive(3); },
   });
@@ -291,7 +310,8 @@ export function ProgrammeWizardPage() {
     <Stack gap="xs">
       {values.map((v, i) => (
         <Group key={i} gap="xs" wrap="nowrap">
-          <TextInput flex={1} value={v} placeholder={placeholder} onChange={(e) => set(values.map((x, j) => (j === i ? e.currentTarget.value : x)))} />
+          <TextInput flex={1} value={v} placeholder={placeholder} onChange={(e) => set(values.map((x, j) => (j === i ? e.currentTarget.value : x)))}
+            onBlur={values === urls ? runDiscovery : undefined} />
           {values.length > 1 && <ActionIcon variant="subtle" color="red" aria-label="Retirer" onClick={() => set(values.filter((_, j) => j !== i))}><IconTrash size={16} /></ActionIcon>}
         </Group>
       ))}
@@ -334,8 +354,31 @@ export function ProgrammeWizardPage() {
                 </Stack>
               </Grid.Col>
               <Grid.Col span={{ base: 12, md: 6 }}>
-                <Text size="sm" fw={500} mb={4}>Concurrents (facultatif)</Text>
-                <Text size="xs" c="dimmed" mb="xs">Nom ou site. Sans concurrent, l'IA en propose (marqués « suggéré par l'IA », à vérifier) si un fournisseur IA est configuré.</Text>
+                <Group justify="space-between" mb={4}>
+                  <Text size="sm" fw={500}>Concurrents à comparer</Text>
+                  <Button size="xs" variant="light" leftSection={<IconRadar size={14} />} loading={discover.isPending} disabled={!validUrls}
+                    onClick={() => { discoveredFor.current = ""; runDiscovery(); }}>Détecter</Button>
+                </Group>
+                {discover.isPending && <Group gap={6} mb="xs"><Loader size="xs" /><Text size="xs" c="dimmed">Recherche des concurrents cités sur votre site…</Text></Group>}
+                {found.length > 0 && (
+                  <Stack gap={6} mb="sm">
+                    {found.map((c) => (
+                      <Paper key={c.name} p="xs" withBorder>
+                        <Group justify="space-between" wrap="nowrap" align="flex-start">
+                          <Checkbox checked={!!picked[c.name]} onChange={(e) => { const v = e.currentTarget.checked; setPicked((p) => ({ ...p, [c.name]: v })); }}
+                            label={<Text size="sm" fw={500}>{c.name}</Text>} description={c.url || undefined} />
+                          <Badge size="xs" color={c.source === "ai_suggested" ? "aurora" : c.source === "site_mentions" ? "signal" : "gray"}>
+                            {c.source === "ai_suggested" ? "Suggéré par l'IA" : c.source === "site_mentions" ? "Cité sur votre site" : "Déjà connu"}
+                          </Badge>
+                        </Group>
+                        {c.evidence?.[0] && <Text size="xs" c="dimmed" mt={4} lineClamp={2}>{c.evidence[0]}</Text>}
+                      </Paper>
+                    ))}
+                  </Stack>
+                )}
+                {discover.data && found.length === 0 && <Text size="xs" c="dimmed" mb="xs">{discover.data.note}</Text>}
+                {discover.data && !discover.data.ai_available && <Text size="xs" c="dimmed" mb="xs">Configurez un fournisseur IA (PILOTE → Fournisseurs IA) pour obtenir aussi des suggestions de l'IA.</Text>}
+                <Text size="xs" c="dimmed" mb={4}>Ajouter un concurrent (nom ou site)</Text>
                 {list(competitors, setCompetitors, "concurrent.com", 5)}
               </Grid.Col>
             </Grid>
@@ -390,6 +433,8 @@ export function AuditResultPage() {
   const params = new URLSearchParams(window.location.search);
   const [kind, setKind] = useState<string>(params.get("kind") ?? "standard");
   const [autonomy, setAutonomy] = useState("approval");
+  const [runNow, setRunNow] = useState(true);
+  const [tab, setTab] = useState<string | null>("actions");
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const q = useQuery({ queryKey: ["v-report", auditId], queryFn: () => api<Report>(`/visibility/audits/${auditId}/report`, { tenantId }) });
   const r = q.data;
@@ -398,9 +443,9 @@ export function AuditResultPage() {
   const validate = useMutation({
     mutationFn: () => api<{ applied: { status: string }[]; errors: { message: string }[] }>("/visibility/recommendations/accept-bulk", {
       method: "POST", tenantId,
-      body: { scheduler_kind: kind, autonomy, items: picked.map(({ rec, c }) => ({ id: rec.id, frequency: c.frequency, times_per_period: c.times })) },
+      body: { scheduler_kind: kind, autonomy, run_now: runNow, items: picked.map(({ rec, c }) => ({ id: rec.id, frequency: c.frequency, times_per_period: c.times })) },
     }),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["v-report", auditId] }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["v-report", auditId] }); void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }); setTab("execution"); },
   });
   const download = async (asset: Asset) => {
     const res = await api<Response>(`/visibility/assets/${asset.id}/download`, { tenantId, raw: true });
@@ -436,9 +481,10 @@ export function AuditResultPage() {
           </Card>
         </Grid.Col>
       </Grid>
-      <Tabs defaultValue="actions" keepMounted={false}>
+      <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="actions">Plan d'actions ({r.recommendations.length})</Tabs.Tab>
+          <Tabs.Tab value="execution">Exécution</Tabs.Tab>
           <Tabs.Tab value="site">Votre site</Tabs.Tab>
           <Tabs.Tab value="competitors">Concurrents</Tabs.Tab>
           <Tabs.Tab value="publish">Quoi publier, où</Tabs.Tab>
@@ -453,6 +499,8 @@ export function AuditResultPage() {
                 <Select w={260} value={autonomy} onChange={(v) => v && setAutonomy(v)} allowDeselect={false} aria-label="Autonomie"
                   data={[{ value: "approval", label: "Je valide chaque publication" }, { value: "automatic", label: "Automatique" }, { value: "analysis", label: "Analyse seule" }]} />
               </Group>
+              {can("seo.manage") && <Switch label="Exécuter immédiatement" checked={runNow} onChange={(e) => setRunNow(e.currentTarget.checked)}
+                description="En plus de la fréquence choisie" />}
               {can("seo.manage") && <Button leftSection={<IconCheck size={16} />} disabled={selectedCount === 0} loading={validate.isPending} onClick={() => validate.mutate()}>Valider {selectedCount} action{selectedCount > 1 ? "s" : ""}</Button>}
             </Group>
             {validate.data && <Alert color={validate.data.errors.length ? "orange" : "signal"} mb="md">{validate.data.applied.length} action(s) appliquée(s) ou programmée(s).{validate.data.errors.map((e) => ` ${e.message}`).join("")}</Alert>}
@@ -487,6 +535,7 @@ export function AuditResultPage() {
             </Table.ScrollContainer>
           </Card>
         </Tabs.Panel>
+        <Tabs.Panel value="execution" pt="md"><ExecutionPanel auditId={auditId} /></Tabs.Panel>
         <Tabs.Panel value="site" pt="md">
           <Stack>
             {sites.map((s) => (
@@ -555,6 +604,73 @@ export function AuditResultPage() {
         </Tabs.Panel>
         <Tabs.Panel value="roadmap" pt="md"><Roadmap items={r.roadmap} /></Tabs.Panel>
       </Tabs>
+    </Stack>
+  );
+}
+
+const STATE_COLOR: Record<Execution["state"], string> = {
+  ready: "signal", planned: "gray", queued: "blue", running: "aurora", succeeded: "signal", awaiting_approval: "yellow", failed: "red", cancelled: "gray",
+};
+
+function ExecutionPanel({ auditId }: { auditId: string }) {
+  const { tenantId, can } = useTenant();
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["v-exec", auditId],
+    queryFn: () => api<Execution[]>("/visibility/recommendations/execution", { tenantId, query: { audit_id: auditId } }),
+    refetchInterval: (query) => ((query.state.data ?? []).some((x) => x.state === "queued" || x.state === "running") ? 2000 : 15000),
+  });
+  const run = useMutation({
+    mutationFn: (id: string) => api(`/visibility/recommendations/${id}/run-now`, { method: "POST", tenantId }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }),
+  });
+  const rows = q.data ?? [];
+  const done = rows.filter((r) => ["ready", "succeeded", "awaiting_approval"].includes(r.state)).length;
+  const active = rows.filter((r) => r.state === "queued" || r.state === "running").length;
+  if (q.isLoading) return <Loader size="sm" />;
+  if (!rows.length) return <Card><Text c="dimmed" size="sm">Aucune action validée pour l'instant. Cochez des actions dans le plan puis cliquez sur « Valider ».</Text></Card>;
+  return (
+    <Stack>
+      <Card>
+        <Group justify="space-between" mb="xs">
+          <Text fw={600}>Avancement global</Text>
+          <Group gap="xs">{active > 0 && <Loader size="xs" color="aurora" />}<Text size="sm" className="gi-num">{done}/{rows.length} terminée(s){active ? ` · ${active} en cours` : ""}</Text></Group>
+        </Group>
+        <Progress value={(100 * done) / rows.length} color="signal" radius="xl" size="lg" striped={active > 0} animated={active > 0} />
+      </Card>
+      {run.error && <Alert color="red">{errorText(run.error)}</Alert>}
+      <Card>
+        <Table.ScrollContainer minWidth={820}>
+          <Table>
+            <Table.Thead><Table.Tr><Table.Th>Action</Table.Th><Table.Th w={260}>Progression</Table.Th><Table.Th>Prochaine exécution</Table.Th><Table.Th /></Table.Tr></Table.Thead>
+            <Table.Tbody>
+              {rows.map((r) => (
+                <Table.Tr key={r.id}>
+                  <Table.Td>
+                    <Text size="sm" fw={500}>{r.title}</Text>
+                    <Text size="xs" c="dimmed">{MODE_LABEL[r.apply_mode] ?? r.apply_mode}{r.frequency && r.frequency !== "once" ? ` · ${r.times_per_period ?? 1}× ${FREQUENCIES.find((f) => f.value === r.frequency)?.label.toLowerCase() ?? r.frequency}` : r.scheduler_id ? " · une fois" : ""}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Progress value={r.progress} color={STATE_COLOR[r.state]} radius="xl" striped={r.state === "running" || r.state === "queued"} animated={r.state === "running"} />
+                    <Group gap={6} mt={4} wrap="nowrap">
+                      <Badge size="xs" color={STATE_COLOR[r.state]} variant="dot">{r.label}</Badge>
+                      {r.state === "awaiting_approval" && <Anchor size="xs" component={Link} to={`/t/${tenantId}/approvals`}>Valider la publication</Anchor>}
+                      {r.content_id && <Anchor size="xs" component={Link} to={`/t/${tenantId}/content`}>Voir le contenu</Anchor>}
+                    </Group>
+                  </Table.Td>
+                  <Table.Td><Text size="xs" c="dimmed">{r.next_run_at ? formatDate(r.next_run_at) : r.state === "ready" ? "—" : "Aucune"}</Text></Table.Td>
+                  <Table.Td ta="right">
+                    {r.can_run_now && can("seo.manage") && (
+                      <Button size="xs" variant="light" leftSection={<IconPlayerPlay size={14} />} loading={run.isPending && run.variables === r.id}
+                        onClick={() => run.mutate(r.id)}>Exécuter maintenant</Button>
+                    )}
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
+      </Card>
     </Stack>
   );
 }

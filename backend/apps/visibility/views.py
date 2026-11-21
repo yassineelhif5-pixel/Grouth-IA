@@ -111,7 +111,17 @@ class RecommendationViewSet(mixins.ListModelMixin, GrowthViewSet):
     def accept(self, request, pk=None):
         d = request.data
         return Response(services.accept_recommendation(str(pk), d.get("frequency"), d.get("times_per_period"),
-                                                       d.get("scheduler_kind", "standard"), d.get("autonomy", "approval")))
+                                                       d.get("scheduler_kind", "standard"), d.get("autonomy", "approval"), bool(d.get("run_now"))))
+
+    @action(detail=True, methods=["post"], url_path="run-now")
+    def run_now(self, request, pk=None):
+        """Immediate execution of a validated action (on top of its programmed frequency)."""
+        return Response(services.run_now(str(pk)))
+
+    @action(detail=False, methods=["get"])
+    def execution(self, request):
+        """Progress of validated actions, polled by the results page."""
+        return Response(services.execution_status(request.query_params.get("audit_id")))
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
@@ -123,9 +133,11 @@ class RecommendationViewSet(mixins.ListModelMixin, GrowthViewSet):
         """Validate several actions at once: [{id, frequency, times_per_period}] + kind + autonomy."""
         out, errors = [], []
         kind, autonomy = request.data.get("scheduler_kind", "standard"), request.data.get("autonomy", "approval")
+        run_now = bool(request.data.get("run_now"))
         for item in request.data.get("items") or []:
             try:
-                out.append(services.accept_recommendation(str(item["id"]), item.get("frequency"), item.get("times_per_period"), kind, autonomy))
+                out.append(services.accept_recommendation(str(item["id"]), item.get("frequency"), item.get("times_per_period"), kind, autonomy,
+                                                          run_now))
             except BusinessError as e:
                 errors.append({"id": item.get("id"), "code": e.code, "message": e.message})
         if kind == "intelligent" and out:
@@ -186,3 +198,15 @@ class AiVisibilityView(GrowthAPIView):
         if not pid:
             raise BusinessError("profile_id requis", "invalid_payload")
         return Response({"created": services.seed_questions(str(pid))})
+
+
+class CompetitorDiscoverView(GrowthAPIView):
+    """Right after the site link is entered: competitors to compare against, each with its source and evidence."""
+    permission_map = {"POST": "seo.manage"}
+    required_module = "seo"
+
+    def post(self, request):
+        site = (request.data.get("site_url") or "").strip()
+        if "." not in site:
+            raise BusinessError("Indiquez le lien du site", "invalid_url")
+        return Response(services.discover_competitors(site, request.data.get("name"), request.data.get("sector")))
