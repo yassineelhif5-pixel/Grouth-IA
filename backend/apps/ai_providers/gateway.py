@@ -101,8 +101,14 @@ def auto_default_model(tenant_id: str | None = None) -> dict | None:
     if not rows:
         return None
     rank = {p: i for i, p in enumerate(PROVIDER_PRIORITY)}
-    # first by provider priority, then prefer a model flagged "(par défaut)" within that provider
-    rows.sort(key=lambda r: (rank.get(r["provider"], 99), 0 if "défaut" in (r.get("model_name") or "").lower() else 1))
+    cheap = ("mini", "économique", "economique", "small", "rapide", "nano", "8b", "haiku", "flash", "reasoner", "32k")
+
+    def key(r):
+        name = (r.get("model_name") or "").lower()
+        return (rank.get(r["provider"], 99),          # suggested provider order
+                0 if "défaut" in name else 1,          # a model explicitly flagged "(par défaut)" wins
+                1 if any(c in name for c in cheap) else 0)  # otherwise prefer the flagship over cheap/mini variants
+    rows.sort(key=key)
     return rows[0]
 
 
