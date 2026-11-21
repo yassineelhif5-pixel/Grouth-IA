@@ -59,7 +59,8 @@ def wrap_untrusted(label: str, content: str, limit: int = 20000) -> str:
 
 
 ENV_KEYS = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY", "google": "GEMINI_API_KEY", "mistral": "MISTRAL_API_KEY",
-            "groq": "GROQ_API_KEY", "perplexity": "PERPLEXITY_API_KEY", "cohere": "COHERE_API_KEY"}
+            "groq": "GROQ_API_KEY", "perplexity": "PERPLEXITY_API_KEY", "cohere": "COHERE_API_KEY", "deepseek": "DEEPSEEK_API_KEY",
+            "moonshot": "MOONSHOT_API_KEY", "openrouter": "OPENROUTER_API_KEY", "xai": "XAI_API_KEY"}
 
 
 def env_key(provider: str) -> str | None:

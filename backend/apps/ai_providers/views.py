@@ -19,7 +19,7 @@ class PilotAIProvidersView(GrowthAPIView):
                                 WHERE r.tenant_id IS NULL AND r.feature_code = '*' AND r.is_enabled ORDER BY r.priority LIMIT 1""")
         return Response({
             "default_model": default[0] if default else None,
-            "env_keys": {p: bool(env_key(p)) for p in ("anthropic", "openai", "google", "mistral", "groq", "perplexity", "cohere")},
+            "env_keys": {p: bool(env_key(p)) for p in ("anthropic", "openai", "google", "deepseek", "moonshot", "openrouter", "xai", "mistral", "groq", "perplexity", "cohere")},
             "providers": fetch_all_dict("""SELECT p.code, p.name, p.api_style, p.is_enabled, c.id AS config_id, c.base_url, c.priority,
                                                   (c.api_key_ciphertext IS NOT NULL) AS has_key, c.last_test_at, c.last_test_status
                                              FROM public.ai_providers p LEFT JOIN public.ai_provider_configurations c

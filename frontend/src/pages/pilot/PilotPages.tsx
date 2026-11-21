@@ -285,8 +285,12 @@ export function PilotAIPage() {
               <Stack gap={4}>
                 <Title order={5}>Modèle par défaut</Title>
                 <Text size="sm" c="dimmed">Utilisé par toutes les fonctionnalités sans routage spécifique (analyses, contenus, assistant SEO/GEO, THOR…).</Text>
-                <Select w={320} mt="xs" value={q.data?.default_model ?? null} allowDeselect={false} placeholder="Choisir un modèle"
-                  data={(q.data?.models ?? []).filter((x) => x.is_enabled).map((x) => ({ value: String(x.code), label: `${String(x.name)} — ${String(x.provider)}` }))}
+                <Select w={340} mt="xs" value={q.data?.default_model ?? null} allowDeselect={false} placeholder="Choisir un modèle" searchable
+                  data={Object.entries((q.data?.models ?? []).filter((x) => x.is_enabled).reduce<Record<string, { value: string; label: string }[]>>((acc, x) => {
+                    const prov = String(x.provider);
+                    (acc[prov] ??= []).push({ value: String(x.code), label: String(x.name) });
+                    return acc;
+                  }, {})).map(([group, items]) => ({ group, items }))}
                   onChange={(v) => v && op.mutate({ operation: "set_default", model_code: v })} />
               </Stack>
               <Stack gap={6} miw={300}>
