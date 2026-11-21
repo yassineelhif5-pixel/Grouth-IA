@@ -90,7 +90,8 @@ def _model_rows(where: str, params: list) -> list[dict]:
                             WHERE x.provider_id = p.id AND x.is_enabled AND x.deleted_at IS NULL
                               AND (x.tenant_id = %s OR x.tenant_id IS NULL)
                             ORDER BY x.tenant_id NULLS LAST, x.priority LIMIT 1) c ON true
-            WHERE m.is_enabled AND {where}""", params)
+            WHERE m.is_enabled AND {where}
+            ORDER BY m.created_at""", params)
 
 
 def auto_default_model(tenant_id: str | None = None) -> dict | None:
@@ -119,13 +120,7 @@ def routes(feature: str, tenant_id: str | None) -> list[dict]:
                             ORDER BY x.tenant_id NULLS LAST, x.priority LIMIT 1) c ON true
             WHERE r.is_enabled AND r.feature_code IN (%s, '*') AND (r.tenant_id = %s OR r.tenant_id IS NULL)
             ORDER BY (r.feature_code = '*'), (r.tenant_id IS NULL), r.priority, c.priority NULLS LAST""", [tenant_id, feature, tenant_id])
-    usable = [r for r in rows if _usable(r)]
-    if usable:
-        return usable
-    # no configured route is usable (e.g. the default model's provider has no key): fall back to any provider that does,
-    # so adding a valid key anywhere makes the AI work immediately without the PILOTE touching the routing.
-    fallback = auto_default_model(tenant_id)
-    return [fallback] if fallback else []
+    return [r for r in rows if _usable(r)]
 
 
 def _check_budget(tenant_id: str | None) -> None:

@@ -40,11 +40,12 @@ class PilotAIProvidersView(GrowthAPIView):
         from .gateway import auto_default_model, env_key, routes
         default = fetch_one("""SELECT m.code FROM public.ai_feature_routes r JOIN public.ai_models m ON m.id = r.model_id
                                 WHERE r.tenant_id IS NULL AND r.feature_code = '*' AND r.is_enabled ORDER BY r.priority LIMIT 1""")
-        effective = routes("content.generation", None)  # what the gateway would actually use right now
+        routed = routes("content.generation", None)  # what the gateway actually uses right now (empty if the default's key is missing)
         auto = auto_default_model(None)
+        effective = routed[0]["model"] if routed else (auto["model"] if auto else None)  # display: show the model that would serve
         return Response({
             "default_model": default[0] if default else None,
-            "effective_model": effective[0]["model"] if effective else None,  # may differ from default if its key is missing
+            "effective_model": effective,  # differs from default when the default's key is missing but another provider has one
             "suggested_model": auto["model"] if auto else None,  # best available by the suggested priority order
             "env_keys": {p: bool(env_key(p)) for p in ("anthropic", "openai", "google", "deepseek", "moonshot", "openrouter", "xai", "mistral", "groq", "perplexity", "cohere")},
             "providers": fetch_all_dict("""SELECT p.code, p.name, p.api_style, p.is_enabled, c.id AS config_id, c.base_url, c.priority,
