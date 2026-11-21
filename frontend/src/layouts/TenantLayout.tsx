@@ -39,6 +39,7 @@ export function TenantLayout() {
     { group: "Contenus", to: `${b}/social`, label: "Réseaux sociaux", icon: i(IconShare), show: m("social", "social.read") },
     { group: "Contenus", to: `${b}/video`, label: "Vidéo", icon: i(IconVideo), show: m("video", "video.read") },
     { group: "Vente", to: `${b}/prospects`, label: "Prospects", icon: i(IconUserSearch), show: m("prospects", "prospects.read") },
+    { group: "Vente", to: `${b}/hunt`, label: "Chasse aux prospects", icon: i(IconTargetArrow), show: m("prospects", "prospects.read") },
     { group: "Vente", to: `${b}/campaigns`, label: "Campagnes", icon: i(IconSend), show: m("prospects", "campaigns.read") },
     { group: "Vente", to: `${b}/email`, label: "E-mails", icon: i(IconMail), show: m("email_center", "email.read") },
     { group: "Vente", to: `${b}/whatsapp`, label: "WhatsApp", icon: i(IconBrandWhatsapp), show: m("whatsapp", "whatsapp.read") },

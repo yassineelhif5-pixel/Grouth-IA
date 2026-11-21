@@ -32,3 +32,4 @@ celerybeat-schedule*
 .vercel/
 .vercel-token
 .vercel-scope
+backend/dump.rdb
