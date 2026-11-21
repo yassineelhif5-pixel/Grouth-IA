@@ -72,14 +72,12 @@ class PilotAIProvidersView(GrowthAPIView):
                            base_url = EXCLUDED.base_url, priority = EXCLUDED.priority, settings = EXCLUDED.settings RETURNING id""",
                       [encrypt_json({"api_key": d.get("api_key", "")}), d.get("base_url"), int(d.get("priority", 100)),
                        __import__("json").dumps(d.get("settings") or {}), d["provider_code"]])
-            # auto-detect: if the AI was not usable (current default provider has no key), make the best available model the default
-            from .gateway import auto_default_model, routes
-            if not routes("content.generation", None):
-                pass  # no usable route even after storing — nothing to switch to
-            elif not _default_route_usable():
-                best = auto_default_model(None)
-                if best:
-                    _set_default_model(best["model"])
+            # auto-detect: if the current default model's provider has no key, point the default at the best model
+            # that now has one (by suggested priority) so adding any valid key makes the AI work right away
+            from .gateway import auto_default_model
+            best = auto_default_model(None)
+            if best and not _default_route_usable():
+                _set_default_model(best["model"])
         elif op == "upsert_model":
             fetch_one("""INSERT INTO public.ai_models (provider_id, code, name, context_window, input_cost_per_mtok_cents, output_cost_per_mtok_cents)
                          SELECT id, %s, %s, %s, %s, %s FROM public.ai_providers WHERE code = %s
