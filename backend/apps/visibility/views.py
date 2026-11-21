@@ -118,6 +118,12 @@ class RecommendationViewSet(mixins.ListModelMixin, GrowthViewSet):
         """Immediate execution of a validated action (on top of its programmed frequency)."""
         return Response(services.run_now(str(pk)))
 
+    @action(detail=False, methods=["post"])
+    def preview(self, request):
+        """Proposed correction for each selected action, before confirmation."""
+        ids = [str(i) for i in (request.data.get("ids") or [])][:100]
+        return Response(services.preview_corrections(ids))
+
     @action(detail=False, methods=["get"])
     def execution(self, request):
         """Progress of validated actions, polled by the results page."""
@@ -135,9 +141,9 @@ class RecommendationViewSet(mixins.ListModelMixin, GrowthViewSet):
         kind, autonomy = request.data.get("scheduler_kind", "standard"), request.data.get("autonomy", "approval")
         run_now = bool(request.data.get("run_now"))
         for item in request.data.get("items") or []:
-            try:
+            try:  # per action: "run_now" (immediate) and/or a frequency (programmed); falls back to the global choice
                 out.append(services.accept_recommendation(str(item["id"]), item.get("frequency"), item.get("times_per_period"), kind, autonomy,
-                                                          run_now))
+                                                          bool(item.get("run_now", run_now))))
             except BusinessError as e:
                 errors.append({"id": item.get("id"), "code": e.code, "message": e.message})
         if kind == "intelligent" and out:

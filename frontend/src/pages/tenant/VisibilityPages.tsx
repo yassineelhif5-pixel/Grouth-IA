@@ -1,6 +1,6 @@
 import {
-  ActionIcon, Affix, Alert, Anchor, Badge, Box, Button, Card, Checkbox, Divider, Drawer, Grid, Group, Loader, NumberInput, Paper,
-  Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack, Stepper, Switch, Table, Tabs, Text, Textarea, TextInput, ThemeIcon, Title,
+  ActionIcon, Affix, Alert, Anchor, Badge, Box, Button, Card, Checkbox, Code, Divider, Drawer, Grid, Group, Loader, Modal, NumberInput, Paper,
+  Progress, ScrollArea, SegmentedControl, Select, SimpleGrid, Stack, Stepper, Table, Tabs, Text, Textarea, TextInput, ThemeIcon, Title,
   Tooltip, UnstyledButton,
 } from "@mantine/core";
 import {
@@ -35,6 +35,9 @@ interface RoadmapItem { id: string; phase: "now" | "next" | "later"; area: strin
 interface Channel { code: string; name: string; why: string; connector: string[] }
 interface Report { audit: Audit; recommendations: Recommendation[]; assets: Asset[]; roadmap: RoadmapItem[]; channels: Channel[]; kpis: KpiResponse }
 interface Profile { id: string; name: string; site_urls: string[]; created_at: string }
+interface Correction { kind: "file" | "content" | "manual"; filename?: string | null; content?: string; truncated?: boolean; cms_available?: boolean; content_type?: string; keyword?: string | null; channel?: string; objective?: string | null; plan?: string[]; how: string }
+interface Preview { id: string; title: string; apply_mode: string; channel: string | null; priority: Recommendation["priority"]; frequency: string; times_per_period: number; recurring_allowed: boolean; correction: Correction }
+interface PlanChoice { mode: "now" | "schedule"; frequency: string; times: number }
 interface Candidate { name: string; url: string; source: "site_mentions" | "known" | "ai_suggested"; evidence?: string[]; mentions?: number }
 interface DiscoverResult { site: string; name: string | null; candidates: Candidate[]; ai_available: boolean; note: string | null }
 interface Execution { id: string; title: string; apply_mode: string; channel: string | null; frequency: string | null; times_per_period: number | null; scheduler_id: string | null; next_run_at: string | null; autonomy: string | null; run_id: string | null; state: "ready" | "planned" | "queued" | "running" | "succeeded" | "awaiting_approval" | "failed" | "cancelled"; progress: number; label: string; started_at: string | null; completed_at: string | null; content_id: string | null; can_run_now: boolean }
@@ -433,7 +436,8 @@ export function AuditResultPage() {
   const params = new URLSearchParams(window.location.search);
   const [kind, setKind] = useState<string>(params.get("kind") ?? "standard");
   const [autonomy, setAutonomy] = useState("approval");
-  const [runNow, setRunNow] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [plan, setPlan] = useState<Record<string, PlanChoice>>({});
   const [tab, setTab] = useState<string | null>("actions");
   const [choices, setChoices] = useState<Record<string, Choice>>({});
   const q = useQuery({ queryKey: ["v-report", auditId], queryFn: () => api<Report>(`/visibility/audits/${auditId}/report`, { tenantId }) });
@@ -443,9 +447,27 @@ export function AuditResultPage() {
   const validate = useMutation({
     mutationFn: () => api<{ applied: { status: string }[]; errors: { message: string }[] }>("/visibility/recommendations/accept-bulk", {
       method: "POST", tenantId,
-      body: { scheduler_kind: kind, autonomy, run_now: runNow, items: picked.map(({ rec, c }) => ({ id: rec.id, frequency: c.frequency, times_per_period: c.times })) },
+      body: {
+        scheduler_kind: kind, autonomy,
+        items: (preview.data ?? []).map((p) => {
+          const ch = plan[p.id] ?? { mode: "now", frequency: p.frequency, times: p.times_per_period };
+          if (!p.recurring_allowed) return { id: p.id, run_now: false };
+          return ch.mode === "now" ? { id: p.id, frequency: "once", run_now: true } : { id: p.id, frequency: ch.frequency, times_per_period: ch.times, run_now: false };
+        }),
+      },
     }),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["v-report", auditId] }); void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }); setTab("execution"); },
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["v-report", auditId] }); void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }); setPreviewOpen(false); setTab("execution"); },
+  });
+  const preview = useMutation({
+    mutationFn: () => api<Preview[]>("/visibility/recommendations/preview", { method: "POST", tenantId, body: { ids: picked.map(({ rec }) => rec.id) } }),
+    onSuccess: (rows) => {
+      setPlan(Object.fromEntries(rows.map((p) => {
+        const freq = choices[p.id]?.frequency ?? p.frequency;
+        const recurring = freq !== "once";
+        return [p.id, { mode: recurring ? "schedule" : "now", frequency: recurring ? freq : "weekly", times: choices[p.id]?.times ?? p.times_per_period ?? 1 }];
+      })));
+      setPreviewOpen(true);
+    },
   });
   const download = async (asset: Asset) => {
     const res = await api<Response>(`/visibility/assets/${asset.id}/download`, { tenantId, raw: true });
@@ -499,10 +521,9 @@ export function AuditResultPage() {
                 <Select w={260} value={autonomy} onChange={(v) => v && setAutonomy(v)} allowDeselect={false} aria-label="Autonomie"
                   data={[{ value: "approval", label: "Je valide chaque publication" }, { value: "automatic", label: "Automatique" }, { value: "analysis", label: "Analyse seule" }]} />
               </Group>
-              {can("seo.manage") && <Switch label="Exécuter immédiatement" checked={runNow} onChange={(e) => setRunNow(e.currentTarget.checked)}
-                description="En plus de la fréquence choisie" />}
-              {can("seo.manage") && <Button leftSection={<IconCheck size={16} />} disabled={selectedCount === 0} loading={validate.isPending} onClick={() => validate.mutate()}>Valider {selectedCount} action{selectedCount > 1 ? "s" : ""}</Button>}
+              {can("seo.manage") && <Button leftSection={<IconCheck size={16} />} disabled={selectedCount === 0} loading={preview.isPending} onClick={() => preview.mutate()}>Valider {selectedCount} action{selectedCount > 1 ? "s" : ""}</Button>}
             </Group>
+            {preview.error && <Alert color="red" mb="md">{errorText(preview.error)}</Alert>}
             {validate.data && <Alert color={validate.data.errors.length ? "orange" : "signal"} mb="md">{validate.data.applied.length} action(s) appliquée(s) ou programmée(s).{validate.data.errors.map((e) => ` ${e.message}`).join("")}</Alert>}
             <Table.ScrollContainer minWidth={900}>
               <Table>
@@ -604,8 +625,74 @@ export function AuditResultPage() {
         </Tabs.Panel>
         <Tabs.Panel value="roadmap" pt="md"><Roadmap items={r.roadmap} /></Tabs.Panel>
       </Tabs>
+      <Modal opened={previewOpen} onClose={() => setPreviewOpen(false)} size="xl" title={<Text fw={600}>Corrections proposées — {preview.data?.length ?? 0} action(s)</Text>}>
+        <Stack>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">Vérifiez ce qui sera appliqué, puis choisissez pour chaque action : la lancer tout de suite ou la programmer.</Text>
+            <Group gap="xs">
+              <Button size="xs" variant="default" onClick={() => setPlan((pl) => Object.fromEntries(Object.entries(pl).map(([k, v]) => [k, { ...v, mode: "now" }])))}>Tout lancer maintenant</Button>
+              <Button size="xs" variant="default" onClick={() => setPlan((pl) => Object.fromEntries(Object.entries(pl).map(([k, v]) => [k, { ...v, mode: "schedule" }])))}>Tout programmer</Button>
+            </Group>
+          </Group>
+          {(preview.data ?? []).map((p) => {
+            const ch = plan[p.id] ?? { mode: "now", frequency: "weekly", times: 1 };
+            const set = (patch: Partial<PlanChoice>) => setPlan((pl) => ({ ...pl, [p.id]: { ...ch, ...patch } }));
+            return (
+              <Card key={p.id} padding="md">
+                <Group justify="space-between" mb="xs" wrap="nowrap" align="flex-start">
+                  <Box><Text fw={600} size="sm">{p.title}</Text><Text size="xs" c="dimmed">{MODE_LABEL[p.apply_mode] ?? p.apply_mode}</Text></Box>
+                  <Badge color={PRIORITY[p.priority].color}>{PRIORITY[p.priority].label}</Badge>
+                </Group>
+                <CorrectionView c={p.correction} />
+                <Divider my="sm" />
+                {p.recurring_allowed ? (
+                  <Group gap="sm" wrap="wrap">
+                    <SegmentedControl size="xs" value={ch.mode} onChange={(v) => set({ mode: v as PlanChoice["mode"] })}
+                      data={[{ value: "now", label: "Lancer maintenant" }, { value: "schedule", label: "Programmer" }]} />
+                    {ch.mode === "schedule" && (
+                      <Group gap={6} wrap="nowrap">
+                        <NumberInput w={70} size="xs" min={1} max={30} value={ch.times} onChange={(v) => set({ times: Number(v) || 1 })} aria-label="Nombre de fois" />
+                        <Select w={150} size="xs" allowDeselect={false} value={ch.frequency} onChange={(v) => v && set({ frequency: v })} aria-label="Période"
+                          data={FREQUENCIES.filter((f) => f.value !== "once")} />
+                      </Group>
+                    )}
+                  </Group>
+                ) : <Badge variant="light" color="signal" leftSection={<IconCheck size={12} />}>Appliquée dès la confirmation</Badge>}
+              </Card>
+            );
+          })}
+          {validate.error && <Alert color="red">{errorText(validate.error)}</Alert>}
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setPreviewOpen(false)}>Annuler</Button>
+            <Button leftSection={<IconCheck size={16} />} loading={validate.isPending} onClick={() => validate.mutate()}>Confirmer</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
+}
+
+function CorrectionView({ c }: { c: Correction }) {
+  if (c.kind === "file") {
+    return (
+      <Stack gap={6}>
+        <Group gap="xs"><Text size="xs" fw={500}>{c.filename}</Text><NatureBadge nature="observed" />{c.cms_available && <Badge size="xs" color="signal">Publication via CMS</Badge>}</Group>
+        <Code block style={{ maxHeight: 220, overflow: "auto", fontSize: 12 }}>{c.content}{c.truncated ? "\n…" : ""}</Code>
+        <Text size="xs" c="dimmed">{c.how}</Text>
+      </Stack>
+    );
+  }
+  if (c.kind === "content") {
+    return (
+      <Stack gap={6}>
+        <Group gap="xs"><Badge size="xs" color="aurora">{c.content_type}</Badge>{c.keyword && <Badge size="xs" variant="outline">mot-clé : {c.keyword}</Badge>}<Badge size="xs" variant="outline">{c.channel}</Badge></Group>
+        {c.objective && <Text size="xs">{c.objective}</Text>}
+        <Stack gap={2}>{(c.plan ?? []).map((x) => <Text key={x} size="xs">• {x}</Text>)}</Stack>
+        <Text size="xs" c="dimmed">{c.how}</Text>
+      </Stack>
+    );
+  }
+  return <Text size="xs">{c.how}</Text>;
 }
 
 const STATE_COLOR: Record<Execution["state"], string> = {

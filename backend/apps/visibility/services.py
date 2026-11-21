@@ -752,3 +752,43 @@ def run_now(rec_id: str) -> dict:
         raise BusinessError("La programmation est en pause ou supprimée", "scheduler_inactive")
     record_audit("visibility.run_now", "visibility", entity_type="visibility_recommendations", entity_id=rec_id, after={"run_id": run_id})
     return {"run_id": run_id}
+
+
+def preview_corrections(rec_ids: list[str]) -> list[dict]:
+    """What will actually be applied for each action, shown before the user confirms (nothing is executed here)."""
+    tid = get_context().tenant_id
+    rows = fetch_all_dict("""SELECT id, code, title, detail, apply_mode, channel, evidence, frequency, times_per_period, status, priority
+                               FROM public.visibility_recommendations
+                              WHERE tenant_id = %s AND deleted_at IS NULL AND id = ANY(%s::uuid[])""", [tid, rec_ids])
+    out = []
+    for r in rows:
+        ev = r["evidence"] or {}
+        item = {"id": str(r["id"]), "title": r["title"], "apply_mode": r["apply_mode"], "channel": r["channel"], "priority": r["priority"],
+                "frequency": r["frequency"] or "once", "times_per_period": r["times_per_period"] or 1, "status": r["status"],
+                "recurring_allowed": r["apply_mode"] in ("ai_content", "auto_connector")}
+        if r["apply_mode"] == "generated_file" and ev.get("asset_id"):
+            a = fetch_one("SELECT filename, content, asset_type FROM public.visibility_generated_assets WHERE id = %s AND tenant_id = %s",
+                          [ev["asset_id"], tid])
+            item["correction"] = {"kind": "file", "filename": a[0] if a else None, "asset_type": a[2] if a else None,
+                                  "content": (a[1] or "")[:6000] if a else "", "truncated": bool(a and len(a[1] or "") > 6000),
+                                  "how": "Le fichier est généré à partir de ce qui a été observé sur votre site. Avec un connecteur CMS, "
+                                         "Growth IA le publie ; sinon téléchargez-le et placez-le à la racine du site (ou dans le <head>)."}
+            if _cms_connected():
+                item["correction"]["cms_available"] = True
+        elif r["apply_mode"] in ("ai_content", "auto_connector"):
+            keyword = ev.get("keyword") or (ev.get("keywords") or [None])[0]
+            social = r["channel"] not in (None, "blog")
+            item["correction"] = {
+                "kind": "content", "content_type": "Publication sociale" if social else "Article de blog", "keyword": keyword,
+                "channel": r["channel"] or "blog", "objective": r["detail"],
+                "plan": ([f"Accroche sur « {keyword or r['title']} »", "3 points clés tirés de votre offre", "Appel à l'action vers le site"] if social else
+                         [f"Titre optimisé pour « {keyword or r['title']} »", "Introduction : le problème du lecteur",
+                          "Étude et statistiques sourcées (aucun chiffre inventé : source citée ou « donnée à compléter »)",
+                          "Comparatif objectif avec les alternatives", "FAQ (questions réellement posées)", "Conclusion et appel à l'action"]),
+                "how": "Rédigé par l'IA puis soumis à votre validation avant publication (selon le niveau d'autonomie choisi)."}
+        else:
+            item["correction"] = {"kind": "manual", "how": r["detail"] or "Action à réaliser par votre équipe ; elle est ajoutée à la roadmap.",
+                                  "evidence": {k: v for k, v in ev.items() if k not in ("asset", "asset_id")}}
+        out.append(item)
+    order = {i: n for n, i in enumerate(rec_ids)}
+    return sorted(out, key=lambda x: order.get(x["id"], 0))

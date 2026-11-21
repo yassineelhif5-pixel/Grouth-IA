@@ -207,11 +207,18 @@ def test_competitor_discovery_and_immediate_execution_progress(tenant_user, make
     assert d.status_code == 200, d.content
     cands = {x["name"]: x for x in d.json()["candidates"]}
     assert cands["Rival"]["source"] == "known" and cands["Rival"]["evidence"]
-    assert d.json()["ai_available"] is False                                # nothing is suggested without an AI provider
+    assert all(x["source"] in ("site_mentions", "known", "ai_suggested") and x["evidence"] for x in d.json()["candidates"])
 
-    rec = next(x for x in c.get(f"/api/v1/visibility/audits/{aid}/report").json()["recommendations"] if x["code"] == "pillar_article")
+    recs = c.get(f"/api/v1/visibility/audits/{aid}/report").json()["recommendations"]
+    rec = next(x for x in recs if x["code"] == "pillar_article")
+    robots = next(x for x in recs if x["code"] == "robots_txt")
+    # the proposed correction is shown before confirming: real generated file, article plan
+    pv = {x["id"]: x for x in c.post("/api/v1/visibility/recommendations/preview", {"ids": [robots["id"], rec["id"]]}, format="json").json()}
+    assert pv[robots["id"]]["correction"]["kind"] == "file" and "Sitemap:" in pv[robots["id"]]["correction"]["content"]
+    assert pv[rec["id"]]["correction"]["kind"] == "content" and pv[rec["id"]]["recurring_allowed"] is True
+    assert pv[robots["id"]]["recurring_allowed"] is False
     bulk = c.post("/api/v1/visibility/recommendations/accept-bulk",
-                  {"items": [{"id": rec["id"], "frequency": "once"}], "autonomy": "approval", "run_now": True}, format="json").json()
+                  {"items": [{"id": rec["id"], "frequency": "once", "run_now": True}], "autonomy": "approval"}, format="json").json()
     applied = bulk["applied"][0]
     assert applied["status"] == "scheduled" and applied["run_id"], bulk
     ftype = admin_conn.execute("SELECT frequency_type FROM public.tenant_schedulers WHERE id = %s", [applied["scheduler_id"]]).fetchone()[0]
