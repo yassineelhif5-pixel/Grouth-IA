@@ -1,6 +1,7 @@
-import { Alert, Center, Loader, ScrollArea, Table, Text } from "@mantine/core";
+import { Alert, Center, ScrollArea, Table, Text } from "@mantine/core";
 import type { ReactNode } from "react";
 
+import { RobotLoader } from "@/components/RobotLoader";
 import { ApiError } from "@/services/api";
 
 export interface Column<T> {
@@ -17,7 +18,7 @@ export function DataTable<T extends { id?: string }>({ rows, columns, loading, e
   onRowClick?: (row: T) => void;
   empty?: string;
 }) {
-  if (loading) return <Center p="xl"><Loader /></Center>;
+  if (loading) return <Center p="md"><RobotLoader size="sm" label="Chargement des données…" /></Center>;
   if (error) {
     const e = error as ApiError;
     return <Alert color="red" title={e.code ?? "error"}>{e.message}{e.requestId ? ` (ref ${e.requestId.slice(0, 8)})` : ""}</Alert>;

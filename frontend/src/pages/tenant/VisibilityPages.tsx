@@ -12,6 +12,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { PageHeader } from "@/components/PageHeader";
+import { RobotLoader } from "@/components/RobotLoader";
 import { useMe, useTenant } from "@/hooks/useMe";
 import { api, ApiError } from "@/services/api";
 import { formatDate } from "@/utils/format";
@@ -64,7 +65,7 @@ export function NatureBadge({ nature }: { nature: "observed" | "ai" | "rules" | 
 // ───────────────────────────── KPI grid ─────────────────────────────
 export function KpiGrid({ data }: { data: KpiResponse | undefined }) {
   const { tenantId } = useTenant();
-  if (!data) return <Loader size="sm" />;
+  if (!data) return <RobotLoader size="sm" label="Calcul des indicateurs…" />;
   return (
     <SimpleGrid cols={{ base: 1, xs: 2, md: 3, xl: 4 }} spacing="md">
       {data.kpis.map((k) => {
@@ -253,16 +254,11 @@ function ChoiceCard({ active, onClick, icon, title, children }: { active: boolea
 function ScanAnimation({ step, progress }: { step: string; progress: number }) {
   return (
     <Stack align="center" gap="lg" py="xl">
-      <div className="gi-scan" role="img" aria-label="Analyse en cours">
-        <span className="gi-scan-dot" style={{ top: "28%", left: "62%" }} />
-        <span className="gi-scan-dot" style={{ top: "64%", left: "30%", animationDelay: "0.8s" }} />
-        <span className="gi-scan-dot" style={{ top: "40%", left: "22%", animationDelay: "1.6s", background: "var(--gi-ai)", boxShadow: "0 0 12px var(--gi-ai)" }} />
-      </div>
+      <RobotLoader size="lg" progress={progress} label="" minHeight={260} />
       <Stack gap={4} align="center" maw={460}>
         <Text fw={600} ff="heading" ta="center">{step || "Préparation de l'analyse"}</Text>
         <Text size="sm" c="dimmed" ta="center">L'IA explore votre site, relève les mots-clés et le domaine, vérifie robots.txt, sitemaps, canonical, HTTPS, 404, 301, hreflang, Open Graph et JSON-LD, puis analyse vos concurrents.</Text>
       </Stack>
-      <Progress value={progress} w={360} radius="xl" color="signal" striped animated aria-label={`${progress}%`} />
     </Stack>
   );
 }
@@ -362,7 +358,7 @@ export function ProgrammeWizardPage() {
                   <Button size="xs" variant="light" leftSection={<IconRadar size={14} />} loading={discover.isPending} disabled={!validUrls}
                     onClick={() => { discoveredFor.current = ""; runDiscovery(); }}>Détecter</Button>
                 </Group>
-                {discover.isPending && <Group gap={6} mb="xs"><Loader size="xs" /><Text size="xs" c="dimmed">Recherche des concurrents cités sur votre site…</Text></Group>}
+                {discover.isPending && <RobotLoader size="sm" label="Recherche des concurrents cités sur votre site…" />}
                 {found.length > 0 && (
                   <Stack gap={6} mb="sm">
                     {found.map((c) => (
@@ -477,7 +473,7 @@ export function AuditResultPage() {
     URL.revokeObjectURL(url);
   };
   const selectedCount = picked.length;
-  if (q.isLoading || !r) return <Loader />;
+  if (q.isLoading || !r) return <RobotLoader size="lg" label="L'IA assemble votre rapport…" />;
   const a = r.audit;
   const sum = a.ai_summary as Summary;
   const sites = a.site_findings.sites ?? [];
@@ -714,7 +710,7 @@ function ExecutionPanel({ auditId }: { auditId: string }) {
   const rows = q.data ?? [];
   const done = rows.filter((r) => ["ready", "succeeded", "awaiting_approval"].includes(r.state)).length;
   const active = rows.filter((r) => r.state === "queued" || r.state === "running").length;
-  if (q.isLoading) return <Loader size="sm" />;
+  if (q.isLoading) return <RobotLoader size="sm" label="Lecture de l'avancement…" />;
   if (!rows.length) return <Card><Text c="dimmed" size="sm">Aucune action validée pour l'instant. Cochez des actions dans le plan puis cliquez sur « Valider ».</Text></Card>;
   return (
     <Stack>

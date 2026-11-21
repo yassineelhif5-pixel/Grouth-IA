@@ -10,18 +10,3 @@
 .gi-ai { color: var(--gi-ai); }
 .gi-glass { backdrop-filter: blur(10px); }
 :focus-visible { outline: 2px solid var(--gi-observed); outline-offset: 2px; }
-
-/* AI scan animation (programme wizard): a radar sweep over the site being analysed */
-.gi-scan { position: relative; width: 168px; height: 168px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(34,195,181,0.18) 0 2px, transparent 3px) center / 24px 24px,
-              radial-gradient(circle at center, rgba(34,195,181,0.10), rgba(139,124,246,0.06) 60%, transparent 70%);
-  border: 1px solid rgba(34,195,181,0.35); overflow: hidden; }
-.gi-scan::before { content: ""; position: absolute; inset: 0; border-radius: 50%;
-  background: conic-gradient(from 0deg, rgba(34,195,181,0.55), rgba(139,124,246,0.15) 20%, transparent 30%);
-  animation: gi-sweep 2.4s linear infinite; }
-.gi-scan::after { content: ""; position: absolute; inset: 22%; border-radius: 50%; border: 1px dashed rgba(139,124,246,0.45); }
-.gi-scan-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--gi-observed);
-  box-shadow: 0 0 12px var(--gi-observed); animation: gi-blip 2.4s ease-out infinite; }
-@keyframes gi-sweep { to { transform: rotate(360deg); } }
-@keyframes gi-blip { 0%, 60% { opacity: 0; transform: scale(.4); } 70% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .gi-scan::before, .gi-scan-dot { animation: none; } }

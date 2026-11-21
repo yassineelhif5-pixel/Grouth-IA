@@ -1,14 +1,15 @@
-import { Center, Loader } from "@mantine/core";
+import { Center } from "@mantine/core";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 
+import { RobotLoader } from "@/components/RobotLoader";
 import { useMe, useTenant } from "@/hooks/useMe";
 import { useSessionStore } from "@/stores/session";
 
 export function FullLoader() {
   return (
-    <Center h="60vh">
-      <Loader />
+    <Center h="70vh">
+      <RobotLoader size="lg" />
     </Center>
   );
 }

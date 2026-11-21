@@ -1,0 +1,84 @@
+/* 3D "thinking" robot — CSS only (perspective + preserve-3d + gradient lighting). Teal = observed, violet = AI. */
+.gi-robot-stage {
+  --s: var(--gi-scale, 1);
+  position: relative; width: calc(200px * var(--s)); height: calc(230px * var(--s));
+  perspective: calc(700px * var(--s)); perspective-origin: 50% 35%;
+}
+.gi-robot {
+  position: absolute; left: 50%; top: calc(36px * var(--s)); width: calc(120px * var(--s)); margin-left: calc(-60px * var(--s));
+  transform-style: preserve-3d; animation: gi-float 3.2s ease-in-out infinite, gi-sway 6.4s ease-in-out infinite;
+}
+/* antenna */
+.gi-antenna { position: absolute; left: 50%; top: calc(-26px * var(--s)); width: calc(4px * var(--s)); height: calc(24px * var(--s));
+  margin-left: calc(-2px * var(--s)); border-radius: 4px; background: linear-gradient(#9aa6bd, #4a5874); transform: translateZ(calc(4px * var(--s))); }
+.gi-antenna-bulb { position: absolute; left: 50%; top: calc(-10px * var(--s)); width: calc(12px * var(--s)); height: calc(12px * var(--s));
+  margin-left: calc(-6px * var(--s)); border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #a897fb 40%, #5a4bb8);
+  box-shadow: 0 0 calc(14px * var(--s)) #8b7cf6; animation: gi-pulse 1.4s ease-in-out infinite; }
+/* head */
+.gi-head { position: relative; height: calc(84px * var(--s)); border-radius: calc(28px * var(--s));
+  background: radial-gradient(120% 90% at 30% 20%, #e7ecf5 0%, #c3cbdb 28%, #6f7d98 70%, #2e3b55 100%);
+  box-shadow: inset calc(-8px * var(--s)) calc(-10px * var(--s)) calc(18px * var(--s)) rgba(13, 22, 38, .55),
+              inset calc(6px * var(--s)) calc(6px * var(--s)) calc(12px * var(--s)) rgba(255, 255, 255, .45),
+              0 calc(12px * var(--s)) calc(30px * var(--s)) rgba(0, 0, 0, .35);
+  transform-style: preserve-3d; transform: translateZ(calc(10px * var(--s))); animation: gi-tilt 4.8s ease-in-out infinite; }
+.gi-ear { position: absolute; top: calc(28px * var(--s)); width: calc(14px * var(--s)); height: calc(30px * var(--s)); border-radius: calc(8px * var(--s));
+  background: linear-gradient(90deg, #2e3b55, #6f7d98); box-shadow: 0 0 calc(10px * var(--s)) rgba(34, 195, 181, .35); }
+.gi-ear-l { left: calc(-9px * var(--s)); transform: translateZ(calc(-6px * var(--s))) rotateY(-30deg); }
+.gi-ear-r { right: calc(-9px * var(--s)); transform: translateZ(calc(-6px * var(--s))) rotateY(30deg); background: linear-gradient(270deg, #2e3b55, #6f7d98); }
+.gi-visor { position: absolute; inset: calc(18px * var(--s)) calc(14px * var(--s)) calc(20px * var(--s)); border-radius: calc(18px * var(--s));
+  background: linear-gradient(160deg, #18243a 0%, #0d1626 60%, #121d30 100%); overflow: hidden;
+  box-shadow: inset 0 calc(3px * var(--s)) calc(8px * var(--s)) rgba(0, 0, 0, .7), 0 0 0 calc(2px * var(--s)) rgba(34, 195, 181, .25);
+  display: flex; align-items: center; justify-content: center; gap: calc(18px * var(--s)); transform: translateZ(calc(6px * var(--s))); }
+.gi-visor::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255,255,255,.18) 0 18%, transparent 30%); }
+.gi-eye { width: calc(16px * var(--s)); height: calc(16px * var(--s)); border-radius: 50%; background: radial-gradient(circle at 40% 40%, #e3fbf8, #36d0c1 45%, #0f8178);
+  box-shadow: 0 0 calc(12px * var(--s)) #22c3b5, 0 0 calc(24px * var(--s)) rgba(34, 195, 181, .5); animation: gi-look 3.6s ease-in-out infinite, gi-blink 4.2s infinite; }
+.gi-scanline { position: absolute; left: 0; right: 0; height: calc(2px * var(--s)); background: linear-gradient(90deg, transparent, rgba(139, 124, 246, .9), transparent);
+  animation: gi-scan 1.8s linear infinite; }
+/* body */
+.gi-neck { width: calc(26px * var(--s)); height: calc(8px * var(--s)); margin: 0 auto; background: linear-gradient(#4a5874, #2e3b55); border-radius: 0 0 6px 6px; }
+.gi-body { position: relative; width: calc(92px * var(--s)); height: calc(70px * var(--s)); margin: 0 auto; border-radius: calc(24px * var(--s)) calc(24px * var(--s)) calc(30px * var(--s)) calc(30px * var(--s));
+  background: radial-gradient(120% 100% at 30% 15%, #c3cbdb 0%, #6f7d98 45%, #1f2c45 100%);
+  box-shadow: inset calc(-6px * var(--s)) calc(-8px * var(--s)) calc(14px * var(--s)) rgba(13, 22, 38, .6), inset calc(5px * var(--s)) calc(5px * var(--s)) calc(10px * var(--s)) rgba(255, 255, 255, .35);
+  transform-style: preserve-3d; display: flex; align-items: center; justify-content: center; }
+/* chest core: a ring that fills with the percentage */
+.gi-core { position: relative; width: calc(44px * var(--s)); height: calc(44px * var(--s)); border-radius: 50%;
+  background: conic-gradient(#22c3b5 0deg, #8b7cf6 var(--gi-pct, 0deg), rgba(255, 255, 255, .08) var(--gi-pct, 0deg));
+  box-shadow: 0 0 calc(16px * var(--s)) rgba(34, 195, 181, .55); transform: translateZ(calc(8px * var(--s))); transition: background .3s; }
+.gi-core::before { content: ""; position: absolute; inset: calc(5px * var(--s)); border-radius: 50%; background: radial-gradient(circle at 40% 35%, #18243a, #0d1626); }
+.gi-core span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #93e8df;
+  font: 600 calc(13px * var(--s)) / 1 Sora, sans-serif; text-shadow: 0 0 6px rgba(34, 195, 181, .8); }
+.gi-arm { position: absolute; top: calc(12px * var(--s)); width: calc(14px * var(--s)); height: calc(44px * var(--s)); border-radius: calc(10px * var(--s));
+  background: linear-gradient(#6f7d98, #2e3b55); }
+.gi-arm-l { left: calc(-16px * var(--s)); transform-origin: top center; transform: rotate(12deg) translateZ(calc(-4px * var(--s))); }
+.gi-arm-r { right: calc(-16px * var(--s)); transform-origin: top center; animation: gi-think-arm 3.2s ease-in-out infinite; }
+/* thought bubbles */
+.gi-thoughts { position: absolute; right: calc(8px * var(--s)); top: calc(4px * var(--s)); width: calc(50px * var(--s)); height: calc(50px * var(--s)); }
+.gi-thoughts span { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #c4b8ff 55%, #7262de); opacity: 0;
+  animation: gi-bubble 2.4s ease-out infinite; }
+.gi-thoughts span:nth-child(1) { width: calc(7px * var(--s)); height: calc(7px * var(--s)); left: 0; bottom: 0; }
+.gi-thoughts span:nth-child(2) { width: calc(11px * var(--s)); height: calc(11px * var(--s)); left: calc(12px * var(--s)); bottom: calc(14px * var(--s)); animation-delay: .4s; }
+.gi-thoughts span:nth-child(3) { width: calc(16px * var(--s)); height: calc(16px * var(--s)); left: calc(28px * var(--s)); bottom: calc(30px * var(--s)); animation-delay: .8s; }
+/* orbit ring around the robot */
+.gi-orbit { position: absolute; left: 50%; top: calc(60px * var(--s)); width: calc(180px * var(--s)); height: calc(180px * var(--s)); margin-left: calc(-90px * var(--s));
+  border-radius: 50%; border: calc(1.5px * var(--s)) solid rgba(34, 195, 181, .35); transform: rotateX(74deg); transform-style: preserve-3d;
+  animation: gi-orbit 5s linear infinite; box-shadow: 0 0 calc(18px * var(--s)) rgba(139, 124, 246, .25); }
+.gi-orbit-dot { position: absolute; top: calc(-5px * var(--s)); left: 50%; width: calc(10px * var(--s)); height: calc(10px * var(--s)); margin-left: calc(-5px * var(--s));
+  border-radius: 50%; background: #22c3b5; box-shadow: 0 0 calc(12px * var(--s)) #22c3b5; }
+.gi-shadow { position: absolute; left: 50%; bottom: calc(6px * var(--s)); width: calc(110px * var(--s)); height: calc(16px * var(--s)); margin-left: calc(-55px * var(--s));
+  border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, .45), transparent 70%); animation: gi-shadow 3.2s ease-in-out infinite; }
+
+@keyframes gi-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 calc(-10px * var(--s)); } }
+@keyframes gi-sway { 0%, 100% { transform: rotateY(-16deg); } 50% { transform: rotateY(16deg); } }
+@keyframes gi-tilt { 0%, 100% { rotate: 0deg; } 30% { rotate: -6deg; } 60% { rotate: 4deg; } }
+@keyframes gi-pulse { 0%, 100% { opacity: .6; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.15); } }
+@keyframes gi-look { 0%, 20% { translate: 0 0; } 35%, 55% { translate: calc(5px * var(--s)) calc(-2px * var(--s)); } 70%, 85% { translate: calc(-5px * var(--s)) calc(-3px * var(--s)); } 100% { translate: 0 0; } }
+@keyframes gi-blink { 0%, 92%, 100% { scale: 1 1; } 95% { scale: 1 .1; } }
+@keyframes gi-scan { 0% { top: -5%; } 100% { top: 105%; } }
+@keyframes gi-think-arm { 0%, 100% { transform: rotate(-12deg); } 50% { transform: rotate(-34deg); } }
+@keyframes gi-bubble { 0% { opacity: 0; transform: translateY(6px) scale(.6); } 30% { opacity: .95; } 100% { opacity: 0; transform: translateY(-8px) scale(1.05); } }
+@keyframes gi-orbit { to { transform: rotateX(74deg) rotateZ(360deg); } }
+@keyframes gi-shadow { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(.82); opacity: .6; } }
+@media (prefers-reduced-motion: reduce) {
+  .gi-robot, .gi-head, .gi-eye, .gi-scanline, .gi-arm-r, .gi-thoughts span, .gi-orbit, .gi-shadow, .gi-antenna-bulb { animation: none; }
+  .gi-thoughts span { opacity: .8; }
+}
