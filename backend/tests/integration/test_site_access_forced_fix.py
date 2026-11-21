@@ -9,6 +9,8 @@ from apps.integrations import providers
 
 from .test_prompt3_licenses_visibility import _enterprise, sites  # noqa: F401 — reuse the local test sites fixture
 
+pytestmark = pytest.mark.django_db(transaction=True, databases=["default", "logs"])
+
 TOKEN = "github_pat_" + "A" * 40
 
 

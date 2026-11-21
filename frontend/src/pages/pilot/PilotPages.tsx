@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Badge, Button, Card, Group, Modal, NumberInput, Select, SimpleGrid, Stack, Table, Text, TextInput, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -264,7 +264,8 @@ export function PilotIncidentsPage() {
 
 export function PilotAIPage() {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["pilot-ai"], queryFn: () => api<{ providers: Row[]; models: Row[]; routes: Row[] }>("/pilot/ai") });
+  const q = useQuery({ queryKey: ["pilot-ai"], queryFn: () => api<{ providers: Row[]; models: Row[]; routes: Row[]; default_model: string | null; env_keys: Record<string, boolean> }>("/pilot/ai") });
+  const [quickKey, setQuickKey] = useState("");
   const op = useMutation({ mutationFn: (b: Record<string, unknown>) => api("/pilot/ai", { method: "POST", body: b }), onSuccess: () => void qc.invalidateQueries({ queryKey: ["pilot-ai"] }) });
   const [k, setK] = useState({ provider_code: "anthropic", api_key: "", base_url: "" });
   const [m, setM] = useState({ provider_code: "anthropic", model_code: "", input_cost_per_mtok_cents: "", output_cost_per_mtok_cents: "" });
@@ -272,6 +273,36 @@ export function PilotAIPage() {
   return (
     <>
       <PageHeader title="Fournisseurs IA" subtitle="Clés chiffrées côté backend · coûts calculés uniquement à partir des tarifs saisis et des tokens réellement consommés" />
+      {(() => {
+        const def = q.data?.models.find((x) => x.code === q.data?.default_model);
+        const prov = String(def?.provider ?? "anthropic");
+        const stored = !!q.data?.providers.find((x) => x.code === prov)?.has_key;
+        const viaEnv = !!q.data?.env_keys?.[prov];
+        return (
+          <Card withBorder mb="md" padding="lg">
+            <Group justify="space-between" align="flex-start" wrap="wrap">
+              <Stack gap={4}>
+                <Title order={5}>Modèle par défaut</Title>
+                <Text size="sm" c="dimmed">Utilisé par toutes les fonctionnalités sans routage spécifique (analyses, contenus, assistant SEO/GEO, THOR…).</Text>
+                <Select w={320} mt="xs" value={q.data?.default_model ?? null} allowDeselect={false} placeholder="Choisir un modèle"
+                  data={(q.data?.models ?? []).filter((x) => x.is_enabled).map((x) => ({ value: String(x.code), label: `${String(x.name)} — ${String(x.provider)}` }))}
+                  onChange={(v) => v && op.mutate({ operation: "set_default", model_code: v })} />
+              </Stack>
+              <Stack gap={6} miw={300}>
+                <Text size="sm" fw={500}>Clé {prov}</Text>
+                {stored ? <Badge color="green">Enregistrée (chiffrée)</Badge> : viaEnv ? <Badge color="teal">Fournie par la variable du serveur</Badge> : <Badge color="red">Manquante : l'IA est inactive</Badge>}
+                {!stored && (
+                  <Group gap="xs" wrap="nowrap">
+                    <TextInput flex={1} size="xs" type="password" placeholder={prov === "anthropic" ? "sk-ant-…" : "clé API"} value={quickKey} onChange={(e) => setQuickKey(e.currentTarget.value)} />
+                    <Button size="xs" disabled={quickKey.length < 10} onClick={() => { op.mutate({ operation: "set_key", provider_code: prov, api_key: quickKey }); setQuickKey(""); }}>Enregistrer</Button>
+                  </Group>
+                )}
+                <Text size="xs" c="dimmed">Les tarifs ne sont pas présumés : saisissez-les ci-dessous pour le calcul des coûts.</Text>
+              </Stack>
+            </Group>
+          </Card>
+        );
+      })()}
       <DataTable rows={q.data?.providers.map((p): Row => ({ ...p, id: String(p.code) }))} columns={[{ key: "name", label: "Fournisseur" }, { key: "api_style", label: "API" },
         { key: "has_key", label: "Clé", render: (x) => (x.has_key ? "✓" : "—") }, { key: "base_url", label: "URL" }, { key: "priority", label: "Priorité" }]} />
       <SimpleGrid cols={{ base: 1, lg: 3 }} mt="md">

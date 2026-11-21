@@ -58,20 +58,33 @@ def wrap_untrusted(label: str, content: str, limit: int = 20000) -> str:
     return f'<untrusted_data source="{label}">\n{safe}\n</untrusted_data>'
 
 
+ENV_KEYS = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY", "google": "GEMINI_API_KEY", "mistral": "MISTRAL_API_KEY",
+            "groq": "GROQ_API_KEY", "perplexity": "PERPLEXITY_API_KEY", "cohere": "COHERE_API_KEY"}
+
+
+def env_key(provider: str) -> str | None:
+    """Server-side fallback key (environment variable) when the PILOTE has not stored one."""
+    import os
+    name = ENV_KEYS.get(provider)
+    return (os.environ.get(name) or "").strip() or None if name else None
+
+
 def routes(feature: str, tenant_id: str | None) -> list[dict]:
-    return fetch_all_dict(
+    rows = fetch_all_dict(
         """SELECT r.priority, m.id AS model_id, m.code AS model, m.input_cost_per_mtok_cents AS in_price,
                   m.output_cost_per_mtok_cents AS out_price, p.code AS provider, p.api_style, c.api_key_ciphertext,
                   coalesce(c.base_url, p.base_url) AS base_url, c.settings
              FROM public.ai_feature_routes r
              JOIN public.ai_models m ON m.id = r.model_id AND m.is_enabled
              JOIN public.ai_providers p ON p.id = m.provider_id AND p.is_enabled
-             JOIN LATERAL (SELECT * FROM public.ai_provider_configurations x
+             LEFT JOIN LATERAL (SELECT * FROM public.ai_provider_configurations x
                             WHERE x.provider_id = p.id AND x.is_enabled AND x.deleted_at IS NULL
                               AND (x.tenant_id = %s OR x.tenant_id IS NULL)
                             ORDER BY x.tenant_id NULLS LAST, x.priority LIMIT 1) c ON true
             WHERE r.is_enabled AND r.feature_code IN (%s, '*') AND (r.tenant_id = %s OR r.tenant_id IS NULL)
-            ORDER BY (r.tenant_id IS NULL), r.priority, c.priority""", [tenant_id, feature, tenant_id])
+            ORDER BY (r.feature_code = '*'), (r.tenant_id IS NULL), r.priority, c.priority NULLS LAST""", [tenant_id, feature, tenant_id])
+    # usable = a stored key, a server environment key, or a keyless local provider (Ollama)
+    return [r for r in rows if r["api_key_ciphertext"] or env_key(r["provider"]) or r["api_style"] == "ollama"]
 
 
 def _check_budget(tenant_id: str | None) -> None:
@@ -92,7 +105,7 @@ def _cost(r: dict, tin: int | None, tout: int | None) -> Decimal | None:
 
 
 def _call(r: dict, system: str, messages: list[dict], tools: list[dict] | None, max_tokens: int, temperature: float) -> AIResult:
-    key = decrypt_json(r["api_key_ciphertext"]).get("api_key") if r["api_key_ciphertext"] else None
+    key = (decrypt_json(r["api_key_ciphertext"]).get("api_key") if r["api_key_ciphertext"] else None) or env_key(r["provider"])
     style, base, model = r["api_style"], (r["base_url"] or "").rstrip("/"), r["model"]
     if style != "ollama" and not key:
         raise AINotConfigured(f"No API key for {r['provider']}")

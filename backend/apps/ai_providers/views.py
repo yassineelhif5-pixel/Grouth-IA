@@ -14,7 +14,12 @@ class PilotAIProvidersView(GrowthAPIView):
     platform_scoped = True
 
     def get(self, request):
+        from .gateway import env_key
+        default = fetch_one("""SELECT m.code FROM public.ai_feature_routes r JOIN public.ai_models m ON m.id = r.model_id
+                                WHERE r.tenant_id IS NULL AND r.feature_code = '*' AND r.is_enabled ORDER BY r.priority LIMIT 1""")
         return Response({
+            "default_model": default[0] if default else None,
+            "env_keys": {p: bool(env_key(p)) for p in ("anthropic", "openai", "google", "mistral", "groq", "perplexity", "cohere")},
             "providers": fetch_all_dict("""SELECT p.code, p.name, p.api_style, p.is_enabled, c.id AS config_id, c.base_url, c.priority,
                                                   (c.api_key_ciphertext IS NOT NULL) AS has_key, c.last_test_at, c.last_test_status
                                              FROM public.ai_providers p LEFT JOIN public.ai_provider_configurations c
@@ -53,6 +58,15 @@ class PilotAIProvidersView(GrowthAPIView):
                          ON CONFLICT (tenant_id, feature_code, model_id) DO UPDATE SET priority = EXCLUDED.priority,
                            quality = EXCLUDED.quality, is_enabled = EXCLUDED.is_enabled RETURNING id""",
                       [d["feature_code"], int(d.get("priority", 1)), d.get("quality", "standard"), bool(d.get("is_enabled", True)), d["model_code"]])
+        elif op == "set_default":  # default model for every feature without a specific route
+            if not fetch_one("SELECT 1 FROM public.ai_models WHERE code = %s AND is_enabled", [d.get("model_code")]):
+                raise BusinessError("Modèle inconnu", "invalid")
+            fetch_one("""UPDATE public.ai_feature_routes SET is_enabled = false WHERE tenant_id IS NULL AND feature_code = '*'
+                          AND model_id <> (SELECT id FROM public.ai_models WHERE code = %s) RETURNING 1""", [d["model_code"]])
+            if not fetch_one("""UPDATE public.ai_feature_routes SET is_enabled = true, priority = 1 WHERE tenant_id IS NULL AND feature_code = '*'
+                                 AND model_id = (SELECT id FROM public.ai_models WHERE code = %s) RETURNING 1""", [d["model_code"]]):
+                fetch_one("""INSERT INTO public.ai_feature_routes (tenant_id, feature_code, model_id, priority, is_enabled)
+                             SELECT NULL, '*', id, 1, true FROM public.ai_models WHERE code = %s RETURNING id""", [d["model_code"]])
         else:
             raise BusinessError("Unknown operation", "invalid")
         record_audit(f"pilot.ai.{op}", "ai_providers", after={k: v for k, v in d.items() if k != "api_key"})
