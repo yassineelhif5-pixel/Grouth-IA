@@ -216,3 +216,44 @@ class CompetitorDiscoverView(GrowthAPIView):
         if "." not in site:
             raise BusinessError("Indiquez le lien du site", "invalid_url")
         return Response(services.discover_competitors(site, request.data.get("name"), request.data.get("sector")))
+
+
+class SiteAccessView(GrowthAPIView):
+    """Forced correction — tenant grants access to its site source (GitHub)."""
+    permission_map = {"GET": "seo.read", "POST": "connectors.manage"}
+    required_module = "seo"
+
+    def get(self, request):
+        from . import site_access
+        return Response(site_access.status())
+
+    def post(self, request):
+        from . import site_access
+        return Response(site_access.connect(request.data.get("token"), request.data.get("return_to")))
+
+
+class SiteAccessReposView(GrowthAPIView):
+    permission_map = {"GET": "connectors.manage", "PUT": "connectors.manage"}
+    required_module = "seo"
+
+    def get(self, request, account_id):
+        from . import site_access
+        return Response(site_access.repos(str(account_id)))
+
+    def put(self, request, account_id):
+        from . import site_access
+        d = request.data
+        return Response(site_access.configure(str(account_id), d.get("repo", ""), d.get("branch"), d.get("base_path", ""),
+                                              d.get("mode", "pull_request")))
+
+
+class SiteAccessApplyView(GrowthAPIView):
+    """Applies the validated fixes in the repository (one commit; PR or direct, as the tenant chose)."""
+    permission_map = {"POST": "seo.manage"}
+    required_module = "seo"
+
+    def post(self, request):
+        from . import site_access
+        d = request.data
+        ids = [str(i) for i in (d.get("recommendation_ids") or [])][:100]
+        return Response(site_access.apply(str(d.get("account_id")), ids, d.get("mode")))

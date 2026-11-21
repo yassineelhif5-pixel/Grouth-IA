@@ -84,8 +84,10 @@ class OAuthCallbackView(PublicWebhookView):
         self.platform_scope(request)
         if request.query_params.get("error"):
             return HttpResponseRedirect(f"{settings.GROWTH['FRONTEND_URL']}/?oauth=error")
-        tenant_id = oauth_callback(request.query_params.get("code", ""), request.query_params.get("state", ""))
-        return HttpResponseRedirect(f"{settings.GROWTH['FRONTEND_URL']}/t/{tenant_id}/connectors?oauth=success")
+        tenant_id, back = oauth_callback(request.query_params.get("code", ""), request.query_params.get("state", ""))
+        sep = "&" if back and "?" in back else "?"
+        return HttpResponseRedirect(f"{settings.GROWTH['FRONTEND_URL']}{back}{sep}oauth=success" if back
+                                    else f"{settings.GROWTH['FRONTEND_URL']}/t/{tenant_id}/connectors?oauth=success")
 
 
 class ConnectorStatusView(GrowthAPIView):

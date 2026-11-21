@@ -695,6 +695,10 @@ def discover_competitors(site_url: str, name: str | None = None, sector: str | N
 
 
 def _run_state(run: dict | None, rec: dict) -> tuple[str, int, str]:
+    forced = (rec.get("applied_result") or {}).get("forced")
+    if forced:
+        where = f"pull request #{forced['pull_request']}" if forced.get("pull_request") else f"branche {forced.get('branch')}"
+        return ("succeeded", 100, f"Remplacé dans {forced.get('repo')} ({where})")
     if rec["status"] in ("accepted", "applied") and rec["apply_mode"] in ("generated_file", "manual"):
         return ("ready", 100, "Fichier prêt à déployer" if rec["apply_mode"] == "generated_file" else "Ajouté à la roadmap")
     if not run:
@@ -737,6 +741,7 @@ def execution_status(audit_id: str | None) -> list[dict]:
                     "next_run_at": r["next_run_at"] if r["frequency_type"] != "event" or not r["run_id"] else None,
                     "autonomy": r["mode"], "run_id": str(r["run_id"]) if r["run_id"] else None, "state": state, "progress": pct, "label": label,
                     "started_at": r["started_at"], "completed_at": r["completed_at"], "content_id": res.get("content_id"),
+                    "link": ((r["applied_result"] or {}).get("forced") or {}).get("url"),
                     "can_run_now": bool(r["scheduler_id"]) and state not in ("queued", "running") and r["scheduler_status"] == "active"})
     return out
 

@@ -25,6 +25,7 @@ OAUTH = {
     "facebook": {"auth": "https://www.facebook.com/v21.0/dialog/oauth", "token": "https://graph.facebook.com/v21.0/oauth/access_token"},
     "hubspot": {"auth": "https://app.hubspot.com/oauth/authorize", "token": "https://api.hubapi.com/oauth/v1/token"},
     "reddit": {"auth": "https://www.reddit.com/api/v1/authorize", "token": "https://www.reddit.com/api/v1/access_token"},
+    "github": {"auth": "https://github.com/login/oauth/authorize", "token": "https://github.com/login/oauth/access_token"},
 }
 PROVIDER_OAUTH = {
     "gmail": ("google", "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send"),
@@ -37,6 +38,7 @@ PROVIDER_OAUTH = {
     "facebook": ("facebook", "pages_manage_posts,pages_read_engagement"),
     "hubspot": ("hubspot", "crm.objects.contacts.read crm.objects.contacts.write"),
     "reddit": ("reddit", "read identity"),
+    "github": ("github", "repo"),  # forced correction: write access to the site repository chosen by the tenant
 }
 
 
@@ -52,13 +54,14 @@ def redirect_uri() -> str:
     return f"{settings.PUBLIC_API_URL}/api/v1/connectors/oauth/callback"
 
 
-def oauth_start(account_id: str) -> str:
+def oauth_start(account_id: str, return_to: str | None = None) -> str:
     acc = load_account(account_id)
     if acc.provider not in PROVIDER_OAUTH:
         raise NotConfigured("This connector does not use OAuth")
     family, scope = PROVIDER_OAUTH[acc.provider]
     client_id, _ = _global_client(acc.provider)
-    state = signing.dumps({"a": acc.id, "t": acc.tenant_id}, salt="growth.oauth")
+    back = return_to if return_to and return_to.startswith(f"/t/{acc.tenant_id}/") else None  # only inside this tenant
+    state = signing.dumps({"a": acc.id, "t": acc.tenant_id, "r": back}, salt="growth.oauth")
     params = {"client_id": client_id, "redirect_uri": redirect_uri(), "response_type": "code", "scope": scope, "state": state}
     if family == "google":
         params |= {"access_type": "offline", "prompt": "consent"}
@@ -67,7 +70,7 @@ def oauth_start(account_id: str) -> str:
     return f"{OAUTH[family]['auth']}?{urlencode(params)}"
 
 
-def oauth_callback(code: str, state: str) -> str:
+def oauth_callback(code: str, state: str) -> tuple[str, str | None]:
     data = signing.loads(state, salt="growth.oauth", max_age=900)  # signed + expiring state (CSRF / replay)
     acc = load_account(data["a"])
     family, _ = PROVIDER_OAUTH[acc.provider]
@@ -76,20 +79,27 @@ def oauth_callback(code: str, state: str) -> str:
     resp = http("POST", OAUTH[family]["token"], provider=acc.provider, operation="oauth_token", account_id=acc.id, data=body,
                 headers={"Accept": "application/json"})
     tok = resp.json()
-    expires = timezone.now() + timezone.timedelta(seconds=int(tok.get("expires_in", 3600)))
-    store_credentials(acc.id, acc.tenant_id, "oauth_token", {**tok, "expires_at": expires.isoformat()},
+    if not tok.get("access_token"):
+        raise IntegrationError(f"{acc.provider} oauth_token failed: {tok.get('error', 'no access token')}")
+    # GitHub OAuth-app tokens do not expire (no expires_in): store them without expiry
+    expires = timezone.now() + timezone.timedelta(seconds=int(tok["expires_in"])) if tok.get("expires_in") else None
+    store_credentials(acc.id, acc.tenant_id, "oauth_token", {**tok, "expires_at": expires.isoformat() if expires else None},
                       hint="oauth", expires_at=expires)
     set_status(acc.id, "authorized")
     record_audit("connector.authorized", "integrations", entity_type="tenant_connector_accounts", entity_id=acc.id,
                  after={"provider": acc.provider}, tenant_id=acc.tenant_id)
-    return acc.tenant_id
+    return acc.tenant_id, data.get("r")
 
 
 def access_token(account_id: str) -> str:
     """Valid OAuth access token, refreshed when expired (refresh persisted encrypted)."""
     acc = load_account(account_id)
     cred = get_credentials(account_id)
+    if cred.get("token"):  # personal access token pasted by the tenant
+        return cred["token"]
     exp = cred.get("expires_at")
+    if not exp and cred.get("access_token"):  # non-expiring OAuth token (GitHub)
+        return cred["access_token"]
     if exp and timezone.datetime.fromisoformat(exp) > timezone.now() + timezone.timedelta(seconds=60):
         return cred["access_token"]
     if not cred.get("refresh_token"):
@@ -209,6 +219,19 @@ def _t_stripe(a):
          headers={"Authorization": f"Bearer {_key(a.id)['api_key']}"})
 
 
+GITHUB_API = "https://api.github.com"
+
+
+def _t_github(a):
+    h = {"Authorization": f"Bearer {access_token(a.id)}", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+    http("GET", f"{GITHUB_API}/user", provider=a.provider, operation="test", account_id=a.id, headers=h)
+    repo = a.settings.get("repo")
+    if repo:
+        r = http("GET", f"{GITHUB_API}/repos/{repo}", provider=a.provider, operation="test_repo", account_id=a.id, headers=h).json()
+        if not (r.get("permissions") or {}).get("push"):
+            raise IntegrationError(f"Pas d'accès en écriture au dépôt {repo}")
+
+
 def _t_pagespeed(a):
     key = (get_credentials(a.id) or {}).get("api_key", "")
     http("GET", "https://www.googleapis.com/pagespeedonline/v5/runPagespeed", provider=a.provider, operation="test",
@@ -218,7 +241,8 @@ def _t_pagespeed(a):
 TESTS = {"smtp": _t_smtp, "imap": _t_imap, "gmail": _t_gmail, "google_workspace": _t_gmail, "microsoft_graph": _t_graph,
          "outlook": _t_graph, "sendgrid": _t_sendgrid, "postmark": _t_postmark, "mailgun": _t_mailgun, "resend": _t_resend,
          "brevo": _t_brevo, "wordpress": _t_wordpress, "ghost": _t_ghost, "rest_cms": _t_rest_cms, "whatsapp_cloud": _t_whatsapp,
-         "linkedin": _t_linkedin, "facebook": _t_facebook, "stripe": _t_stripe, "pagespeed": _t_pagespeed}
+         "linkedin": _t_linkedin, "facebook": _t_facebook, "stripe": _t_stripe, "pagespeed": _t_pagespeed,
+         "github": _t_github}
 
 
 def test_connection(account_id: str) -> dict:

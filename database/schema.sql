@@ -17878,3 +17878,10 @@ SELECT s.tenant_id, q.quota_code, q.limit_value, q.period, now(), 'plan'
  WHERE s.deleted_at IS NULL
    AND NOT EXISTS (SELECT 1 FROM public.tenant_license_quotas x WHERE x.tenant_id = s.tenant_id
                      AND x.quota_code = 'visibility.audits.monthly' AND x.deleted_at IS NULL);
+
+-- >>> 0016_site_access.sql
+-- Forced correction: access to the client's site source (GitHub repository) to replace files directly.
+-- Additive and idempotent.
+INSERT INTO public.connector_providers (code, name, category, auth_type, docs_status)
+VALUES ('github', 'GitHub (dépôt du site)', 'cms', 'oauth2', 'available')
+ON CONFLICT DO NOTHING;
