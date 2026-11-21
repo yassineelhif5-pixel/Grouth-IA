@@ -265,7 +265,7 @@ export function PilotIncidentsPage() {
 
 export function PilotAIPage() {
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["pilot-ai"], queryFn: () => api<{ providers: Row[]; models: Row[]; routes: Row[]; default_model: string | null; env_keys: Record<string, boolean> }>("/pilot/ai") });
+  const q = useQuery({ queryKey: ["pilot-ai"], queryFn: () => api<{ providers: Row[]; models: Row[]; routes: Row[]; default_model: string | null; effective_model: string | null; suggested_model: string | null; env_keys: Record<string, boolean> }>("/pilot/ai") });
   const [quickKey, setQuickKey] = useState("");
   const op = useMutation({ mutationFn: (b: Record<string, unknown>) => api("/pilot/ai", { method: "POST", body: b }), onSuccess: () => void qc.invalidateQueries({ queryKey: ["pilot-ai"] }) });
   const [k, setK] = useState({ provider_code: "anthropic", api_key: "", base_url: "" });
@@ -283,8 +283,9 @@ export function PilotAIPage() {
           <Card withBorder mb="md" padding="lg">
             <Group justify="space-between" align="flex-start" wrap="wrap">
               <Stack gap={4}>
-                <Title order={5}>Modèle par défaut</Title>
-                <Text size="sm" c="dimmed">Utilisé par toutes les fonctionnalités sans routage spécifique (analyses, contenus, assistant SEO/GEO, THOR…).</Text>
+                <Group gap="xs"><Title order={5}>Modèle par défaut</Title>
+                  <Button size="compact-xs" variant="light" onClick={() => op.mutate({ operation: "auto_default" })} loading={op.isPending}>Détecter automatiquement</Button></Group>
+                <Text size="sm" c="dimmed">Utilisé par toutes les fonctionnalités sans routage spécifique. Le système choisit automatiquement le premier fournisseur disposant d'une clé valide ; vous pouvez forcer un modèle ici.</Text>
                 <Select w={340} mt="xs" value={q.data?.default_model ?? null} allowDeselect={false} placeholder="Choisir un modèle" searchable
                   data={Object.entries((q.data?.models ?? []).filter((x) => x.is_enabled).reduce<Record<string, { value: string; label: string }[]>>((acc, x) => {
                     const prov = String(x.provider);
@@ -292,6 +293,12 @@ export function PilotAIPage() {
                     return acc;
                   }, {})).map(([group, items]) => ({ group, items }))}
                   onChange={(v) => v && op.mutate({ operation: "set_default", model_code: v })} />
+                {q.data?.effective_model && q.data.effective_model !== q.data.default_model && (
+                  <Alert color="orange" mt="xs" py={6}>La clé du modèle par défaut est absente : l'IA utilise actuellement <b>{String(q.data.effective_model)}</b> (premier fournisseur avec une clé valide). Cliquez sur « Détecter automatiquement » pour en faire le défaut, ou ajoutez la clé manquante.</Alert>
+                )}
+                {!q.data?.effective_model && (
+                  <Alert color="red" mt="xs" py={6}>Aucune clé valide détectée pour l'instant : ajoutez la clé d'un fournisseur ci-dessous pour activer l'IA.</Alert>
+                )}
               </Stack>
               <Stack gap={6} miw={300}>
                 <Text size="sm" fw={500}>Clé {prov}</Text>

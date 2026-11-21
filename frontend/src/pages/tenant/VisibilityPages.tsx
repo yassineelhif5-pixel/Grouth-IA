@@ -7,6 +7,7 @@ import {
   IconAlertTriangle, IconBrain, IconBrandGithub, IconCheck, IconCircleCheck, IconCircleDashed, IconDownload, IconInfoCircle, IconMessageChatbot,
   IconPlayerPlay, IconPlus, IconPrinter, IconRadar, IconRobot, IconSend, IconSparkles, IconTrash, IconX,
 } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -798,9 +799,16 @@ function ExecutionPanel({ auditId }: { auditId: string }) {
     mutationFn: (id: string) => api(`/visibility/recommendations/${id}/run-now`, { method: "POST", tenantId }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }),
   });
+  const [confirmFix, setConfirmFix] = useState(false);
+  const fixAll = useMutation({
+    mutationFn: () => api<{ repo: string; url: string; files: string[] }>("/visibility/site-access/fix-all", { method: "POST", tenantId, body: { audit_id: auditId, force: true } }),
+    onSuccess: (r) => { setConfirmFix(false); notifications.show({ color: "signal", title: "Fichiers corrigés sur GitHub", message: `${r.files.length} fichier(s) poussé(s) sur ${r.repo}.` }); void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }); },
+    onError: (e) => { if (e instanceof ApiError && e.code === "site_source_not_configured") notifications.show({ color: "orange", title: "Accès au site requis", message: "Connectez le dépôt GitHub dans l'onglet « Accès au site », puis réessayez." }); },
+  });
   const rows = q.data ?? [];
   const done = rows.filter((r) => ["ready", "succeeded", "awaiting_approval"].includes(r.state)).length;
   const active = rows.filter((r) => r.state === "queued" || r.state === "running").length;
+  const fileCount = rows.filter((r) => r.apply_mode === "generated_file").length;
   if (q.isLoading) return <RobotLoader size="sm" label="Lecture de l'avancement…" />;
   if (!rows.length) return <Card><Text c="dimmed" size="sm">Aucune action validée pour l'instant. Cochez des actions dans le plan puis cliquez sur « Valider ».</Text></Card>;
   return (
@@ -811,7 +819,26 @@ function ExecutionPanel({ auditId }: { auditId: string }) {
           <Group gap="xs">{active > 0 && <Loader size="xs" color="aurora" />}<Text size="sm" className="gi-num">{done}/{rows.length} terminée(s){active ? ` · ${active} en cours` : ""}</Text></Group>
         </Group>
         <Progress value={(100 * done) / rows.length} color="signal" radius="xl" size="lg" striped={active > 0} animated={active > 0} />
+        {fileCount > 0 && can("seo.manage") && (
+          <Group justify="space-between" mt="md">
+            <Text size="sm" c="dimmed">{fileCount} fichier(s) technique(s) peuvent être poussés directement dans le dépôt de votre site.</Text>
+            <Button color="red" variant="light" leftSection={<IconBrandGithub size={16} />} onClick={() => setConfirmFix(true)}>Corriger tout sur GitHub</Button>
+          </Group>
+        )}
       </Card>
+      <Modal opened={confirmFix} onClose={() => setConfirmFix(false)} title={<Text fw={600}>Corriger tous les fichiers sur GitHub</Text>}>
+        <Stack>
+          <Alert color="red" icon={<IconAlertTriangle size={16} />} title="Action directe sur la branche principale">
+            Growth IA va se connecter à votre dépôt et écrire les {fileCount} fichier(s) corrigé(s) directement sur <b>main</b> (push forcé), en remplaçant les fichiers existants. Le contenu précédent reste dans l'historique Git du dépôt.
+          </Alert>
+          <Text size="sm" c="dimmed">À utiliser quand vous voulez appliquer nos propositions sans passer par une pull request.</Text>
+          {fixAll.error && <Alert color="red" py={6}>{errorText(fixAll.error)}</Alert>}
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setConfirmFix(false)}>Annuler</Button>
+            <Button color="red" loading={fixAll.isPending} onClick={() => fixAll.mutate()}>Corriger et pousser sur main</Button>
+          </Group>
+        </Stack>
+      </Modal>
       {run.error && <Alert color="red">{errorText(run.error)}</Alert>}
       <Card>
         <Table.ScrollContainer minWidth={820}>

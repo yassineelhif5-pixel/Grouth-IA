@@ -70,6 +70,41 @@ def env_key(provider: str) -> str | None:
     return (os.environ.get(name) or "").strip() or None if name else None
 
 
+# Suggested provider priority used to auto-pick a default when several have a key (PILOTE can override the route).
+PROVIDER_PRIORITY = ["anthropic", "openai", "google", "deepseek", "mistral", "groq", "perplexity", "moonshot", "xai", "cohere", "openrouter"]
+
+
+def _usable(r: dict) -> bool:
+    """A route is usable if its provider has a stored key, a server env key, or is a keyless local provider (Ollama)."""
+    return bool(r["api_key_ciphertext"]) or bool(env_key(r["provider"])) or r["api_style"] == "ollama"
+
+
+def _model_rows(where: str, params: list) -> list[dict]:
+    return fetch_all_dict(
+        f"""SELECT 1 AS priority, m.id AS model_id, m.code AS model, m.name AS model_name, m.input_cost_per_mtok_cents AS in_price,
+                  m.output_cost_per_mtok_cents AS out_price, p.code AS provider, p.api_style, c.api_key_ciphertext,
+                  coalesce(c.base_url, p.base_url) AS base_url, c.settings
+             FROM public.ai_models m
+             JOIN public.ai_providers p ON p.id = m.provider_id AND p.is_enabled
+             LEFT JOIN LATERAL (SELECT * FROM public.ai_provider_configurations x
+                            WHERE x.provider_id = p.id AND x.is_enabled AND x.deleted_at IS NULL
+                              AND (x.tenant_id = %s OR x.tenant_id IS NULL)
+                            ORDER BY x.tenant_id NULLS LAST, x.priority LIMIT 1) c ON true
+            WHERE m.is_enabled AND {where}""", params)
+
+
+def auto_default_model(tenant_id: str | None = None) -> dict | None:
+    """The best available model when no explicit route is usable: first provider (by suggested priority) that has a
+    usable key, preferring a model flagged '(par défaut)'. Lets work continue as soon as any valid key is added."""
+    rows = [r for r in _model_rows("true", [tenant_id]) if _usable(r)]
+    if not rows:
+        return None
+    rank = {p: i for i, p in enumerate(PROVIDER_PRIORITY)}
+    # first by provider priority, then prefer a model flagged "(par défaut)" within that provider
+    rows.sort(key=lambda r: (rank.get(r["provider"], 99), 0 if "défaut" in (r.get("model_name") or "").lower() else 1))
+    return rows[0]
+
+
 def routes(feature: str, tenant_id: str | None) -> list[dict]:
     rows = fetch_all_dict(
         """SELECT r.priority, m.id AS model_id, m.code AS model, m.input_cost_per_mtok_cents AS in_price,
@@ -84,8 +119,13 @@ def routes(feature: str, tenant_id: str | None) -> list[dict]:
                             ORDER BY x.tenant_id NULLS LAST, x.priority LIMIT 1) c ON true
             WHERE r.is_enabled AND r.feature_code IN (%s, '*') AND (r.tenant_id = %s OR r.tenant_id IS NULL)
             ORDER BY (r.feature_code = '*'), (r.tenant_id IS NULL), r.priority, c.priority NULLS LAST""", [tenant_id, feature, tenant_id])
-    # usable = a stored key, a server environment key, or a keyless local provider (Ollama)
-    return [r for r in rows if r["api_key_ciphertext"] or env_key(r["provider"]) or r["api_style"] == "ollama"]
+    usable = [r for r in rows if _usable(r)]
+    if usable:
+        return usable
+    # no configured route is usable (e.g. the default model's provider has no key): fall back to any provider that does,
+    # so adding a valid key anywhere makes the AI work immediately without the PILOTE touching the routing.
+    fallback = auto_default_model(tenant_id)
+    return [fallback] if fallback else []
 
 
 def _check_budget(tenant_id: str | None) -> None:

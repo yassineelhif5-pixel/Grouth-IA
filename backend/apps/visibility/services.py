@@ -749,7 +749,12 @@ def _run_state(run: dict | None, rec: dict) -> tuple[str, int, str]:
         return ("succeeded", 100, "Exécuté")
     if st == "cancelled":
         return ("cancelled", 0, run.get("error_message") or "Annulé")
-    return ("failed", 100, run.get("error_message") or "Échec")
+    msg = run.get("error_message") or "Échec"
+    if "AI route" in msg or "No AI model" in msg or "No API key" in msg or "not configured by the PILOTE" in msg:
+        msg = "Aucun modèle IA configuré — ajoutez une clé dans PILOTE → Fournisseurs IA"
+    elif "site_source_not_configured" in msg or "Aucun accès au site" in msg:
+        msg = "Connectez le dépôt GitHub du site pour pousser ce fichier"
+    return ("failed", 100, msg[:160])
 
 
 def execution_status(audit_id: str | None) -> list[dict]:

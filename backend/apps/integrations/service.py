@@ -32,9 +32,9 @@ class GrowthAiConnectorService:
         return site_access.commit_files(account_id, files, mode)
 
     @staticmethod
-    def push_recommendation_files(tenant_id: str, rec_ids: list[str], mode: str | None = None) -> dict:
+    def push_recommendation_files(tenant_id: str, rec_ids: list[str], mode: str | None = None, force: bool = False) -> dict:
         """Build the files of the given SEO/GEO recommendations and push them, then mark the recommendations applied.
-        This is what a validated 'forced correction' action or scheduler run calls."""
+        This is what a validated 'forced correction' action or scheduler run calls. force=True pushes onto main."""
         from apps.visibility import site_access
         account_id = site_access.resolve_account(tenant_id)
         if not account_id:
@@ -42,9 +42,19 @@ class GrowthAiConnectorService:
         files, applied = site_access.files_for_recommendations(rec_ids, account_id)
         if not files:
             raise BusinessError("Aucune des actions sélectionnées ne produit de fichier à pousser", "nothing_to_apply")
-        result = site_access.commit_files(account_id, files, mode)
+        result = site_access.commit_files(account_id, files, mode, force)
         site_access.mark_applied(applied, result)
         return result | {"applied": applied}
+
+    @staticmethod
+    def fix_all_site_files(tenant_id: str, audit_id: str, force: bool = True) -> dict:
+        """'Corriger tout' : push every generated site file of an audit to the repository in one commit.
+        force=True (default) writes them straight onto the default branch (main), replacing the existing files."""
+        from apps.visibility import site_access
+        rec_ids = site_access.generated_file_rec_ids(audit_id)
+        if not rec_ids:
+            raise BusinessError("Aucun fichier à corriger pour cet audit", "nothing_to_apply")
+        return GrowthAiConnectorService.push_recommendation_files(tenant_id, rec_ids, None, force)
 
 
 # Module-level singleton used as "the service" across the codebase.

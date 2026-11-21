@@ -171,3 +171,31 @@ def test_forced_correction_pushes_through_scheduler(tenant_user, make_user, site
     again = c.post(f"/api/v1/visibility/recommendations/{robots['id']}/run-now", {}, format="json")
     assert again.status_code == 200
     assert any(p.endswith("/git/commits") for _m, p, _b in github.calls)
+
+
+def test_fix_all_force_pushes_every_file_to_main(tenant_user, make_user, sites, github, admin_conn):  # noqa: F811
+    site, _rival = sites
+    owner, pilot = tenant_user(), make_user(pilot=True)
+    _enterprise(pilot, owner["tenant_id"])
+    c = owner["client"]
+    aid = c.post("/api/v1/visibility/programmes", {"name": "Acme", "site_urls": [site], "scope": ["seo"]}, format="json").json()["audit_id"]
+    recs = c.get(f"/api/v1/visibility/audits/{aid}/report").json()["recommendations"]
+    file_recs = [r for r in recs if r["apply_mode"] == "generated_file"]
+    assert len(file_recs) >= 2
+    _connect_and_configure(c)
+
+    github.calls = []
+    res = c.post("/api/v1/visibility/site-access/fix-all", {"audit_id": aid}, format="json")
+    assert res.status_code == 200, res.content
+    out = res.json()
+    # one commit with every generated file, force-updated onto main
+    assert out["mode"] == "direct" and out["force_push"] is True and out["branch"] == "main"
+    assert len(out["applied"]) == len(file_recs)
+    tree = next(b for m, p, b in github.calls if p.endswith("/git/trees"))
+    assert len(tree["tree"]) == len(file_recs)
+    patch = next(b for m, p, b in github.calls if m == "PATCH")
+    assert patch["force"] is True  # force push to main, as requested
+    # all file recommendations are now applied
+    applied = admin_conn.execute("""SELECT count(*) FROM public.visibility_recommendations
+                                     WHERE audit_id=%s AND apply_mode='generated_file' AND status='applied'""", [aid]).fetchone()[0]
+    assert applied == len(file_recs)

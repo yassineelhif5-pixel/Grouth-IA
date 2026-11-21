@@ -170,14 +170,15 @@ def resolve_account(tenant_id: str) -> str | None:
     return str(row[0]) if row else None
 
 
-def commit_files(account_id: str, files: list[dict], mode: str | None = None) -> dict:
+def commit_files(account_id: str, files: list[dict], mode: str | None = None, force: bool = False) -> dict:
     """Low-level push primitive: write every file in ONE commit, replacing the existing ones, as a PR or directly.
+    force=True pushes straight onto the default branch (main), overwriting the files there (a force update of the ref).
     `files` = [{"path","content","title"?}]. Paths are taken as given (already under the repo's public folder)."""
     acc = _own(account_id)
     cfg = acc.settings or {}
     if not cfg.get("repo"):
         raise BusinessError("Choisissez d'abord le dépôt du site", "repo_not_configured")
-    mode = mode or cfg.get("mode") or "pull_request"
+    mode = "direct" if force else (mode or cfg.get("mode") or "pull_request")
     if not files:
         raise BusinessError("Aucun fichier à pousser", "nothing_to_apply")
     repo, base = cfg["repo"], cfg.get("branch") or "main"
@@ -193,8 +194,8 @@ def commit_files(account_id: str, files: list[dict], mode: str | None = None) ->
                      json={"message": msg, "tree": tree["sha"], "parents": [head]}).json()
         result: dict = {"repo": repo, "mode": mode, "commit_sha": commit["sha"], "files": [f["path"] for f in files]}
         if mode == "direct":
-            _gh("PATCH", f"/repos/{repo}/git/refs/heads/{base}", account_id, "update_ref", json={"sha": commit["sha"], "force": False})
-            result |= {"branch": base, "url": f"https://github.com/{repo}/commit/{commit['sha']}"}
+            _gh("PATCH", f"/repos/{repo}/git/refs/heads/{base}", account_id, "update_ref", json={"sha": commit["sha"], "force": force})
+            result |= {"branch": base, "force_push": force, "url": f"https://github.com/{repo}/commit/{commit['sha']}"}
         else:
             branch = f"growth-ia/corrections-{datetime.now(UTC):%Y%m%d-%H%M%S}"
             _gh("POST", f"/repos/{repo}/git/refs", account_id, "create_ref", json={"ref": f"refs/heads/{branch}", "sha": commit["sha"]})
@@ -214,6 +215,16 @@ def commit_files(account_id: str, files: list[dict], mode: str | None = None) ->
 def files_for_recommendations(rec_ids: list[str], account_id: str) -> tuple[list[dict], list[str]]:
     base = (_own(account_id).settings or {}).get("base_path", "")
     return _files_for(rec_ids, base)
+
+
+def generated_file_rec_ids(audit_id: str) -> list[str]:
+    """Every recommendation of an audit that produces a file to place on the site (for 'fix all')."""
+    tid = get_context().tenant_id
+    rows = fetch_all_dict("""SELECT r.id FROM public.visibility_recommendations r
+                               JOIN public.visibility_generated_assets a ON a.id = nullif(r.evidence->>'asset_id','')::uuid
+                              WHERE r.tenant_id = %s AND r.audit_id = %s AND r.deleted_at IS NULL AND r.apply_mode = 'generated_file'
+                              ORDER BY r.priority""", [tid, audit_id])
+    return [str(r["id"]) for r in rows]
 
 
 def mark_applied(rec_ids: list[str], result: dict) -> None:

@@ -258,3 +258,17 @@ class SiteAccessApplyView(GrowthAPIView):
         d = request.data
         ids = [str(i) for i in (d.get("recommendation_ids") or [])][:100]
         return Response(service.push_recommendation_files(request.tenant.tenant_id, ids, d.get("mode")))
+
+
+class SiteAccessFixAllView(GrowthAPIView):
+    """'Corriger tout' — push every generated file of an audit to the repository (force onto main by default)."""
+    permission_map = {"POST": "seo.manage"}
+    required_module = "seo"
+
+    def post(self, request):
+        from apps.integrations.service import service
+        d = request.data
+        audit_id = str(d.get("audit_id") or "")
+        if not audit_id:
+            raise BusinessError("audit_id requis", "invalid")
+        return Response(service.fix_all_site_files(request.tenant.tenant_id, audit_id, force=bool(d.get("force", True))))

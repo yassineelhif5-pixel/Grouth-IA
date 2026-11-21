@@ -11,6 +11,7 @@ from .views import (
     ProgrammeView,
     RecommendationViewSet,
     SiteAccessApplyView,
+    SiteAccessFixAllView,
     SiteAccessReposView,
     SiteAccessView,
     TenantRoadmapViewSet,
@@ -27,5 +28,6 @@ router.register("visibility/questions", AiVisibilityQuestionViewSet, basename="v
 urlpatterns = [path("visibility/programmes", ProgrammeView.as_view()), path("visibility/assistant", AssistantView.as_view()),
                path("visibility/kpis", KpiView.as_view()),
                path("visibility/site-access", SiteAccessView.as_view()), path("visibility/site-access/apply", SiteAccessApplyView.as_view()),
+               path("visibility/site-access/fix-all", SiteAccessFixAllView.as_view()),
                path("visibility/site-access/<uuid:account_id>", SiteAccessReposView.as_view()), path("visibility/competitors/discover", CompetitorDiscoverView.as_view()), path("visibility/ai", AiVisibilityView.as_view()),
                path("visibility/assets/<uuid:asset_id>/download", AssetDownloadView.as_view())] + router.urls
