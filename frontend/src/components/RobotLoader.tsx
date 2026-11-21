@@ -21,7 +21,6 @@ export function RobotLoader({ progress, label, size = "md", minHeight }: { progr
   return (
     <Stack align="center" justify="center" gap={size === "sm" ? 4 : "sm"} mih={minHeight ?? (size === "sm" ? 140 : 320)} role="status" aria-live="polite" aria-label={`${label ?? "Chargement"} ${pct} %`}>
       <div className="gi-robot-stage" style={{ ["--gi-scale" as string]: scale, ["--gi-pct" as string]: `${pct * 3.6}deg` }}>
-        <div className="gi-orbit"><span className="gi-orbit-dot" /></div>
         <div className="gi-thoughts"><span /><span /><span /></div>
         <div className="gi-robot">
           <div className="gi-antenna"><span className="gi-antenna-bulb" /></div>
@@ -41,7 +40,6 @@ export function RobotLoader({ progress, label, size = "md", minHeight }: { progr
             <span className="gi-arm gi-arm-r" />
           </div>
         </div>
-        <div className="gi-shadow" />
       </div>
       <Text className="gi-num" fw={600} ff="heading" fz={size === "sm" ? 18 : 28} lh={1}>{pct} %</Text>
       {label !== "" && <Text size={size === "sm" ? "xs" : "sm"} c="dimmed" ta="center" maw={420}>{label ?? "L'IA prépare votre page…"}</Text>}

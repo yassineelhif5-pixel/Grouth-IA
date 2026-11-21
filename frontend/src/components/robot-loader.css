@@ -1,7 +1,7 @@
 /* 3D "thinking" robot — CSS only (perspective + preserve-3d + gradient lighting). Teal = observed, violet = AI. */
 .gi-robot-stage {
-  --s: var(--gi-scale, 1);
-  position: relative; width: calc(200px * var(--s)); height: calc(230px * var(--s));
+  --s: var(--gi-scale, 1); background: transparent;
+  position: relative; width: calc(200px * var(--s)); height: calc(200px * var(--s));
   perspective: calc(700px * var(--s)); perspective-origin: 50% 35%;
 }
 .gi-robot {
