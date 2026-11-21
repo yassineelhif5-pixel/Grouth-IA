@@ -398,8 +398,10 @@ def _build_roadmap(aid: str, recs: list[dict], summary: dict) -> None:
 
 # ───────────────────────────── validation & application ─────────────────────────────
 def accept_recommendation(rec_id: str, frequency: str | None, times: int | None, scheduler_kind: str = "standard",
-                          autonomy: str = "approval", run_now: bool = False) -> dict:
-    """User validated the action: apply it now when possible, schedule it when recurring."""
+                          autonomy: str = "approval", run_now: bool = False, forced: bool = False) -> dict:
+    """User validated the action: apply it now when possible, schedule it when recurring.
+    forced=True on a generated-file action routes it through the connector service, which pushes the files
+    to the site source (GitHub), replacing the existing ones — on run-now and on each scheduled run."""
     tid = get_context().tenant_id
     r = fetch_all_dict("""SELECT r.*, p.product_id, p.name AS profile_name FROM public.visibility_recommendations r
                             JOIN public.visibility_profiles p ON p.id = r.profile_id
@@ -411,13 +413,25 @@ def accept_recommendation(rec_id: str, frequency: str | None, times: int | None,
     times = max(1, min(int(times or r["times_per_period"] or 1), 30))
     result: dict = {"recommendation_id": rec_id, "apply_mode": r["apply_mode"]}
     if r["apply_mode"] == "generated_file":
-        aid = (r["evidence"] or {}).get("asset_id")
-        result |= {"status": "accepted", "asset_id": aid,
-                   "how_to_apply": "Fichier généré prêt à déployer : téléchargez-le et placez-le à la racine du site (ou dans le <head> pour "
-                                   "les balises). Avec un connecteur CMS, Growth IA le publie directement."}
-        new_status = "accepted"
-        if r["channel"] in ("wordpress", "ghost") or _cms_connected():
-            result["cms_available"] = True
+        from apps.integrations.service import GrowthAiConnectorService
+        if forced and GrowthAiConnectorService.site_source(tid):  # push to the site source via the connector service
+            sched = create_site_files_scheduler(r, frequency, times, scheduler_kind, autonomy)
+            result |= {"status": "scheduled", "scheduler_id": sched, "forced": True,
+                       "how_to_apply": "Correction forcée : les fichiers seront poussés dans le dépôt du site (remplacement de l'existant)."}
+            if run_now:
+                from apps.scheduler.engine import enqueue_run
+                result["run_id"] = enqueue_run(sched, "manual")
+            new_status = "scheduled"
+        else:
+            aid = (r["evidence"] or {}).get("asset_id")
+            result |= {"status": "accepted", "asset_id": aid,
+                       "how_to_apply": "Fichier généré prêt à déployer : téléchargez-le et placez-le à la racine du site (ou dans le <head> pour "
+                                       "les balises). Connectez l'accès au site pour que Growth IA le pousse automatiquement."}
+            new_status = "accepted"
+            if r["channel"] in ("wordpress", "ghost") or _cms_connected():
+                result["cms_available"] = True
+            if GrowthAiConnectorService.site_source(tid):
+                result["site_source_available"] = True
     elif r["apply_mode"] in ("ai_content", "auto_connector"):
         sched = create_programme_scheduler(r, frequency, times, scheduler_kind, autonomy)
         result |= {"status": "scheduled", "scheduler_id": sched}
@@ -458,6 +472,27 @@ def _content_project(product_id: str, name: str) -> str:
         return str(row[0])
     return str(fetch_one("INSERT INTO public.content_projects (tenant_id, product_id, name) VALUES (%s,%s,%s) RETURNING id",
                          [tid, product_id, f"Visibilité — {name}"[:200]])[0])
+
+
+def create_site_files_scheduler(r: dict, frequency: str, times: int, kind: str, autonomy: str) -> str:
+    """Scheduler that pushes a generated file to the site source on run (now or recurring), via the connector service."""
+    from apps.licensing.services import check_quota
+    from apps.scheduler.engine import next_run
+    tid = get_context().tenant_id
+    check_quota(tid, "scheduler.configurations")
+    ftype, fval = FREQ_TO_SCHEDULER.get(frequency, ("weekly", "0 09:00"))
+    if frequency == "once":
+        ftype, fval = "event", "visibility.once"
+    params = {"recommendation_ids": [str(r["id"])], "title": r["title"], "mode": None}  # mode None → the account's configured PR/direct mode
+    mode = {"automatic": "automatic", "approval": "approval", "analysis": "analysis"}.get(autonomy, "approval")
+    sid = fetch_one("""INSERT INTO public.tenant_schedulers (tenant_id, product_id, name, description, timezone, status, category, frequency_type,
+                         frequency_value, params, mode, next_run_at, scheduler_kind, visibility_profile_id, recommendation_ids)
+                       VALUES (%s,%s,%s,%s,'Europe/Paris','active','site_files',%s,%s,%s::jsonb,%s,%s,%s,%s,%s::jsonb) RETURNING id""",
+                    [tid, r["product_id"], f"Correction site : {r['title'][:160]}", r["detail"], ftype, fval, json.dumps(params), mode,
+                     next_run("daily", "09:00", "Europe/Paris") if ftype == "event" else next_run(ftype, fval, "Europe/Paris"), kind, r["profile_id"], json.dumps([str(r["id"])])])[0]
+    record_activity("scheduler.created", "scheduler", entity_type="tenant_schedulers", entity_id=sid,
+                    description=f"Correction forcée du site : {r['title'][:120]}")
+    return str(sid)
 
 
 def create_programme_scheduler(r: dict, frequency: str, times: int, kind: str, autonomy: str) -> str:

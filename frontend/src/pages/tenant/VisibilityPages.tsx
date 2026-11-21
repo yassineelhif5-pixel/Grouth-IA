@@ -42,7 +42,6 @@ interface PlanChoice { mode: "now" | "schedule" | "forced"; frequency: string; t
 interface SiteAccount { id: string; display_name: string; status: string; settings: { repo?: string; branch?: string; base_path?: string; mode?: "pull_request" | "direct" }; last_error: string | null; credential_hint: string | null }
 interface SiteAccessStatus { accounts: SiteAccount[]; oauth_available: boolean; token_help: string }
 interface Repo { full_name: string; default_branch: string; private: boolean; homepage: string | null }
-interface ForcedResult { repo: string; mode: string; url: string; branch: string; pull_request?: number; files: string[] }
 interface Candidate { name: string; url: string; source: "site_mentions" | "known" | "ai_suggested"; evidence?: string[]; mentions?: number }
 interface DiscoverResult { site: string; name: string | null; candidates: Candidate[]; ai_available: boolean; note: string | null }
 interface Execution { id: string; title: string; apply_mode: string; channel: string | null; frequency: string | null; times_per_period: number | null; scheduler_id: string | null; next_run_at: string | null; autonomy: string | null; run_id: string | null; state: "ready" | "planned" | "queued" | "running" | "succeeded" | "awaiting_approval" | "failed" | "cancelled"; progress: number; label: string; started_at: string | null; completed_at: string | null; content_id: string | null; link: string | null; can_run_now: boolean }
@@ -446,30 +445,22 @@ export function AuditResultPage() {
     .filter(({ rec, c }) => c.selected && rec.status === "proposed"), [choices, r]);
   const site = useQuery({ queryKey: ["site-access", tenantId], queryFn: () => api<SiteAccessStatus>("/visibility/site-access", { tenantId }) });
   const siteAccount = site.data?.accounts.find((a) => a.settings?.repo && (a.status === "tested" || a.status === "connected"));
-  const [forced, setForced] = useState<ForcedResult | null>(null);
   const validate = useMutation({
-    mutationFn: async () => {
-      const forcedIds = (preview.data ?? []).filter((p) => !p.recurring_allowed && plan[p.id]?.mode === "forced").map((p) => p.id);
-      const res = await acceptBulk();
-      setForced(null);
-      if (forcedIds.length && siteAccount) {
-        setForced(await api<ForcedResult>("/visibility/site-access/apply", { method: "POST", tenantId, body: { account_id: siteAccount.id, recommendation_ids: forcedIds } }));
-      }
-      return res;
-    },
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["v-report", auditId] }); void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }); setPreviewOpen(false); setTab("execution"); },
-  });
-  const acceptBulk = () => api<{ applied: { status: string }[]; errors: { message: string }[] }>("/visibility/recommendations/accept-bulk", {
+    mutationFn: () => api<{ applied: { status: string }[]; errors: { message: string }[] }>("/visibility/recommendations/accept-bulk", {
       method: "POST", tenantId,
       body: {
         scheduler_kind: kind, autonomy,
         items: (preview.data ?? []).map((p) => {
           const ch = plan[p.id] ?? { mode: "now", frequency: p.frequency, times: p.times_per_period };
-          if (!p.recurring_allowed) return { id: p.id, run_now: false };
+          if (!p.recurring_allowed) {  // generated file: "forced" pushes it to the site via GitHub, otherwise it stays a downloadable file
+            return ch.mode === "forced" ? { id: p.id, frequency: "once", run_now: true, forced: true } : { id: p.id, run_now: false };
+          }
           return ch.mode === "now" ? { id: p.id, frequency: "once", run_now: true } : { id: p.id, frequency: ch.frequency, times_per_period: ch.times, run_now: false };
         }),
       },
-    });
+    }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ["v-report", auditId] }); void qc.invalidateQueries({ queryKey: ["v-exec", auditId] }); setPreviewOpen(false); setTab("execution"); },
+  });
   const preview = useMutation({
     mutationFn: () => api<Preview[]>("/visibility/recommendations/preview", { method: "POST", tenantId, body: { ids: picked.map(({ rec }) => rec.id) } }),
     onSuccess: (rows) => {
@@ -537,7 +528,6 @@ export function AuditResultPage() {
               {can("seo.manage") && <Button leftSection={<IconCheck size={16} />} disabled={selectedCount === 0} loading={preview.isPending} onClick={() => preview.mutate()}>Valider {selectedCount} action{selectedCount > 1 ? "s" : ""}</Button>}
             </Group>
             {preview.error && <Alert color="red" mb="md">{errorText(preview.error)}</Alert>}
-            {forced && <Alert color="signal" mb="md" title="Correction forcée appliquée">{forced.files.length} fichier(s) écrit(s) dans {forced.repo} — {forced.pull_request ? <>pull request <Anchor href={forced.url} target="_blank" rel="noreferrer">#{forced.pull_request}</Anchor> à fusionner</> : <>commit direct sur <Anchor href={forced.url} target="_blank" rel="noreferrer">{forced.branch}</Anchor></>}.</Alert>}
             {validate.data && <Alert color={validate.data.errors.length ? "orange" : "signal"} mb="md">{validate.data.applied.length} action(s) appliquée(s) ou programmée(s).{validate.data.errors.map((e) => ` ${e.message}`).join("")}</Alert>}
             <Table.ScrollContainer minWidth={900}>
               <Table>

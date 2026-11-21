@@ -22,7 +22,7 @@ logger = logging.getLogger("growth.workflows")
 
 CATEGORY_MODULE = {"seo": "seo", "geo": "geo", "articles": "content", "pages": "pages", "social": "social", "videos": "video",
                    "opportunities": "opportunities", "social_monitoring": "social_hunter", "prospects": "prospects", "crm": "crm",
-                   "reporting": "reporting", "intelligence": "intelligence", "agents": "thor"}
+                   "reporting": "reporting", "intelligence": "intelligence", "agents": "thor", "site_files": "seo"}
 
 
 def next_run(freq: str, value: str | None, tz: str, after: datetime | None = None) -> datetime | None:
@@ -60,6 +60,15 @@ def next_run(freq: str, value: str | None, tz: str, after: datetime | None = Non
 
 
 # ─────────────────────────── Handlers (shared by schedulers and workflow nodes) ───────────────────────────
+def _h_site_files(p):
+    """Validated forced correction: connect to the site source (GitHub) and push the generated files, replacing existing ones."""
+    from apps.integrations.service import service
+    rec_ids = p.get("recommendation_ids") or []
+    if not rec_ids:
+        return {"pushed": 0, "note": "no files to push"}
+    return service.push_recommendation_files(get_context().tenant_id, rec_ids, p.get("mode"))
+
+
 def _h_seo(p):
     if p.get("visibility_profile_id"):  # intelligent programme: weekly re-audit, plan re-prioritised from new observations
         from apps.visibility.services import execute_audit as visibility_audit
@@ -162,9 +171,9 @@ def _h_agents(p):
 
 HANDLERS = {"seo": _h_seo, "geo": _h_geo, "articles": _h_articles, "pages": _h_pages, "social": _h_social, "videos": _h_videos,
             "opportunities": _h_opportunities, "social_monitoring": _h_social_monitoring, "prospects": _h_prospects, "crm": _h_crm,
-            "reporting": _h_reporting, "intelligence": _h_intelligence, "agents": _h_agents}
+            "reporting": _h_reporting, "intelligence": _h_intelligence, "agents": _h_agents, "site_files": _h_site_files}
 # actions with side effects outside Growth IA go through the growth gate
-GATED = {"pages": ("pages", "publish"), "social": ("social", "publish"), "prospects": ("prospects", "send_campaign")}
+GATED = {"pages": ("pages", "publish"), "social": ("social", "publish"), "prospects": ("prospects", "send_campaign"), "site_files": ("seo", "publish_files")}
 
 
 def _condition_met(cond: dict) -> bool:

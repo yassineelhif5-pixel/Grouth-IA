@@ -162,17 +162,27 @@ def _files_for(rec_ids: list[str], base: str) -> tuple[list[dict], list[str]]:
     return files, applied
 
 
-def apply(account_id: str, rec_ids: list[str], mode: str | None = None) -> dict:
-    """One commit with every fix. pull_request (default) → branch + PR; direct → commit on the configured branch."""
+def resolve_account(tenant_id: str) -> str | None:
+    """The tenant's single connected GitHub (site source) account, if any — used by the connector service."""
+    row = fetch_one("""SELECT a.id FROM public.tenant_connector_accounts a JOIN public.connector_providers p ON p.id = a.provider_id
+                        WHERE a.tenant_id = %s AND p.code = 'github' AND a.deleted_at IS NULL
+                          AND nullif(a.settings->>'repo','') IS NOT NULL ORDER BY a.created_at LIMIT 1""", [tenant_id])
+    return str(row[0]) if row else None
+
+
+def commit_files(account_id: str, files: list[dict], mode: str | None = None) -> dict:
+    """Low-level push primitive: write every file in ONE commit, replacing the existing ones, as a PR or directly.
+    `files` = [{"path","content","title"?}]. Paths are taken as given (already under the repo's public folder)."""
     acc = _own(account_id)
     cfg = acc.settings or {}
     if not cfg.get("repo"):
         raise BusinessError("Choisissez d'abord le dépôt du site", "repo_not_configured")
     mode = mode or cfg.get("mode") or "pull_request"
-    files, applied = _files_for(rec_ids, cfg.get("base_path", ""))
     if not files:
-        raise BusinessError("Aucune des actions sélectionnées ne produit de fichier à placer dans le dépôt", "nothing_to_apply")
+        raise BusinessError("Aucun fichier à pousser", "nothing_to_apply")
     repo, base = cfg["repo"], cfg.get("branch") or "main"
+    for f in files:
+        f.setdefault("title", f["path"])
     try:
         head = _gh("GET", f"/repos/{repo}/git/ref/heads/{base}", account_id, "get_ref").json()["object"]["sha"]
         base_tree = _gh("GET", f"/repos/{repo}/git/commits/{head}", account_id, "get_commit").json()["tree"]["sha"]
@@ -196,11 +206,28 @@ def apply(account_id: str, rec_ids: list[str], mode: str | None = None) -> dict:
     except IntegrationError as e:
         set_status(account_id, "failed", e.message)
         raise BusinessError(f"GitHub a refusé l'opération : {e.message}", "github_error") from e
-    status_value = "applied"
-    for rid in applied:
-        fetch_one("""UPDATE public.visibility_recommendations SET status = %s, applied_at = now(),
-                     applied_result = coalesce(applied_result, '{}'::jsonb) || %s::jsonb WHERE id = %s RETURNING 1""",
-                  [status_value, json.dumps({"forced": result}), rid])
-    record_audit("site_access.fixes_applied", "visibility", entity_type="tenant_connector_accounts", entity_id=account_id,
+    record_audit("site_access.pushed", "visibility", entity_type="tenant_connector_accounts", entity_id=account_id,
                  after={k: v for k, v in result.items() if k != "files"} | {"files": len(files)})
+    return result
+
+
+def files_for_recommendations(rec_ids: list[str], account_id: str) -> tuple[list[dict], list[str]]:
+    base = (_own(account_id).settings or {}).get("base_path", "")
+    return _files_for(rec_ids, base)
+
+
+def mark_applied(rec_ids: list[str], result: dict) -> None:
+    for rid in rec_ids:
+        fetch_one("""UPDATE public.visibility_recommendations SET status = 'applied', applied_at = now(),
+                     applied_result = coalesce(applied_result, '{}'::jsonb) || %s::jsonb WHERE id = %s RETURNING 1""",
+                  [json.dumps({"forced": result}), rid])
+
+
+def apply(account_id: str, rec_ids: list[str], mode: str | None = None) -> dict:
+    """Immediate forced correction from the UI: build files from the recommendations and push them in one commit."""
+    files, applied = files_for_recommendations(rec_ids, account_id)
+    if not files:
+        raise BusinessError("Aucune des actions sélectionnées ne produit de fichier à placer dans le dépôt", "nothing_to_apply")
+    result = commit_files(account_id, files, mode)
+    mark_applied(applied, result)
     return result

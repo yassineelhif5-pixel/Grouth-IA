@@ -111,7 +111,8 @@ class RecommendationViewSet(mixins.ListModelMixin, GrowthViewSet):
     def accept(self, request, pk=None):
         d = request.data
         return Response(services.accept_recommendation(str(pk), d.get("frequency"), d.get("times_per_period"),
-                                                       d.get("scheduler_kind", "standard"), d.get("autonomy", "approval"), bool(d.get("run_now"))))
+                                                       d.get("scheduler_kind", "standard"), d.get("autonomy", "approval"), bool(d.get("run_now")),
+                                                       bool(d.get("forced"))))
 
     @action(detail=True, methods=["post"], url_path="run-now")
     def run_now(self, request, pk=None):
@@ -143,7 +144,7 @@ class RecommendationViewSet(mixins.ListModelMixin, GrowthViewSet):
         for item in request.data.get("items") or []:
             try:  # per action: "run_now" (immediate) and/or a frequency (programmed); falls back to the global choice
                 out.append(services.accept_recommendation(str(item["id"]), item.get("frequency"), item.get("times_per_period"), kind, autonomy,
-                                                          bool(item.get("run_now", run_now))))
+                                                          bool(item.get("run_now", run_now)), bool(item.get("forced"))))
             except BusinessError as e:
                 errors.append({"id": item.get("id"), "code": e.code, "message": e.message})
         if kind == "intelligent" and out:
@@ -253,7 +254,7 @@ class SiteAccessApplyView(GrowthAPIView):
     required_module = "seo"
 
     def post(self, request):
-        from . import site_access
+        from apps.integrations.service import service
         d = request.data
         ids = [str(i) for i in (d.get("recommendation_ids") or [])][:100]
-        return Response(site_access.apply(str(d.get("account_id")), ids, d.get("mode")))
+        return Response(service.push_recommendation_files(request.tenant.tenant_id, ids, d.get("mode")))

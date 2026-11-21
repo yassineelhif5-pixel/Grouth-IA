@@ -127,3 +127,47 @@ def test_forced_correction_via_github(tenant_user, make_user, sites, github, adm
     admin_conn.execute("""UPDATE public.tenant_connector_authorizations SET status = 'suspended' WHERE tenant_id = %s
                           AND provider_id = (SELECT id FROM public.connector_providers WHERE code = 'github')""", [owner["tenant_id"]])
     assert c.post("/api/v1/visibility/site-access", {"token": TOKEN}, format="json").status_code == 403
+
+
+def _connect_and_configure(c):
+    """Connect GitHub by token and point it at acme/site (helper shared by the forced-push tests)."""
+    acc = c.post("/api/v1/visibility/site-access", {"token": TOKEN}, format="json").json()["account_id"]
+    c.put(f"/api/v1/visibility/site-access/{acc}", {"repo": "https://github.com/acme/site", "base_path": "public", "mode": "direct"}, format="json")
+    return acc
+
+
+def test_forced_correction_pushes_through_scheduler(tenant_user, make_user, sites, github, admin_conn):  # noqa: F811
+    site, _rival = sites
+    owner, pilot = tenant_user(), make_user(pilot=True)
+    _enterprise(pilot, owner["tenant_id"])
+    c = owner["client"]
+    aid = c.post("/api/v1/visibility/programmes", {"name": "Acme", "site_urls": [site], "scope": ["seo"]}, format="json").json()["audit_id"]
+    robots = next(x for x in c.get(f"/api/v1/visibility/audits/{aid}/report").json()["recommendations"] if x["code"] == "robots_txt")
+    _connect_and_configure(c)
+    # a full URL was accepted and normalised to owner/name
+    assert admin_conn.execute("""SELECT settings->>'repo' FROM public.tenant_connector_accounts a
+                                  JOIN public.connector_providers p ON p.id=a.provider_id
+                                  WHERE a.tenant_id=%s AND p.code='github'""", [owner["tenant_id"]]).fetchone()[0] == "acme/site"
+
+    github.calls = []
+    bulk = c.post("/api/v1/visibility/recommendations/accept-bulk",
+                  {"autonomy": "automatic", "items": [{"id": robots["id"], "frequency": "once", "run_now": True, "forced": True}]},
+                  format="json").json()
+    applied = bulk["applied"][0]
+    assert applied["status"] == "scheduled" and applied["forced"] is True and applied["run_id"]
+    cat = admin_conn.execute("SELECT category FROM public.tenant_schedulers WHERE id=%s", [applied["scheduler_id"]]).fetchone()[0]
+    assert cat == "site_files"
+    # the scheduler run actually pushed the file to GitHub, replacing the existing one (direct mode → PATCH ref)
+    tree = next(b for m, p, b in github.calls if p.endswith("/git/trees"))
+    assert any(t["path"] == "public/robots.txt" and "Sitemap:" in t["content"] for t in tree["tree"])
+    assert any(m == "PATCH" for m, _p, _b in github.calls)
+    # recommendation marked applied with the push result, visible in the execution view
+    ex = {x["id"]: x for x in c.get("/api/v1/visibility/recommendations/execution", {"audit_id": aid}).json()}[robots["id"]]
+    assert ex["state"] == "succeeded" and ex["link"] and "acme/site" in ex["link"]
+    assert admin_conn.execute("SELECT status FROM public.visibility_recommendations WHERE id=%s", [robots["id"]]).fetchone()[0] == "applied"
+
+    # re-running on demand pushes again (keeps the site in sync)
+    github.calls = []
+    again = c.post(f"/api/v1/visibility/recommendations/{robots['id']}/run-now", {}, format="json")
+    assert again.status_code == 200
+    assert any(p.endswith("/git/commits") for _m, p, _b in github.calls)
