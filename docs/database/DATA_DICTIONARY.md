@@ -1675,7 +1675,7 @@ Unique: `(tenant_id, website_id, name)`
 | deleted_at | timestamptz | yes |  |  |  |
 | version_number | integer |  | 1 |  |  |
 | correlation_id | uuid | yes |  |  |  |
-| category | text |  | 'reporting' | in(seo, geo, articles, pages, social, videos, opportunities, social_monitoring, prospects, crm, reporting, intelligence, agents) |  |
+| category | text |  | 'reporting' | in(seo, geo, articles, pages, social, videos, opportunities, social_monitoring, prospects, crm, reporting, intelligence, agents, site_files) |  |
 | frequency_type | text |  | 'daily' | in(hourly, every_x_hours, daily, weekly, monthly, cron, event, conditional) |  |
 | frequency_value | text | yes |  |  | X hours | HH:MM | weekday HH:MM | day HH:MM | cron | event name |
 | params | jsonb |  | '{}' |  |  |

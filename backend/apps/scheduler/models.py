@@ -25,7 +25,7 @@ class TenantScheduler(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     version_number = models.IntegerField(default=1)
     correlation_id = models.UUIDField(null=True, blank=True)
-    category = models.TextField(default='reporting', choices=[('seo', 'seo'), ('geo', 'geo'), ('articles', 'articles'), ('pages', 'pages'), ('social', 'social'), ('videos', 'videos'), ('opportunities', 'opportunities'), ('social_monitoring', 'social_monitoring'), ('prospects', 'prospects'), ('crm', 'crm'), ('reporting', 'reporting'), ('intelligence', 'intelligence'), ('agents', 'agents')])
+    category = models.TextField(default='reporting', choices=[('seo', 'seo'), ('geo', 'geo'), ('articles', 'articles'), ('pages', 'pages'), ('social', 'social'), ('videos', 'videos'), ('opportunities', 'opportunities'), ('social_monitoring', 'social_monitoring'), ('prospects', 'prospects'), ('crm', 'crm'), ('reporting', 'reporting'), ('intelligence', 'intelligence'), ('agents', 'agents'), ('site_files', 'site_files')])
     frequency_type = models.TextField(default='daily', choices=[('hourly', 'hourly'), ('every_x_hours', 'every_x_hours'), ('daily', 'daily'), ('weekly', 'weekly'), ('monthly', 'monthly'), ('cron', 'cron'), ('event', 'event'), ('conditional', 'conditional')])
     frequency_value = models.TextField(null=True, blank=True, help_text='X hours | HH:MM | weekday HH:MM | day HH:MM | cron | event name')
     params = models.JSONField(default=dict)
