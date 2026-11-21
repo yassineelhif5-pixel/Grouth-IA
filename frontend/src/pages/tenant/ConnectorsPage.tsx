@@ -44,8 +44,8 @@ function ConfigureModal({ provider, onClose, onDone }: { provider: Provider; onC
     mutationFn: async () => {
       const r = await api<{ account_id: string }>("/connectors/connect", { method: "POST", tenantId, body: { provider_code: provider.code, method: "api_key" } });
       const secrets: Record<string, string> = {}, settings: Record<string, string> = {};
-      for (const f of provider.fields) if (values[f.name]) secrets[f.name] = values[f.name];
-      for (const f of provider.settings_fields) if (values[f.name]) settings[f.name] = values[f.name];
+      for (const f of provider.fields) { const v = values[f.name]; if (v) secrets[f.name] = v; }
+      for (const f of provider.settings_fields) { const v = values[f.name]; if (v) settings[f.name] = v; }
       await api(`/connector-accounts/${r.account_id}/credentials`, { method: "POST", tenantId, body: { credential_type: "api_key", secrets, settings } });
       return api<{ status: string; error: string | null }>(`/connector-accounts/${r.account_id}/test`, { method: "POST", tenantId });
     },
