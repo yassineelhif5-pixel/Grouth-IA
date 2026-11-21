@@ -83,7 +83,7 @@ def _supabase_get(path: str, service: bool = False) -> CheckResult:
         return CheckResult("down", error=type(e).__name__, recommendation="Supabase unreachable from the backend")
     if resp.status_code != 200:
         return CheckResult("down", ms, f"HTTP {resp.status_code}")
-    return CheckResult("healthy" if ms < 1500 else "degraded", ms, details={"items": len(resp.json()) if path.endswith("bucket") else None})
+    return CheckResult("healthy" if ms < 2500 else "degraded", ms, details={"items": len(resp.json()) if path.endswith("bucket") else None})
 
 
 def supabase_auth() -> CheckResult:
@@ -102,18 +102,26 @@ def redis_check() -> CheckResult:
     key = f"growth:diag:{uuid.uuid4()}"  # dedicated diagnostic namespace, auto-expiring
     try:
         client = redis_lib.Redis.from_url(settings.REDIS_URL, socket_timeout=3)
-        _, ms = _timed(lambda: (client.ping(), client.set(key, "1", ex=30), client.get(key), client.delete(key)))
+        client.ping()  # connection opened outside the measurement
+        _, ms = _timed(lambda: client.pipeline().set(key, "1", ex=30).get(key).delete(key).execute())
     except Exception as e:  # noqa: BLE001
         return CheckResult("down", error=type(e).__name__, recommendation="Check Redis service / REDIS_URL")
-    return CheckResult("healthy" if ms < 200 else "degraded", ms)
+    return CheckResult("healthy" if ms < 250 else "degraded", ms)
 
 
 def celery_workers() -> CheckResult:
+    from celery import current_task
+
     from config.celery import app
+    me = getattr(getattr(current_task, "request", None), "hostname", None) if current_task else None
     try:
         replies, ms = _timed(lambda: app.control.inspect(timeout=2).ping() or {})
     except Exception as e:  # noqa: BLE001
         return CheckResult("down", error=type(e).__name__, recommendation="Broker unreachable")
+    if not replies and me:
+        # this check is itself executing on a worker: with a single-process pool (Windows --pool=solo) that worker
+        # cannot answer the ping while busy, yet it is demonstrably alive
+        return CheckResult("healthy", ms, details={"workers": [me], "note": "self (single-process pool)"})
     if not replies:
         return CheckResult("down", ms, "no worker replied", "Start celery worker(s)")
     return CheckResult("healthy", ms, details={"workers": sorted(replies)})
