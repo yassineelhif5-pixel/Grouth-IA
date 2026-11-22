@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     "apps.products", "apps.websites", "apps.scheduler", "apps.reporting", "apps.audit",
     "apps.history", "apps.observability", "apps.system_health", "apps.ai_providers",
     # Growth IA — business modules (schema ready, features in later prompts)
-    "apps.seo", "apps.geo", "apps.content", "apps.social", "apps.opportunities",
+    "apps.seo", "apps.geo", "apps.content", "apps.social", "apps.marketing_center", "apps.opportunities",
     "apps.prospects", "apps.email_center", "apps.whatsapp", "apps.intelligence", "apps.thor", "apps.visibility",
 ]
 

@@ -26,6 +26,7 @@ export function TenantLayout() {
   const i = (C: typeof IconGauge) => <C size={18} stroke={1.6} />;
   const items: (NavItem & { show: boolean })[] = [
     { group: "Pilotage", to: `${b}/dashboard`, label: t("nav.dashboard"), icon: i(IconGauge), show: can("reporting.read") },
+    { group: "Marketing", to: `${b}/marketing`, label: "Marketing Center", icon: i(IconSparkles), show: m("content", "content.read") },
     { group: "Pilotage", to: `${b}/audit`, label: "Audit & roadmap", icon: i(IconStethoscope), show: m("seo", "seo.read") },
     { group: "Pilotage", to: `${b}/reporting`, label: t("nav.reporting"), icon: i(IconReportAnalytics), show: can("reporting.read") },
     { group: "Pilotage", to: `${b}/approvals`, label: "Validations", icon: i(IconChecklist), show: can("approvals.decide") },

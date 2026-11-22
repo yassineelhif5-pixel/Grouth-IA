@@ -18,6 +18,7 @@ app.conf.task_routes = {
     "licensing.*": {"queue": "maintenance"},
     "integrations.*": {"queue": "integrations"},
     "email.*": {"queue": "integrations"},
+    "marketing_center.*": {"queue": "default"},
 }
 app.conf.beat_schedule = {
     "health-checks": {"task": "system_health.run_all_checks", "schedule": 300.0},
@@ -31,7 +32,8 @@ app.conf.beat_schedule = {
     "scheduler-recover": {"task": "scheduler.recover", "schedule": 300.0},
     "email-sync": {"task": "email.sync_all", "schedule": 300.0},
     "campaigns": {"task": "prospects.process_campaigns", "schedule": 300.0},
+    "marketing-editorial-drafts": {"task": "marketing_center.dispatch_due_items", "schedule": 60.0},
 }
 app.autodiscover_tasks(lambda: ["apps.system_health", "apps.notifications", "apps.licensing", "apps.observability", "apps.integrations",
                                 "apps.products", "apps.seo", "apps.geo", "apps.content", "apps.opportunities", "apps.prospects",
-                                "apps.email_center", "apps.scheduler", "apps.visibility"])
+                                "apps.email_center", "apps.scheduler", "apps.visibility", "apps.marketing_center"])
