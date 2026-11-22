@@ -92,6 +92,9 @@ def _h_geo(p):
 
 
 def _h_articles(p):
+    if p.get("autopilot"):  # confirmed publication programme: write a new article on the theme, then publish it
+        from apps.content.autopilot import run
+        return run(p)
     from apps.content.services import generate
     cid = p.get("content_id")
     if not cid:

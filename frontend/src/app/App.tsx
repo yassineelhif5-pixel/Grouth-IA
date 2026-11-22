@@ -5,6 +5,7 @@ import { HistoryCentre } from "@/features/HistoryCentre";
 import { useTenant } from "@/hooks/useMe";
 import { PilotLayout } from "@/layouts/PilotLayout";
 import { TenantLayout } from "@/layouts/TenantLayout";
+import { AutopilotPage } from "@/pages/tenant/AutopilotPage";
 import { HuntPage } from "@/pages/tenant/HuntPage";
 import { AcceptInvitationPage, HomeRedirect, LoginPage, MfaPage, OnboardingPage, ResetPasswordPage, SignupPage } from "@/pages/auth/AuthPages";
 import * as P from "@/pages/pilot/PilotPages";
@@ -52,6 +53,7 @@ export function App() {
           <Route path="video" element={<RequirePermission perm="video.read" module="video"><M.VideoPage /></RequirePermission>} />
           <Route path="opportunities" element={<RequirePermission perm="opportunities.read" module="opportunities"><M.OpportunitiesPage /></RequirePermission>} />
           <Route path="prospects" element={<RequirePermission perm="prospects.read" module="prospects"><M.ProspectsPage /></RequirePermission>} />
+          <Route path="autopilot" element={<RequirePermission perm="content.read" module="content"><AutopilotPage /></RequirePermission>} />
           <Route path="hunt" element={<RequirePermission perm="prospects.read" module="prospects"><HuntPage /></RequirePermission>} />
           <Route path="campaigns" element={<RequirePermission perm="campaigns.read" module="prospects"><M.CampaignsPage /></RequirePermission>} />
           <Route path="email" element={<RequirePermission perm="email.read" module="email_center"><M.EmailCenterPage /></RequirePermission>} />

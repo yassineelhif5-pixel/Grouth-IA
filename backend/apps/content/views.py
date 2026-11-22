@@ -6,7 +6,9 @@ from apps.core.crud import crud
 from apps.core.db import fetch_all_dict, fetch_one
 from apps.core.exceptions import BusinessError
 from apps.core.tenancy import has_permission
+from apps.core.views import GrowthAPIView
 
+from . import autopilot as ap
 from . import services as s
 from .models import BuilderPage, BuilderTemplate, ContentCategory, ContentProject, GeneratedContent, PublicationSchedule
 
@@ -130,3 +132,53 @@ ProjectViewSet = crud(ContentProject, module="content", perm="content", filters=
 CategoryViewSet = crud(ContentCategory, module="content", perm="content")
 ScheduleViewSet = crud(PublicationSchedule, module="content", perm="content", write="publish", filters=["content", "status"])
 TemplateViewSet = crud(BuilderTemplate, module="pages", perm="pages")
+
+
+# ───────────────────────────── Blog autopilot (automatic CMS publication) ─────────────────────────────
+class _AutopilotBase(GrowthAPIView):
+    required_module = "content"
+    permission_map = {"GET": "content.read", "POST": "content.publish"}
+
+
+class AutopilotSetupView(_AutopilotBase):
+    """Connected CMS (WordPress, Ghost, REST CMS), editorial themes and WordPress categories."""
+
+    def get(self, request):
+        q = request.query_params
+        out = {"accounts": ap.cms_accounts(), "themes": ap.suggest_themes(q.get("product_id")) if q.get("product_id") else {"themes": []}}
+        if q.get("account_id"):
+            try:
+                out["categories"] = ap.wordpress_categories(q["account_id"])
+            except BusinessError as e:
+                out["categories"], out["categories_error"] = [], e.message
+        return Response(out)
+
+
+class AutopilotChatView(_AutopilotBase):
+    def post(self, request):
+        return Response(ap.chat(str(request.data.get("message") or ""), request.data.get("plan") or {}, request.data.get("history") or []))
+
+
+class AutopilotConfirmView(_AutopilotBase):
+    def post(self, request):
+        return Response(ap.confirm(request.data.get("plan") or {}), status=201)
+
+
+class AutopilotHistoryView(_AutopilotBase):
+    def get(self, request):
+        return Response(ap.history(request.query_params.get("product_id")))
+
+
+class AutopilotActionView(_AutopilotBase):
+    def post(self, request, object_id, op):
+        if op == "publish":
+            return Response(ap.approve_and_publish(str(object_id)))
+        if op in ("pause", "resume"):
+            return Response(ap.set_status(str(object_id), op == "resume"))
+        if op == "run":
+            from apps.scheduler.engine import enqueue_run
+            if not fetch_one("""SELECT 1 FROM public.tenant_schedulers WHERE id = %s AND tenant_id = %s AND category = 'articles'
+                                AND coalesce((params->>'autopilot')::boolean, false)""", [str(object_id), request.tenant.tenant_id]):
+                raise BusinessError("programme not found", "not_found", status_code=404)
+            return Response({"run_id": enqueue_run(str(object_id), "manual")})
+        raise BusinessError("unknown action", "not_found", status_code=404)

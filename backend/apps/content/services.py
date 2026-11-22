@@ -174,7 +174,8 @@ def md_to_html(md: str) -> str:
     return re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r'<a href="\2">\1</a>', h)
 
 
-def cms_publish(account_id: str, kind: str, title: str, html_body: str, slug: str | None, external_id: str | None, status: str = "publish") -> tuple[str, str]:
+def cms_publish(account_id: str, kind: str, title: str, html_body: str, slug: str | None, external_id: str | None, status: str = "publish",
+                category_ids: list[int] | None = None) -> tuple[str, str]:
     acc = load_account(account_id)
     if acc.tenant_id != get_context().tenant_id:
         raise BusinessError("connector not found", "not_found", status_code=404)
@@ -184,7 +185,8 @@ def cms_publish(account_id: str, kind: str, title: str, html_body: str, slug: st
         auth = {"Authorization": "Basic " + b64encode(f"{cred['username']}:{cred['application_password']}".encode()).decode()}
         url = f"{site}/wp-json/wp/v2/{'pages' if kind == 'page' else 'posts'}" + (f"/{external_id}" if external_id else "")
         d = http("POST", url, provider="wordpress", operation=f"publish_{kind}", account_id=acc.id, headers=auth,
-                 json={"title": title, "content": html_body, "status": status, **({"slug": slug} if slug else {})}).json()
+                 json={"title": title, "content": html_body, "status": status, **({"slug": slug} if slug else {}),
+                       **({"categories": category_ids} if category_ids and kind != "page" else {})}).json()
         return str(d["id"]), d.get("link", "")
     if acc.provider == "ghost":
         import jwt as pyjwt
@@ -204,16 +206,20 @@ def cms_publish(account_id: str, kind: str, title: str, html_body: str, slug: st
     raise BusinessError(f"CMS {acc.provider} not supported yet", "not_implemented", status_code=501)
 
 
-def request_publication(content_id: str, account_id: str) -> dict:
+def request_publication(content_id: str, account_id: str, status: str = "publish", category_ids: list[int] | None = None,
+                        pre_approved: bool = False) -> dict:
+    """pre_approved: publication explicitly confirmed by a user beforehand (blog autopilot programme) — still blocked when the
+    workspace policy disables the action or limits it to analysis."""
     c = fetch_one("SELECT status, product_id, title FROM public.generated_contents WHERE id = %s AND tenant_id = %s", [content_id, get_context().tenant_id])
     if not c:
         raise BusinessError("content not found", "not_found", status_code=404)
     if c[0] != "approved":
         raise BusinessError("Content must be approved before publication", "not_approved", status_code=409)
     decision, approval = gate("content", "publish", entity_type="generated_contents", entity_id=content_id,
-                              payload={"account_id": account_id}, product_id=c[1])
+                              payload={"account_id": account_id, "status": status, "category_ids": category_ids}, product_id=c[1],
+                              already_approved=pre_approved)
     if decision == "execute":
-        return publish_content({"entity_id": content_id, "payload": {"account_id": account_id}})
+        return publish_content({"entity_id": content_id, "payload": {"account_id": account_id, "status": status, "category_ids": category_ids}})
     return {"status": decision, "approval_id": approval}
 
 
@@ -226,7 +232,9 @@ def publish_content(approval: dict) -> dict:
     pub = fetch_one("INSERT INTO public.content_publications (tenant_id, content_id, channel, status, connector_account_id) VALUES (%s,%s,'cms','scheduled',%s) RETURNING id",
                     [tid, cid, account_id])[0]
     try:
-        external_id, url = cms_publish(account_id, "post", title, md_to_html(body), None, ext)
+        external_id, url = cms_publish(account_id, "post", title, md_to_html(body), None, ext,
+                                       status="draft" if approval["payload"].get("status") == "draft" else "publish",
+                                       category_ids=approval["payload"].get("category_ids") or None)
     except BusinessError as e:
         fetch_one("UPDATE public.content_publications SET status = 'failed', error_message = %s WHERE id = %s RETURNING 1", [e.message, pub])
         from apps.notifications.service import notify

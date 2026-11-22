@@ -1,7 +1,7 @@
 import { Alert, Anchor } from "@mantine/core";
 import {
   IconAddressBook, IconBox, IconBrandWhatsapp, IconBulb, IconCalendarTime, IconChecklist, IconCreditCard, IconGauge, IconGitBranch,
-  IconHistory, IconLayout, IconMail, IconMessageChatbot, IconPencil, IconPlugConnected, IconRadar, IconReportAnalytics, IconSearch,
+  IconHistory, IconLayout, IconMail, IconMessageChatbot, IconPencil, IconPlugConnected, IconRadar, IconReportAnalytics, IconRobot, IconSearch,
   IconSend, IconSettings, IconShare, IconShieldLock, IconSparkles, IconStethoscope, IconTargetArrow, IconUsers, IconUserSearch, IconVideo,
   IconWorld, IconWorldSearch,
 } from "@tabler/icons-react";
@@ -35,6 +35,7 @@ export function TenantLayout() {
     { group: "Visibilité", to: `${b}/geo`, label: "GEO", icon: i(IconWorldSearch), show: m("geo", "geo.read") },
     { group: "Visibilité", to: `${b}/opportunities`, label: "Opportunités", icon: i(IconTargetArrow), show: m("opportunities", "opportunities.read") },
     { group: "Contenus", to: `${b}/content`, label: "Content Studio", icon: i(IconPencil), show: m("content", "content.read") },
+    { group: "Contenus", to: `${b}/autopilot`, label: "Publication automatique", icon: i(IconRobot), show: m("content", "content.read") },
     { group: "Contenus", to: `${b}/pages`, label: "Pages", icon: i(IconLayout), show: m("pages", "pages.read") },
     { group: "Contenus", to: `${b}/social`, label: "Réseaux sociaux", icon: i(IconShare), show: m("social", "social.read") },
     { group: "Contenus", to: `${b}/video`, label: "Vidéo", icon: i(IconVideo), show: m("video", "video.read") },

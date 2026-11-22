@@ -78,9 +78,15 @@ FORMS: dict[str, dict] = {
                              _field("base_url", "Région API", required=False, placeholder="https://api.mailgun.net (ou .eu)")],
                 "secrets": [_field("api_key", "Clé API Mailgun", secret=True, help="Mailgun → Settings → API Keys (Private API key).")]},
     "stripe": {"secrets": [_field("api_key", "Clé secrète Stripe", secret=True, placeholder="sk_live_…", help="Stripe → Développeurs → Clés API → clé secrète.")]},
-    "wordpress": {"settings": [_field("site_url", "Adresse du site", type="url", placeholder="https://votre-site.fr")],
-                  "secrets": [_U, _field("application_password", "Mot de passe d'application", secret=True,
-                                         help="WordPress → Utilisateurs → Profil → Mots de passe d'application.")]},
+    "wordpress": {"settings": [_field("site_url", "Adresse du site", type="url", placeholder="https://votre-site.fr",
+                                      help="Adresse publique en HTTPS. L'API REST doit répondre sur /wp-json (activée par défaut ; "
+                                           "Réglages → Permaliens : tout sauf « Simple »).")],
+                  "secrets": [_field("username", "Identifiant WordPress",
+                                     help="Identifiant d'un compte Auteur, Éditeur ou Administrateur (un compte dédié « Growth IA » est conseillé)."),
+                              _field("application_password", "Mot de passe d'application", secret=True, placeholder="xxxx xxxx xxxx xxxx xxxx xxxx",
+                                     help="WordPress → Utilisateurs → Profil → « Mots de passe d'application » : nommez-le « Growth IA », "
+                                          "cliquez sur Ajouter et copiez le code de 24 caractères (ce n'est pas votre mot de passe de connexion). "
+                                          "WordPress 5.6 minimum ; si la section n'apparaît pas, une extension de sécurité la désactive.")]},
     "ghost": {"settings": [_field("site_url", "Adresse du site", type="url", placeholder="https://votre-site.fr")],
               "secrets": [_field("admin_api_key", "Clé API Admin (id:secret)", secret=True, help="Ghost → Settings → Integrations → Add custom integration.")]},
     "rest_cms": {"settings": [_field("test_url", "URL de test (GET authentifié)", type="url", placeholder="https://api.exemple.com/me")],

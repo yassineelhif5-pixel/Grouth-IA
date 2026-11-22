@@ -155,7 +155,7 @@ def suggest_keywords(found: list[str], url: str) -> tuple[list[dict], str]:
         data = json.loads(res.text[res.text.find("["): res.text.rfind("]") + 1])
         return [{"keyword": str(d["keyword"])[:120], "intent": str(d.get("intent", ""))[:40], "why": str(d.get("why", ""))[:300]}
                 for d in data if d.get("keyword")][:15], "ai"
-    except (AINotConfigured, ValueError, KeyError, TypeError):
+    except (AINotConfigured, BusinessError, ValueError, KeyError, TypeError):  # AI is optional here: rules take over
         pass
     heads = [k for k in found if " " not in k][:4] or found[:4]
     out = []
@@ -350,7 +350,7 @@ def score_prospect(prospect_id: str) -> dict:
             system='Évalue de 0 à 100 l\'intérêt probable de cette entreprise pour le produit. JSON uniquement : {"score": 0-100, "reasons": "une phrase"}')
         j = json.loads(res.text[res.text.find("{"): res.text.rfind("}") + 1])
         total, method, reasons = round(0.5 * total + 0.5 * float(j["score"])), "hunt-ai-v1", str(j.get("reasons", ""))[:500]
-    except (AINotConfigured, ValueError, KeyError, TypeError):
+    except (AINotConfigured, BusinessError, ValueError, KeyError, TypeError):  # AI is optional here: rules take over
         pass
     score = max(0, min(100, round(total)))
     summary = reasons or "; ".join(f"{x['factor']} : {x['detail']}" for x in factors if x["points"])
@@ -414,7 +414,7 @@ def draft_email(prospect_id: str, contact_id: str | None = None) -> dict:
                     "Texte brut uniquement, sans formule de politesse ni signature."))
         if res.text.strip():
             intro, method = res.text.strip()[:1200], "ai"
-    except (AINotConfigured, ValueError):
+    except (AINotConfigured, BusinessError, ValueError, KeyError, TypeError):  # AI is optional here: rules take over
         pass
     body = (f"{hello}\n\n{intro}\n\n{pitch}\n\n"
             f"Je vous invite à l'essayer gratuitement pendant 2 jours, sans engagement :\n{trial}\n\n"

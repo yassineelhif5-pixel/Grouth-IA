@@ -363,7 +363,7 @@ function QuickScheduleCard() {
       product: kind === "geo" ? target : undefined, params: { [k.param]: target } } }),
     onSuccess: () => { setTarget(null); setName(""); notifications.show({ color: "green", message: "Séance programmée" }); void qc.invalidateQueries({ queryKey: ["/schedulers"] }); },
   });
-  const hint: Record<string, string> = { daily: "Heure HH:MM, ex. 08:30", weekly: "Jour et heure, ex. monday 08:30", monthly: "Jour et heure, ex. 1 08:30",
+  const hint: Record<string, string> = { daily: "Heure HH:MM, ex. 08:30", weekly: "Jour (0 = lundi … 6 = dimanche) et heure, ex. 0 08:30", monthly: "Jour et heure, ex. 1 08:30",
     every_x_hours: "Nombre d'heures, ex. 6", cron: "Expression cron, ex. 0 8 * * 1-5" };
   return (
     <Card withBorder mb="md">
