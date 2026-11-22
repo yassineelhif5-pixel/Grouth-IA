@@ -4,6 +4,7 @@ import {
   IconChecklist,
   IconPlugConnected,
   IconPencil,
+  IconChecklist,
   IconReportAnalytics,
   IconSearch,
   IconShare,
@@ -22,6 +23,20 @@ type MarketingArea = {
 };
 
 const areas: MarketingArea[] = [
+  {
+    title: "Profil marketing",
+    description: "Renseigner votre activité, vos offres, votre public cible et vos objectifs pour guider les échanges avec l'assistant.",
+    path: "/marketing/profile",
+    icon: IconChecklist,
+    status: "Configuration tenant",
+  },
+  {
+    title: "Calendrier éditorial",
+    description: "Consulter les campagnes préparées et les articles proposés après validation de la stratégie.",
+    path: "/marketing/calendar",
+    icon: IconCalendarTime,
+    status: "Planification",
+  },
   {
     title: "Assistant & stratégie IA",
     description: "Préparer votre stratégie marketing à partir de vos échanges avec l'assistant et définir vos priorités éditoriales.",
