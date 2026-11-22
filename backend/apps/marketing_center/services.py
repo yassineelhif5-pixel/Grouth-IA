@@ -65,6 +65,11 @@ def list_conversations() -> list[dict]:
 
 
 def get_messages(conversation_id: str) -> list[dict]:
+    owned = fetch_one("""SELECT id FROM public.tenant_marketing_conversations
+                          WHERE id=%s AND tenant_id=%s AND user_id=%s AND deleted_at IS NULL""",
+                      [conversation_id, _tid(), get_context().user_id])
+    if not owned:
+        raise BusinessError("Conversation introuvable.", "not_found", status_code=404)
     return fetch_all_dict("""SELECT id, role, content, metadata, provider_code, model_code, created_at
                               FROM public.tenant_marketing_messages
                              WHERE tenant_id=%s AND conversation_id=%s ORDER BY created_at, id""", [_tid(), conversation_id])
