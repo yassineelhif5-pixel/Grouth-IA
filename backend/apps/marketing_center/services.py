@@ -32,7 +32,7 @@ def get_profile() -> dict:
         return {}
     keys = ("id", "company_name", "industry", "offer", "target_audience", "differentiators", "objectives",
             "preferred_language", "website_url", "timezone", "publishing_policy")
-    return dict(zip(keys, row))
+    return dict(zip(keys, row, strict=True))
 
 
 def save_profile(data: dict) -> dict:
@@ -138,8 +138,8 @@ def propose_strategy(conversation_id: str) -> dict:
         data = r.json()
         if not isinstance(data, dict) or not isinstance(data.get("articles"), list):
             raise ValueError("Invalid strategy shape")
-    except (ValueError, TypeError, json.JSONDecodeError):
-        raise BusinessError("La proposition IA n'a pas retourné un format exploitable. Réessayez.", "invalid_ai_output", status_code=502)
+    except (ValueError, TypeError, json.JSONDecodeError) as err:
+        raise BusinessError("La proposition IA n'a pas retourné un format exploitable. Réessayez.", "invalid_ai_output", status_code=502) from err
     title = str(data.get("title") or "Stratégie marketing proposée")[:240]
     summary = str(data.get("summary") or "")[:10000]
     sid = fetch_one("""INSERT INTO public.tenant_marketing_strategies
@@ -223,8 +223,8 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
     try:
         tz = ZoneInfo(zone)
         start = date.fromisoformat(starts_on) if starts_on else datetime.now(tz).date()
-    except (ValueError, KeyError):
-        raise BusinessError("Date de début ou fuseau horaire invalide.", "invalid")
+    except (ValueError, KeyError) as err:
+        raise BusinessError("Date de début ou fuseau horaire invalide.", "invalid") from err
     duration = strategy.get("campaign_duration_weeks")
     try:
         weeks = max(1, min(52, int(duration or 8)))
