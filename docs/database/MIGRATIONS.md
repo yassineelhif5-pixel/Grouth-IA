@@ -14,6 +14,7 @@
 | `0010_notification_read_state.sql` | marquage lu contrôlé des notifications (journal append-only) | non |
 | `0020_tenant_marketing_center.sql` | profil marketing, conversations, messages append-only et stratégies (RLS tenant) | non |
 | `0021_tenant_marketing_campaigns.sql` | campagnes et backlog éditorial avec déduplication tenant | non |
+| `0022_tenant_marketing_scheduler.sql` | activation du scheduler, projet Content Studio et suivi des tentatives de génération | non |
 
 ## Règles
 
