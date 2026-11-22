@@ -329,6 +329,15 @@ def generate_editorial_item(item_id: str) -> dict:
     if not project:
         raise BusinessError("Le projet Content Studio associé n'est plus actif.", "invalid_state", status_code=409)
     content_id = item[7]
+    if content_id:
+        existing_content = fetch_one("""SELECT body,status FROM public.generated_contents
+                                         WHERE id=%s AND tenant_id=%s AND deleted_at IS NULL""", [content_id, tid])
+        if existing_content and existing_content[0]:
+            fetch_one("""UPDATE public.tenant_marketing_editorial_items
+                            SET status='draft',generated_at=coalesce(generated_at,now()),generation_error=NULL,updated_by=%s
+                          WHERE id=%s AND tenant_id=%s RETURNING id""", [get_context().user_id, item_id, tid])
+            return {"item_id": str(item_id), "content_id": str(content_id), "status": "draft",
+                    "title": item[1], "primary_keyword": item[3], "recovered_existing_draft": True}
     if not content_id:
         content_id = fetch_one("""INSERT INTO public.generated_contents
             (tenant_id,project_id,title,content_type,language,status,product_id,keyword,objective,channel,agent_code)
