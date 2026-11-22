@@ -4,7 +4,6 @@ import {
   IconChecklist,
   IconPlugConnected,
   IconPencil,
-  IconChecklist,
   IconReportAnalytics,
   IconSearch,
   IconShare,
