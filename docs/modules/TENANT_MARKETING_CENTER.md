@@ -33,7 +33,7 @@ Accès : protégé par l'authentification, le contexte tenant et la permission `
 - [ ] Assistant marketing conversationnel dédié et persistance du profil.
 - [ ] Génération et validation du récapitulatif stratégique.
 - [ ] Gestion éditoriale anti-duplication.
-- [ ] Orchestration des campagnes marketing et scheduler.
+- [x] Création de campagnes planifiées et calendrier éditorial tenant.\n- [ ] Activation du scheduler de génération à minuit et reprise des tâches interrompues.
 - [ ] Connexions et publication multicanale dédiées.
 - [ ] Centre YouTube et analytics marketing consolidés.
 
@@ -50,3 +50,33 @@ Accès : protégé par l'authentification, le contexte tenant et la permission `
 ## Vérification
 
 Le présent jalon est un point d'entrée UI. Les intégrations et les opérations de publication ne sont pas déclarées terminées par ce jalon. Exécuter `npm run typecheck`, `npm run lint`, `npm test` et `npm run build` depuis `frontend/` dans un environnement de développement avant déploiement.
+
+
+## API livrée
+
+- `GET/PUT /api/v1/marketing/profile` — profil marketing du tenant.
+- `GET /api/v1/marketing/conversations` — conversations de l'utilisateur dans le tenant.
+- `GET/POST /api/v1/marketing/chat` — historique et assistant conversationnel.
+- `GET/POST /api/v1/marketing/strategies` — liste et génération de propositions.
+- `PUT /api/v1/marketing/strategies/{id}` — modification d'une proposition avant validation.
+- `POST /api/v1/marketing/strategies/{id}/approve` — approbation explicite.
+- `GET/POST /api/v1/marketing/campaigns` — campagnes et backlog éditorial.
+
+## Tables ajoutées
+
+- `tenant_marketing_profiles`
+- `tenant_marketing_conversations`
+- `tenant_marketing_messages` (journal append-only)
+- `tenant_marketing_strategies`
+- `tenant_marketing_campaigns`
+- `tenant_marketing_editorial_items`
+
+Migrations : `0020_tenant_marketing_center.sql` et `0021_tenant_marketing_campaigns.sql`, chargées par les migrations Django `0009` et `0010`. Les règles RLS isolent les données par tenant. Les conversations sont également limitées à leur propriétaire utilisateur.
+
+## Limites explicites de ce jalon
+
+- La création d'une campagne crée un backlog d'articles datés, mais ne déclenche pas encore de tâche Celery.
+- L'heure 00:00 est enregistrée comme configuration prévue ; le scheduler marketing dédié reste à développer.
+- Les articles ne sont pas encore générés automatiquement dans Content Studio depuis le backlog.
+- Les connecteurs WordPress/LinkedIn/Facebook/X/YouTube ne sont pas encore orchestrés par cette nouvelle campagne.
+- La déduplication actuelle est exacte (empreinte normalisée titre + mot-clé), pas encore sémantique/embeddings.
