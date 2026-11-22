@@ -18261,6 +18261,8 @@ END $$;
 COMMENT ON TABLE public.tenant_marketing_campaigns IS 'Editorial campaigns generated from an approved tenant marketing strategy. Creation does not activate publication.';
 COMMENT ON TABLE public.tenant_marketing_editorial_items IS 'Planned article backlog with tenant-wide deduplication hash; publication requires later approval.';
 
+
+
 -- >>> 0022_tenant_marketing_scheduler.sql
 -- Tenant Marketing Center: scheduler configuration and safe draft generation tracking.
 -- The scheduler only creates Growth AI drafts. It never approves or publishes content.
@@ -18282,7 +18284,7 @@ ALTER TABLE public.tenant_marketing_editorial_items
 
 CREATE INDEX IF NOT EXISTS ix_marketing_due_items
   ON public.tenant_marketing_editorial_items(status,planned_for,updated_at)
-  WHERE deleted_at IS NULL AND status IN ('planned','queued');
+  WHERE deleted_at IS NULL AND status IN ('planned','queued','failed');
 
 COMMENT ON COLUMN public.tenant_marketing_campaigns.generation_enabled IS
   'Explicit tenant opt-in for scheduled draft generation. This does not enable publishing.';
