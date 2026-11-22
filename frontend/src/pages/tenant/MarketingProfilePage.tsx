@@ -34,7 +34,7 @@ export function MarketingProfilePage() {
       qc.invalidateQueries({ queryKey: ["marketing-profile", tenantId] });
     },
   });
-  const set = (key: keyof Profile, value: string) => setForm((old) => ({ ...old, [key]: value }));
+  const set = (key: Exclude<keyof Profile, "objectives">, value: string) => setForm((old) => ({ ...old, [key]: value }));
   return (
     <Stack gap="lg">
       <div>
