@@ -185,10 +185,16 @@ def list_campaigns() -> list[dict]:
     return fetch_all_dict("""SELECT c.id,c.strategy_id,c.name,c.status,c.timezone,c.generation_time,c.publish_requires_approval,
                                     c.starts_on,c.ends_on,c.created_at,
                                     (SELECT count(*) FROM public.tenant_marketing_editorial_items i
-                                      WHERE i.tenant_id=c.tenant_id AND i.campaign_id=c.id AND i.deleted_at IS NULL) AS article_count
+                                      WHERE i.tenant_id=c.tenant_id AND i.campaign_id=c.id AND i.deleted_at IS NULL) AS article_count,
+                                    coalesce((SELECT json_agg(json_build_object(
+                                      'id',i.id,'title',i.title,'angle',i.angle,'primary_keyword',i.primary_keyword,
+                                      'secondary_keywords',i.secondary_keywords,'search_intent',i.search_intent,
+                                      'status',i.status,'planned_for',i.planned_for,'published_url',i.published_url
+                                    ) ORDER BY i.planned_for,i.created_at)
+                                      FROM public.tenant_marketing_editorial_items i
+                                     WHERE i.tenant_id=c.tenant_id AND i.campaign_id=c.id AND i.deleted_at IS NULL),'[]'::json) AS articles
                                FROM public.tenant_marketing_campaigns c
                               WHERE c.tenant_id=%s AND c.deleted_at IS NULL ORDER BY c.created_at DESC LIMIT 50""", [_tid()])
-
 
 def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
     import hashlib
