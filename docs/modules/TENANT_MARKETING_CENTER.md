@@ -33,7 +33,8 @@ Accès : protégé par l'authentification, le contexte tenant et la permission `
 - [x] Modification des titres et mots-clés avant approbation.
 - [x] Approbation explicite avant création d'une campagne.
 - [x] Backlog éditorial et calendrier tenant.
-- [x] Déduplication exacte par empreinte normalisée titre + mot-clé.
+- [x] Déduplication exacte par empreinte normalisée titre + mot-clé, avec vérification des contenus déjà présents dans Content Studio.
+- [x] Synchronisation des statuts de revue et de publication depuis Content Studio dans le calendrier marketing.
 - [ ] Détection sémantique avancée des sujets similaires.
 - [x] Scheduler Celery marketing vérifiant chaque minute les campagnes dues selon le fuseau horaire du tenant.
 - [x] Activation/désactivation explicite de la génération, avec sélection d'un projet Content Studio.
@@ -84,6 +85,7 @@ Migrations : `0020_tenant_marketing_center.sql`, `0021_tenant_marketing_campaign
 ## Limites explicites de ce jalon
 
 - Le scheduler crée uniquement des brouillons dans Content Studio ; la validation et la publication restent des actions distinctes.
+- Les statuts du calendrier reflètent le statut réel du contenu associé (draft, review, approved, published).
 - Les échecs de génération sont retentés jusqu'à trois tentatives, avec récupération des tâches bloquées.
 - La déduplication actuelle est exacte (empreinte normalisée titre + mot-clé), pas encore sémantique/embeddings.
 - Les connecteurs WordPress/LinkedIn/Facebook/X/YouTube ne sont pas encore orchestrés par cette nouvelle campagne.
