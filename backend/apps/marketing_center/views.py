@@ -89,3 +89,31 @@ class MarketingCampaignsView(GrowthAPIView):
         if not strategy_id:
             raise BusinessError("strategy_id is required", "invalid")
         return Response(s.create_campaign(strategy_id, request.data.get("starts_on")), status=201)
+
+
+
+class MarketingContentProjectsView(GrowthAPIView):
+    required_module = "content"
+    permission_map = {"GET": "content.read"}
+
+    def get(self, request):
+        return Response(s.list_content_projects())
+
+
+class MarketingCampaignActivateView(GrowthAPIView):
+    required_module = "content"
+    permission_map = {"POST": "content.write"}
+
+    def post(self, request, campaign_id):
+        project_id = request.data.get("content_project_id")
+        if not project_id:
+            raise BusinessError("content_project_id is required", "invalid")
+        return Response(s.activate_campaign(campaign_id, project_id))
+
+
+class MarketingCampaignPauseView(GrowthAPIView):
+    required_module = "content"
+    permission_map = {"POST": "content.write"}
+
+    def post(self, request, campaign_id):
+        return Response(s.pause_campaign(campaign_id))
