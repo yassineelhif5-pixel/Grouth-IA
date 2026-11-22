@@ -194,13 +194,14 @@ def list_campaigns() -> list[dict]:
                                     (SELECT count(*) FROM public.tenant_marketing_editorial_items i
                                       WHERE i.tenant_id=c.tenant_id AND i.campaign_id=c.id AND i.deleted_at IS NULL) AS article_count,
                                     coalesce((SELECT json_agg(json_build_object(
-                                      'id',i.id,'title',i.title,'angle',i.angle,'primary_keyword',i.primary_keyword,
+                                      'id',i.id,'title',coalesce(gc.title,i.title),'angle',i.angle,'primary_keyword',i.primary_keyword,
                                       'secondary_keywords',i.secondary_keywords,'search_intent',i.search_intent,
-                                      'status',i.status,'planned_for',i.planned_for,'published_url',i.published_url,
+                                      'status',coalesce(gc.status,i.status),'planned_for',i.planned_for,'published_url',coalesce(gc.published_url,i.published_url),
                                       'content_id',i.generated_content_id,'generation_attempts',i.generation_attempts,
                                       'generation_error',i.generation_error
                                     ) ORDER BY i.planned_for,i.created_at)
                                       FROM public.tenant_marketing_editorial_items i
+                                      LEFT JOIN public.generated_contents gc ON gc.id=i.generated_content_id AND gc.tenant_id=i.tenant_id AND gc.deleted_at IS NULL
                                      WHERE i.tenant_id=c.tenant_id AND i.campaign_id=c.id AND i.deleted_at IS NULL),'[]'::json) AS articles
                                FROM public.tenant_marketing_campaigns c
                                LEFT JOIN public.content_projects p ON p.id=c.content_project_id AND p.tenant_id=c.tenant_id
