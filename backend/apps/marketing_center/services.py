@@ -262,3 +262,101 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
             "generation_time": "00:00", "publish_requires_approval": True,
             "articles_created": inserted, "duplicates_skipped": duplicates,
             "note": "Calendrier préparé. Aucune génération automatique ni publication n'est activée à ce stade."}
+
+
+
+def list_content_projects() -> list[dict]:
+    return fetch_all_dict("""SELECT id,name,product_id,status
+                               FROM public.content_projects
+                              WHERE tenant_id=%s AND deleted_at IS NULL AND status='active'
+                              ORDER BY name""", [_tid()])
+
+
+def activate_campaign(campaign_id: str, content_project_id: str) -> dict:
+    tid, uid = _tid(), get_context().user_id
+    project = fetch_one("""SELECT id,name,product_id FROM public.content_projects
+                            WHERE id=%s AND tenant_id=%s AND deleted_at IS NULL AND status='active'""",
+                        [content_project_id, tid])
+    if not project:
+        raise BusinessError("Projet Content Studio introuvable ou inactif pour ce tenant.", "not_found", status_code=404)
+    campaign = fetch_one("""SELECT id,status,generation_enabled FROM public.tenant_marketing_campaigns
+                             WHERE id=%s AND tenant_id=%s AND deleted_at IS NULL""", [campaign_id, tid])
+    if not campaign:
+        raise BusinessError("Campagne introuvable.", "not_found", status_code=404)
+    if campaign[1] not in ("planned", "paused"):
+        raise BusinessError("Seule une campagne planifiée ou en pause peut être activée.", "invalid_state", status_code=409)
+    if campaign[2]:
+        raise BusinessError("La génération de cette campagne est déjà activée.", "already_active", status_code=409)
+    fetch_one("""UPDATE public.tenant_marketing_campaigns
+                    SET content_project_id=%s,generation_enabled=true,status='active',updated_by=%s
+                  WHERE id=%s AND tenant_id=%s RETURNING id""", [content_project_id, uid, campaign_id, tid])
+    return {"id": str(campaign_id), "status": "active", "generation_enabled": True,
+            "content_project_id": str(project[0]), "content_project_name": project[1],
+            "timezone": fetch_one("SELECT timezone FROM public.tenant_marketing_campaigns WHERE id=%s", [campaign_id])[0],
+            "generation_time": "00:00", "publish_requires_approval": True,
+            "note": "Génération automatique de brouillons activée. Aucun contenu ne sera publié sans validation et action de publication distincte."}
+
+
+def pause_campaign(campaign_id: str) -> dict:
+    tid, uid = _tid(), get_context().user_id
+    row = fetch_one("""UPDATE public.tenant_marketing_campaigns
+                          SET status='paused',generation_enabled=false,updated_by=%s
+                        WHERE id=%s AND tenant_id=%s AND deleted_at IS NULL AND status='active'
+                        RETURNING id""", [uid, campaign_id, tid])
+    if not row:
+        raise BusinessError("Campagne active introuvable.", "not_found", status_code=404)
+    return {"id": str(campaign_id), "status": "paused", "generation_enabled": False}
+
+
+def generate_editorial_item(item_id: str) -> dict:
+    tid = _tid()
+    item = fetch_one("""SELECT i.id,i.title,i.angle,i.primary_keyword,i.secondary_keywords,i.search_intent,i.faq,
+                               i.generated_content_id,c.content_project_id,c.name,c.timezone
+                          FROM public.tenant_marketing_editorial_items i
+                          JOIN public.tenant_marketing_campaigns c ON c.id=i.campaign_id AND c.tenant_id=i.tenant_id
+                         WHERE i.id=%s AND i.tenant_id=%s AND i.deleted_at IS NULL
+                           AND c.status='active' AND c.generation_enabled=true""", [item_id, tid])
+    if not item:
+        raise BusinessError("Article éditorial non disponible pour la génération.", "not_found", status_code=404)
+    project_id = item[8]
+    if not project_id:
+        raise BusinessError("Aucun projet Content Studio n'est associé à la campagne.", "invalid_state", status_code=409)
+    project = fetch_one("""SELECT product_id FROM public.content_projects
+                            WHERE id=%s AND tenant_id=%s AND deleted_at IS NULL AND status='active'""", [project_id, tid])
+    if not project:
+        raise BusinessError("Le projet Content Studio associé n'est plus actif.", "invalid_state", status_code=409)
+    content_id = item[7]
+    if not content_id:
+        content_id = fetch_one("""INSERT INTO public.generated_contents
+            (tenant_id,project_id,title,content_type,language,status,product_id,keyword,objective,channel,agent_code)
+            VALUES (%s,%s,%s,'article',coalesce((SELECT preferred_language FROM public.tenant_marketing_profiles
+             WHERE tenant_id=%s AND deleted_at IS NULL),'fr'),'draft',%s,%s,%s,'website','marketing_center')
+            RETURNING id""",
+            [tid, project_id, item[1], tid, project[0], item[3], item[2] or item[5] or "Article de blog informatif"])[0]
+        fetch_one("""UPDATE public.tenant_marketing_editorial_items
+                        SET generated_content_id=%s,updated_by=%s
+                      WHERE id=%s AND tenant_id=%s RETURNING id""",
+                  [content_id, get_context().user_id, item_id, tid])
+    secondary = item[4] if isinstance(item[4], list) else json.loads(item[4] or "[]")
+    faq = item[6] if isinstance(item[6], list) else json.loads(item[6] or "[]")
+    profile = get_profile()
+    brief = (
+        "Rédige un article de blog original, utile et structuré en Markdown.\n"
+        f"Contexte entreprise communiqué par le client : {profile.get('company_name') or '-'}; secteur : {profile.get('industry') or '-'}; "
+        f"offre : {profile.get('offer') or '-'}; public : {profile.get('target_audience') or '-'}; différenciation : {profile.get('differentiators') or '-'}\n"
+        f"Angle éditorial : {item[2] or '-'}\nIntention de recherche : {item[5] or '-'}\n"
+        f"Mot-clé principal : {item[3]}\nMots-clés secondaires : {', '.join(secondary)}\n"
+        f"Questions FAQ proposées : {json.dumps(faq, ensure_ascii=False)}\n"
+        "N'invente aucune donnée chiffrée, référence, étude, client, fonctionnalité ou promesse. "
+        "Si une information factuelle manque, indique clairement [À VÉRIFIER]. "
+        "Structure avec une introduction, des titres H2/H3, des exemples pratiques et une conclusion. "
+        "Ajoute une FAQ uniquement si les questions fournies sont pertinentes. "
+        "Ne prétends pas que l'article est publié ou indexé."
+    )
+    from apps.content.services import generate
+    result = generate(str(content_id), "generate", brief)
+    fetch_one("""UPDATE public.tenant_marketing_editorial_items
+                    SET status='draft',generated_at=now(),generation_error=NULL,updated_by=%s
+                  WHERE id=%s AND tenant_id=%s RETURNING id""", [get_context().user_id, item_id, tid])
+    return {"item_id": str(item_id), "content_id": str(content_id), "status": "draft",
+            "title": item[1], "primary_keyword": item[3], **result}
