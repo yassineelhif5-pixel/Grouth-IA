@@ -12,6 +12,8 @@
 | `0008_storage.sql` | buckets privés + politiques Storage | non |
 | `0009_django_schema.sql` | schéma privé `django` pour les tables internes Django/Celery Beat | non |
 | `0010_notification_read_state.sql` | marquage lu contrôlé des notifications (journal append-only) | non |
+| `0020_tenant_marketing_center.sql` | profil marketing, conversations, messages append-only et stratégies (RLS tenant) | non |
+| `0021_tenant_marketing_campaigns.sql` | campagnes et backlog éditorial avec déduplication tenant | non |
 
 ## Règles
 
