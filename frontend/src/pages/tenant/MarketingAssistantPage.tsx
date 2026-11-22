@@ -70,7 +70,12 @@ export function MarketingAssistantPage() {
       qc.invalidateQueries({ queryKey: ["marketing-strategies", tenantId] });
     },
   });
-  const campaign = useMutation({\n    mutationFn: () => api<{ id: string; articles_created: number; duplicates_skipped: number; note: string }>("/marketing/campaigns", {\n      method: "POST", tenantId, body: { strategy_id: strategy?.id },\n    }),\n  });\n  const approve = useMutation({
+  const campaign = useMutation({
+    mutationFn: () => api<{ id: string; articles_created: number; duplicates_skipped: number; note: string }>("/marketing/campaigns", {
+      method: "POST", tenantId, body: { strategy_id: strategy?.id },
+    }),
+  });
+  const approve = useMutation({
     mutationFn: () => api<{ status: string }>("/marketing/strategies/" + strategy?.id + "/approve", { method: "POST", tenantId, body: {} }),
     onSuccess: (result) => setStrategy((old) => old ? { ...old, status: result.status } : old),
   });
@@ -177,7 +182,10 @@ export function MarketingAssistantPage() {
               {strategy.strategy.questions?.length ? <Alert color="yellow" title="Points à préciser"><Text size="sm">{strategy.strategy.questions.join(" · ")}</Text></Alert> : null}
               <Group justify="flex-end">
                 {strategy.status === "proposed" && <Button color="teal" leftSection={<IconCheck size={16} />} onClick={() => approve.mutate()} loading={approve.isPending}>Approuver la stratégie</Button>}
+                {strategy.status === "approved" && <Button onClick={() => campaign.mutate()} loading={campaign.isPending}>Créer le calendrier éditorial</Button>}
               </Group>
+              {campaign.data && <Alert color="green" title="Calendrier préparé">{campaign.data.articles_created} articles ajoutés · {campaign.data.duplicates_skipped} doublons ignorés. {campaign.data.note}</Alert>}
+              {campaign.isError && <Alert color="red">{campaign.error instanceof Error ? campaign.error.message : "Erreur de création du calendrier."}</Alert>}
               {approve.isError && <Alert color="red">{approve.error instanceof Error ? approve.error.message : "Erreur d'approbation."}</Alert>}
             </Stack>
           </Card>}
