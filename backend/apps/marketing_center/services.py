@@ -281,7 +281,7 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
     return {"id": str(campaign_id), "name": name, "status": "planned", "timezone": zone,
             "generation_time": "00:00", "publish_requires_approval": True,
             "articles_created": inserted, "duplicates_skipped": duplicates,
-            "note": "Calendrier préparé. Aucune génération automatique ni publication n'est activée à ce stade."}
+            "note": "Calendrier préparé. Activez explicitement la campagne pour générer des brouillons à minuit. Aucune publication automatique n'est activée."}
 
 
 
