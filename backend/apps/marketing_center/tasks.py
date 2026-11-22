@@ -71,10 +71,11 @@ def generate_editorial_item(item_id: str):
         result = services.generate_editorial_item(item_id)
         logger.info("Marketing article draft generated", extra={"item_id": item_id, "content_id": result.get("content_id")})
         return result
-    except Exception as exc:  # noqa: BLE001 - persist a retryable item failure, do not publish or swallow task state
+    except Exception as exc:  # noqa: BLE001 - persist a retryable item failure; never publish
+        from apps.core.redaction import redact_text
         fetch_one("""UPDATE public.tenant_marketing_editorial_items
                         SET status='failed',generation_error=%s,updated_at=now()
                       WHERE id=%s AND tenant_id=%s RETURNING id""",
-                  [str(exc)[:2000], item_id, get_context().tenant_id])
-        logger.exception("Marketing editorial draft generation failed", extra={"item_id": item_id})
-        return {"item_id": item_id, "status": "failed", "error": str(exc)[:500]}
+                  [redact_text(str(exc))[:2000], item_id, get_context().tenant_id])
+        logger.error("Marketing editorial draft generation failed", extra={"item_id": item_id, "error_type": type(exc).__name__})
+        return {"item_id": item_id, "status": "failed", "error": redact_text(str(exc))[:500]}
