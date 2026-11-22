@@ -1,5 +1,4 @@
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from apps.core.exceptions import BusinessError
 from apps.core.views import GrowthAPIView
@@ -40,7 +39,6 @@ class MarketingChatView(GrowthAPIView):
         if not cid:
             raise BusinessError("conversation_id is required", "invalid")
         # Ownership and tenant isolation are checked before messages are returned.
-        s.get_messages(cid)
         return Response(s.get_messages(cid))
 
     def post(self, request):
