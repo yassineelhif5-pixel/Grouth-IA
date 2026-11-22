@@ -70,7 +70,7 @@ export function MarketingAssistantPage() {
       qc.invalidateQueries({ queryKey: ["marketing-strategies", tenantId] });
     },
   });
-  const approve = useMutation({
+  const campaign = useMutation({\n    mutationFn: () => api<{ id: string; articles_created: number; duplicates_skipped: number; note: string }>("/marketing/campaigns", {\n      method: "POST", tenantId, body: { strategy_id: strategy?.id },\n    }),\n  });\n  const approve = useMutation({
     mutationFn: () => api<{ status: string }>("/marketing/strategies/" + strategy?.id + "/approve", { method: "POST", tenantId, body: {} }),
     onSuccess: (result) => setStrategy((old) => old ? { ...old, status: result.status } : old),
   });
