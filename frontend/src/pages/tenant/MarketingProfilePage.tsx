@@ -55,8 +55,8 @@ function MarketingProfileForm({ tenantId, initialProfile }: { tenantId: string; 
           <Textarea label="Public cible" minRows={2} value={form.target_audience ?? ""} onChange={(e) => set("target_audience", e.currentTarget.value)} />
           <Textarea label="Différenciation et avantages" minRows={2} value={form.differentiators ?? ""} onChange={(e) => set("differentiators", e.currentTarget.value)} />
           <Textarea label="Objectifs marketing (un par ligne)" minRows={3}
-            value={(form.objectives ?? []).join("\\n")}
-            onChange={(e) => setForm((old) => ({ ...old, objectives: e.currentTarget.value.split("\\n").map((x) => x.trim()).filter(Boolean) }))} />
+            value={(form.objectives ?? []).join("\n")}
+            onChange={(e) => setForm((old) => ({ ...old, objectives: e.currentTarget.value.split("\n").map((x) => x.trim()).filter(Boolean) }))} />
           <TextInput label="Site web (facultatif)" placeholder="https://exemple.fr" value={form.website_url ?? ""} onChange={(e) => set("website_url", e.currentTarget.value)} />
           <TextInput label="Fuseau horaire" value={form.timezone ?? "Europe/Paris"} onChange={(e) => set("timezone", e.currentTarget.value)} />
           <Group justify="flex-end">
