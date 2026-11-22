@@ -275,6 +275,8 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
                 inserted += 1
             else:
                 duplicates += 1
+        if inserted == 0:
+            raise BusinessError("Tous les articles proposés existent déjà ou sont incomplets. Modifiez la stratégie avant de créer une campagne.", "no_unique_articles", status_code=409)
 
     return {"id": str(campaign_id), "name": name, "status": "planned", "timezone": zone,
             "generation_time": "00:00", "publish_requires_approval": True,
