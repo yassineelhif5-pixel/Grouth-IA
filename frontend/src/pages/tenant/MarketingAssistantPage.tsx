@@ -10,6 +10,7 @@ import {
   Stack,
   Text,
   Textarea,
+  TextInput,
   Title,
 } from "@mantine/core";
 import { IconCheck, IconMessageChatbot, IconSparkles } from "@tabler/icons-react";
@@ -42,6 +43,10 @@ export function MarketingAssistantPage() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [strategy, setStrategy] = useState<Strategy | null>(null);
+  const [editingStrategy, setEditingStrategy] = useState(false);
+  const [strategyTitle, setStrategyTitle] = useState("");
+  const [strategySummary, setStrategySummary] = useState("");
+  const [strategyEditor, setStrategyEditor] = useState<Strategy["strategy"] | null>(null);
   const conversations = useQuery({
     queryKey: ["marketing-conversations", tenantId],
     queryFn: () => api<Conversation[]>("/marketing/conversations", { tenantId }),
@@ -67,7 +72,23 @@ export function MarketingAssistantPage() {
     }),
     onSuccess: (result) => {
       setStrategy(result);
+      setStrategyTitle(result.title);
+      setStrategySummary(result.summary);
+      setStrategyEditor(result.strategy);
+      setEditingStrategy(false);
       qc.invalidateQueries({ queryKey: ["marketing-strategies", tenantId] });
+    },
+  });
+  const saveStrategy = useMutation({
+    mutationFn: () => api<Strategy>("/marketing/strategies/" + strategy?.id, {
+      method: "PUT", tenantId, body: { title: strategyTitle, summary: strategySummary, strategy: strategyEditor },
+    }),
+    onSuccess: (result) => {
+      setStrategy(result);
+      setStrategyTitle(result.title);
+      setStrategySummary(result.summary);
+      setStrategyEditor(result.strategy);
+      setEditingStrategy(false);
     },
   });
   const campaign = useMutation({
@@ -164,26 +185,52 @@ export function MarketingAssistantPage() {
                 <Title order={4}>{strategy.title}</Title>
                 <Badge color={strategy.status === "approved" ? "green" : "yellow"}>{strategy.status}</Badge>
               </Group>
-              <Text size="sm">{strategy.summary}</Text>
-              {strategy.strategy.objectives?.length ? <div><Text fw={600} size="sm">Objectifs</Text><Text size="sm">{strategy.strategy.objectives.join(" · ")}</Text></div> : null}
-              {strategy.strategy.target_audiences?.length ? <div><Text fw={600} size="sm">Publics cibles</Text><Text size="sm">{strategy.strategy.target_audiences.join(" · ")}</Text></div> : null}
-              {strategy.strategy.editorial_pillars?.length ? <div><Text fw={600} size="sm">Piliers éditoriaux</Text><Text size="sm">{strategy.strategy.editorial_pillars.join(" · ")}</Text></div> : null}
-              <Stack gap="xs">
-                <Text fw={600} size="sm">Articles proposés</Text>
-                {strategy.strategy.articles?.map((article, index) => (
-                  <Paper key={index} withBorder p="sm" radius="sm">
-                    <Text fw={600} size="sm">{article.title}</Text>
-                    {article.angle && <Text size="xs" c="dimmed">{article.angle}</Text>}
-                    <Text size="xs" mt={4}>Mot-clé principal : <b>{article.primary_keyword || "À définir"}</b></Text>
-                    {article.secondary_keywords?.length ? <Text size="xs" c="dimmed">Secondaires : {article.secondary_keywords.join(", ")}</Text> : null}
-                  </Paper>
-                ))}
-              </Stack>
-              {strategy.strategy.questions?.length ? <Alert color="yellow" title="Points à préciser"><Text size="sm">{strategy.strategy.questions.join(" · ")}</Text></Alert> : null}
-              <Group justify="flex-end">
-                {strategy.status === "proposed" && <Button color="teal" leftSection={<IconCheck size={16} />} onClick={() => approve.mutate()} loading={approve.isPending}>Approuver la stratégie</Button>}
-                {strategy.status === "approved" && <Button onClick={() => campaign.mutate()} loading={campaign.isPending}>Créer le calendrier éditorial</Button>}
-              </Group>
+              {editingStrategy && strategyEditor ? (
+                <Stack gap="sm">
+                  <TextInput label="Titre de la stratégie" value={strategyTitle} onChange={(e) => setStrategyTitle(e.currentTarget.value)} />
+                  <Textarea label="Récapitulatif" value={strategySummary} onChange={(e) => setStrategySummary(e.currentTarget.value)} minRows={3} />
+                  <Text fw={600} size="sm">Modifier les articles et mots-clés</Text>
+                  {strategyEditor.articles?.map((article, index) => (
+                    <Paper key={index} withBorder p="sm" radius="sm">
+                      <TextInput label="Titre" value={article.title} onChange={(e) => setStrategyEditor((old) => old ? ({
+                        ...old, articles: (old.articles ?? []).map((item, i) => i === index ? { ...item, title: e.currentTarget.value } : item),
+                      }) : old)} />
+                      <TextInput mt="xs" label="Mot-clé principal" value={article.primary_keyword ?? ""} onChange={(e) => setStrategyEditor((old) => old ? ({
+                        ...old, articles: (old.articles ?? []).map((item, i) => i === index ? { ...item, primary_keyword: e.currentTarget.value } : item),
+                      }) : old)} />
+                    </Paper>
+                  ))}
+                  <Group justify="flex-end">
+                    <Button variant="default" onClick={() => { setEditingStrategy(false); setStrategyEditor(strategy.strategy); setStrategyTitle(strategy.title); setStrategySummary(strategy.summary); }}>Annuler</Button>
+                    <Button onClick={() => saveStrategy.mutate()} loading={saveStrategy.isPending}>Enregistrer les modifications</Button>
+                  </Group>
+                  {saveStrategy.isError && <Alert color="red">{saveStrategy.error instanceof Error ? saveStrategy.error.message : "Erreur de sauvegarde."}</Alert>}
+                </Stack>
+              ) : (
+                <>
+                  <Text size="sm">{strategy.summary}</Text>
+                  {strategy.strategy.objectives?.length ? <div><Text fw={600} size="sm">Objectifs</Text><Text size="sm">{strategy.strategy.objectives.join(" · ")}</Text></div> : null}
+                  {strategy.strategy.target_audiences?.length ? <div><Text fw={600} size="sm">Publics cibles</Text><Text size="sm">{strategy.strategy.target_audiences.join(" · ")}</Text></div> : null}
+                  {strategy.strategy.editorial_pillars?.length ? <div><Text fw={600} size="sm">Piliers éditoriaux</Text><Text size="sm">{strategy.strategy.editorial_pillars.join(" · ")}</Text></div> : null}
+                  <Stack gap="xs">
+                    <Text fw={600} size="sm">Articles proposés</Text>
+                    {strategy.strategy.articles?.map((article, index) => (
+                      <Paper key={index} withBorder p="sm" radius="sm">
+                        <Text fw={600} size="sm">{article.title}</Text>
+                        {article.angle && <Text size="xs" c="dimmed">{article.angle}</Text>}
+                        <Text size="xs" mt={4}>Mot-clé principal : <b>{article.primary_keyword || "À définir"}</b></Text>
+                        {article.secondary_keywords?.length ? <Text size="xs" c="dimmed">Secondaires : {article.secondary_keywords.join(", ")}</Text> : null}
+                      </Paper>
+                    ))}
+                  </Stack>
+                  {strategy.strategy.questions?.length ? <Alert color="yellow" title="Points à préciser"><Text size="sm">{strategy.strategy.questions.join(" · ")}</Text></Alert> : null}
+                  <Group justify="flex-end">
+                    {strategy.status === "proposed" && <Button variant="default" onClick={() => { setEditingStrategy(true); setStrategyEditor(strategy.strategy); setStrategyTitle(strategy.title); setStrategySummary(strategy.summary); }}>Modifier la proposition</Button>}
+                    {strategy.status === "proposed" && <Button color="teal" leftSection={<IconCheck size={16} />} onClick={() => approve.mutate()} loading={approve.isPending}>Approuver la stratégie</Button>}
+                    {strategy.status === "approved" && <Button onClick={() => campaign.mutate()} loading={campaign.isPending}>Créer le calendrier éditorial</Button>}
+                  </Group>
+                </>
+              )}
               {campaign.data && <Alert color="green" title="Calendrier préparé">{campaign.data.articles_created} articles ajoutés · {campaign.data.duplicates_skipped} doublons ignorés. {campaign.data.note}</Alert>}
               {campaign.isError && <Alert color="red">{campaign.error instanceof Error ? campaign.error.message : "Erreur de création du calendrier."}</Alert>}
               {approve.isError && <Alert color="red">{approve.error instanceof Error ? approve.error.message : "Erreur d'approbation."}</Alert>}
