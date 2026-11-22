@@ -26,3 +26,11 @@ COMMENT ON COLUMN public.tenant_marketing_campaigns.content_project_id IS
   'Tenant-owned Content Studio project used as the destination for generated drafts.';
 COMMENT ON COLUMN public.tenant_marketing_editorial_items.generation_attempts IS
   'Number of scheduler dispatch attempts; stale queued items can be recovered safely.';
+
+DO $$ BEGIN
+  ALTER TABLE public.tenant_marketing_editorial_items
+    DROP CONSTRAINT IF EXISTS tenant_marketing_editorial_items_status_check;
+  ALTER TABLE public.tenant_marketing_editorial_items
+    ADD CONSTRAINT tenant_marketing_editorial_items_status_check
+    CHECK (status IN ('planned','queued','generating','draft','review','approved','published','skipped','failed'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
