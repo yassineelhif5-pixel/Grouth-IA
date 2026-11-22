@@ -39,6 +39,7 @@ def dispatch_due_items():
                  AND i.deleted_at IS NULL
                  AND i.status IN ('planned','failed')
                  AND i.generation_attempts < 3
+                 AND (c.ends_on IS NULL OR (now() AT TIME ZONE c.timezone)::date <= c.ends_on)
                  AND i.planned_for <= (now() AT TIME ZONE c.timezone)::date
                  AND (now() AT TIME ZONE c.timezone)::time >= c.generation_time
                ORDER BY i.planned_for,i.created_at
