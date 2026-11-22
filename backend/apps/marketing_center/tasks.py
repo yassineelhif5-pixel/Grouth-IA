@@ -70,6 +70,6 @@ def generate_editorial_item(item_id: str):
         fetch_one("""UPDATE public.tenant_marketing_editorial_items
                         SET status='failed',generation_error=%s,updated_at=now()
                       WHERE id=%s AND tenant_id=%s RETURNING id""",
-                  [str(exc)[:2000], item_id, __import__("apps.core.context", fromlist=["get_context"]).get_context().tenant_id])
+                  [str(exc)[:2000], item_id, get_context().tenant_id])
         logger.exception("Marketing editorial draft generation failed", extra={"item_id": item_id})
         return {"item_id": item_id, "status": "failed", "error": str(exc)[:500]}
