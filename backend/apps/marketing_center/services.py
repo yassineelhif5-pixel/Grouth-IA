@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+from django.db import transaction
+
 from apps.ai_providers.gateway import complete
 from apps.core.context import get_context
 from apps.core.db import fetch_all_dict, fetch_one
@@ -339,16 +341,17 @@ def generate_editorial_item(item_id: str) -> dict:
             return {"item_id": str(item_id), "content_id": str(content_id), "status": "draft",
                     "title": item[1], "primary_keyword": item[3], "recovered_existing_draft": True}
     if not content_id:
-        content_id = fetch_one("""INSERT INTO public.generated_contents
-            (tenant_id,project_id,title,content_type,language,status,product_id,keyword,objective,channel,agent_code)
-            VALUES (%s,%s,%s,'article',coalesce((SELECT preferred_language FROM public.tenant_marketing_profiles
-             WHERE tenant_id=%s AND deleted_at IS NULL),'fr'),'draft',%s,%s,%s,'website','marketing_center')
-            RETURNING id""",
-            [tid, project_id, item[1], tid, project[0], item[3], item[2] or item[5] or "Article de blog informatif"])[0]
-        fetch_one("""UPDATE public.tenant_marketing_editorial_items
-                        SET generated_content_id=%s,updated_by=%s
-                      WHERE id=%s AND tenant_id=%s RETURNING id""",
-                  [content_id, get_context().user_id, item_id, tid])
+        with transaction.atomic():
+            content_id = fetch_one("""INSERT INTO public.generated_contents
+                (tenant_id,project_id,title,content_type,language,status,product_id,keyword,objective,channel,agent_code)
+                VALUES (%s,%s,%s,'article',coalesce((SELECT preferred_language FROM public.tenant_marketing_profiles
+                 WHERE tenant_id=%s AND deleted_at IS NULL),'fr'),'draft',%s,%s,%s,'website','marketing_center')
+                RETURNING id""",
+                [tid, project_id, item[1], tid, project[0], item[3], item[2] or item[5] or "Article de blog informatif"])[0]
+            fetch_one("""UPDATE public.tenant_marketing_editorial_items
+                            SET generated_content_id=%s,updated_by=%s
+                          WHERE id=%s AND tenant_id=%s RETURNING id""",
+                      [content_id, get_context().user_id, item_id, tid])
     secondary = item[4] if isinstance(item[4], list) else json.loads(item[4] or "[]")
     faq = item[6] if isinstance(item[6], list) else json.loads(item[6] or "[]")
     profile = get_profile()
