@@ -18261,8 +18261,6 @@ END $$;
 COMMENT ON TABLE public.tenant_marketing_campaigns IS 'Editorial campaigns generated from an approved tenant marketing strategy. Creation does not activate publication.';
 COMMENT ON TABLE public.tenant_marketing_editorial_items IS 'Planned article backlog with tenant-wide deduplication hash; publication requires later approval.';
 
-
-
 -- >>> 0022_tenant_marketing_scheduler.sql
 -- Tenant Marketing Center: scheduler configuration and safe draft generation tracking.
 -- The scheduler only creates Growth AI drafts. It never approves or publishes content.
