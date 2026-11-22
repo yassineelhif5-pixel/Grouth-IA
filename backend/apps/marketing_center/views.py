@@ -77,3 +77,17 @@ class MarketingStrategyApproveView(GrowthAPIView):
 
     def post(self, request, strategy_id):
         return Response(s.approve_strategy(strategy_id))
+
+
+class MarketingCampaignsView(GrowthAPIView):
+    required_module = "content"
+    permission_map = {"GET": "content.read", "POST": "content.write"}
+
+    def get(self, request):
+        return Response(s.list_campaigns())
+
+    def post(self, request):
+        strategy_id = request.data.get("strategy_id")
+        if not strategy_id:
+            raise BusinessError("strategy_id is required", "invalid")
+        return Response(s.create_campaign(strategy_id, request.data.get("starts_on")), status=201)
