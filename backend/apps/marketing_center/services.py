@@ -43,16 +43,21 @@ def save_profile(data: dict) -> dict:
     if "website_url" in values:
         # URL is stored as an optional content reference; no fetch/crawl is performed.
         values["website_url"] = (values["website_url"] or "").strip() or None
+    if "objectives" in values:
+        if not isinstance(values["objectives"], list):
+            raise BusinessError("objectives must be a list", "invalid")
+        values["objectives"] = json.dumps(values["objectives"], ensure_ascii=False)
     if not values:
         return get_profile()
     existing = fetch_one("SELECT id FROM public.tenant_marketing_profiles WHERE tenant_id=%s AND deleted_at IS NULL", [tid])
     if existing:
-        sets = ", ".join(f"{k}=%s" for k in values)
+        sets = ", ".join(f"{k}={'%s::jsonb' if k == 'objectives' else '%s'}" for k in values)
         fetch_one(f"UPDATE public.tenant_marketing_profiles SET {sets}, updated_by=%s WHERE tenant_id=%s AND deleted_at IS NULL RETURNING id",
                   [*values.values(), uid, tid])
     else:
         cols = ["tenant_id", *values.keys(), "created_by", "updated_by"]
-        marks = ["%s"] * len(cols)
+        marks = ["%s::jsonb" if k == "objectives" else "%s" for k in values]
+        marks = ["%s", *marks, "%s", "%s"]
         args = [tid, *values.values(), uid, uid]
         fetch_one(f"INSERT INTO public.tenant_marketing_profiles ({', '.join(cols)}) VALUES ({', '.join(marks)}) RETURNING id", args)
     return get_profile()
@@ -216,8 +221,8 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
     profile = get_profile()
     zone = profile.get("timezone") or "Europe/Paris"
     try:
-        start = date.fromisoformat(starts_on) if starts_on else date.today()
-        ZoneInfo(zone)
+        tz = ZoneInfo(zone)
+        start = date.fromisoformat(starts_on) if starts_on else datetime.now(tz).date()
     except (ValueError, KeyError):
         raise BusinessError("Date de début ou fuseau horaire invalide.", "invalid")
     duration = strategy.get("campaign_duration_weeks")
@@ -238,7 +243,7 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
         if not title or not keyword:
             duplicates += 1
             continue
-        canonical = re.sub(r"\\s+", " ", (title + "|" + keyword).casefold()).strip()
+        canonical = re.sub(r"\s+", " ", (title + "|" + keyword).casefold()).strip()
         digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         planned = start + timedelta(days=max(0, int(index * (weeks * 7) / max(count, 1))))
         result = fetch_one("""INSERT INTO public.tenant_marketing_editorial_items
