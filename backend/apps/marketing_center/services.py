@@ -237,43 +237,45 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
     except (TypeError, ValueError):
         weeks = 8
     name = str(strategy.get("title") or row[0] or "Campagne marketing")[:240]
-    campaign_id = fetch_one("""INSERT INTO public.tenant_marketing_campaigns
-                                (tenant_id,strategy_id,name,status,timezone,generation_time,publish_requires_approval,starts_on,ends_on,created_by,updated_by)
-                                VALUES (%s,%s,%s,'planned',%s,'00:00',true,%s,%s,%s,%s) RETURNING id""",
-                            [tid, strategy_id, name, zone, start, start + timedelta(weeks=weeks), uid, uid])[0]
-    inserted, duplicates = 0, 0
-    count = len(articles)
-    for index, article in enumerate(articles):
-        title = str(article.get("title") or "").strip()
-        keyword = str(article.get("primary_keyword") or "").strip()
-        if not title or not keyword:
-            duplicates += 1
-            continue
-        existing_content = fetch_one("""SELECT id FROM public.generated_contents
-            WHERE tenant_id=%s AND deleted_at IS NULL
-              AND lower(regexp_replace(trim(title),'[[:space:]]+',' ','g')) =
-                  lower(regexp_replace(trim(%s),'[[:space:]]+',' ','g'))
-              AND lower(regexp_replace(trim(coalesce(keyword,'')),'[[:space:]]+',' ','g')) =
-                  lower(regexp_replace(trim(%s),'[[:space:]]+',' ','g'))
-            LIMIT 1""", [tid, title, keyword])
-        if existing_content:
-            duplicates += 1
-            continue
-        canonical = re.sub(r"\s+", " ", (title + "|" + keyword).casefold()).strip()
-        digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-        planned = start + timedelta(days=max(0, int(index * (weeks * 7) / max(count, 1))))
-        result = fetch_one("""INSERT INTO public.tenant_marketing_editorial_items
-                               (tenant_id,campaign_id,title,angle,primary_keyword,secondary_keywords,search_intent,faq,dedupe_hash,status,planned_for,created_by,updated_by)
-                               VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s,%s::jsonb,%s,'planned',%s,%s,%s)
-                               ON CONFLICT (tenant_id,dedupe_hash) WHERE deleted_at IS NULL DO NOTHING RETURNING id""",
-                           [tid, campaign_id, title, article.get("angle"), keyword,
-                            json.dumps(article.get("secondary_keywords") or [], ensure_ascii=False),
-                            article.get("search_intent"), json.dumps(article.get("faq") or [], ensure_ascii=False),
-                            digest, planned, uid, uid])
-        if result:
-            inserted += 1
-        else:
-            duplicates += 1
+    with transaction.atomic():
+        campaign_id = fetch_one("""INSERT INTO public.tenant_marketing_campaigns
+                                    (tenant_id,strategy_id,name,status,timezone,generation_time,publish_requires_approval,starts_on,ends_on,created_by,updated_by)
+                                    VALUES (%s,%s,%s,'planned',%s,'00:00',true,%s,%s,%s,%s) RETURNING id""",
+                                [tid, strategy_id, name, zone, start, start + timedelta(weeks=weeks), uid, uid])[0]
+        inserted, duplicates = 0, 0
+        count = len(articles)
+        for index, article in enumerate(articles):
+            title = str(article.get("title") or "").strip()
+            keyword = str(article.get("primary_keyword") or "").strip()
+            if not title or not keyword:
+                duplicates += 1
+                continue
+            existing_content = fetch_one("""SELECT id FROM public.generated_contents
+                WHERE tenant_id=%s AND deleted_at IS NULL
+                  AND lower(regexp_replace(trim(title),'[[:space:]]+',' ','g')) =
+                      lower(regexp_replace(trim(%s),'[[:space:]]+',' ','g'))
+                  AND lower(regexp_replace(trim(coalesce(keyword,'')),'[[:space:]]+',' ','g')) =
+                      lower(regexp_replace(trim(%s),'[[:space:]]+',' ','g'))
+                LIMIT 1""", [tid, title, keyword])
+            if existing_content:
+                duplicates += 1
+                continue
+            canonical = re.sub(r"\s+", " ", (title + "|" + keyword).casefold()).strip()
+            digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+            planned = start + timedelta(days=max(0, int(index * (weeks * 7) / max(count, 1))))
+            result = fetch_one("""INSERT INTO public.tenant_marketing_editorial_items
+                                   (tenant_id,campaign_id,title,angle,primary_keyword,secondary_keywords,search_intent,faq,dedupe_hash,status,planned_for,created_by,updated_by)
+                                   VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s,%s::jsonb,%s,'planned',%s,%s,%s)
+                                   ON CONFLICT (tenant_id,dedupe_hash) WHERE deleted_at IS NULL DO NOTHING RETURNING id""",
+                               [tid, campaign_id, title, article.get("angle"), keyword,
+                                json.dumps(article.get("secondary_keywords") or [], ensure_ascii=False),
+                                article.get("search_intent"), json.dumps(article.get("faq") or [], ensure_ascii=False),
+                                digest, planned, uid, uid])
+            if result:
+                inserted += 1
+            else:
+                duplicates += 1
+
     return {"id": str(campaign_id), "name": name, "status": "planned", "timezone": zone,
             "generation_time": "00:00", "publish_requires_approval": True,
             "articles_created": inserted, "duplicates_skipped": duplicates,
