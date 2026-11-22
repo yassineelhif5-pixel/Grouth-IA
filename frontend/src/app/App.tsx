@@ -14,6 +14,8 @@ import * as V from "@/pages/tenant/VisibilityPages";
 import { ConnectorsPage } from "@/pages/tenant/ConnectorsPage";
 import { MarketingCenterPage } from "@/pages/tenant/MarketingCenterPage";
 import { MarketingAssistantPage } from "@/pages/tenant/MarketingAssistantPage";
+import { MarketingCalendarPage } from "@/pages/tenant/MarketingCalendarPage";
+import { MarketingProfilePage } from "@/pages/tenant/MarketingProfilePage";
 
 function TenantHistory() {
   const { tenantId, can } = useTenant();
@@ -36,6 +38,8 @@ export function App() {
           <Route path="dashboard" element={<V.HomeDashboardPage />} />
           <Route path="marketing" element={<RequirePermission perm="content.read" module="content"><MarketingCenterPage /></RequirePermission>} />
           <Route path="marketing/assistant" element={<RequirePermission perm="content.read" module="content"><MarketingAssistantPage /></RequirePermission>} />
+          <Route path="marketing/calendar" element={<RequirePermission perm="content.read" module="content"><MarketingCalendarPage /></RequirePermission>} />
+          <Route path="marketing/profile" element={<RequirePermission perm="content.read" module="content"><MarketingProfilePage /></RequirePermission>} />
           <Route path="activity" element={<T.DashboardPage />} />
           <Route path="visibility" element={<RequirePermission perm="seo.read" module="seo"><V.ProgrammesPage /></RequirePermission>} />
           <Route path="visibility/new" element={<RequirePermission perm="seo.manage" module="seo"><V.ProgrammeWizardPage /></RequirePermission>} />
