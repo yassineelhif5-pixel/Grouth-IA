@@ -193,7 +193,7 @@ def list_campaigns() -> list[dict]:
 def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
     import hashlib
     import re
-    from datetime import date, timedelta
+    from datetime import date, datetime, timedelta
     from zoneinfo import ZoneInfo
 
     tid, uid = _tid(), get_context().user_id
