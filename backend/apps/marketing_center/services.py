@@ -307,9 +307,15 @@ def activate_campaign(campaign_id: str, content_project_id: str) -> dict:
         raise BusinessError("Seule une campagne planifiée ou en pause peut être activée.", "invalid_state", status_code=409)
     if campaign[2]:
         raise BusinessError("La génération de cette campagne est déjà activée.", "already_active", status_code=409)
-    fetch_one("""UPDATE public.tenant_marketing_campaigns
-                    SET content_project_id=%s,generation_enabled=true,status='active',updated_by=%s
-                  WHERE id=%s AND tenant_id=%s RETURNING id""", [content_project_id, uid, campaign_id, tid])
+    with transaction.atomic():
+        fetch_one("""UPDATE public.tenant_marketing_campaigns
+                        SET content_project_id=%s,generation_enabled=true,status='active',updated_by=%s
+                      WHERE id=%s AND tenant_id=%s RETURNING id""", [content_project_id, uid, campaign_id, tid])
+        # Explicit reactivation after a pause gives failed articles a fresh bounded retry budget.
+        fetch_one("""UPDATE public.tenant_marketing_editorial_items
+                        SET status='planned',generation_attempts=0,generation_error=NULL,updated_at=now(),updated_by=%s
+                      WHERE tenant_id=%s AND campaign_id=%s AND deleted_at IS NULL AND status='failed'
+                      RETURNING id""", [uid, tid, campaign_id])
     return {"id": str(campaign_id), "status": "active", "generation_enabled": True,
             "content_project_id": str(project[0]), "content_project_name": project[1],
             "timezone": fetch_one("SELECT timezone FROM public.tenant_marketing_campaigns WHERE id=%s", [campaign_id])[0],
