@@ -23,19 +23,22 @@ Accès : protégé par l'authentification, le contexte tenant et la permission `
 
 ## État de livraison
 
-### Jalon 1 — Fondation UI
+### Jalons livrés
 
-- [x] Page d'accueil Marketing Center.
-- [x] Navigation dans l'espace tenant.
-- [x] Route tenant protégée.
-- [x] Liens vers les modules métier existants.
-- [x] Mention explicite de l'absence d'analyse automatique du site pour construire la stratégie.
-- [ ] Assistant marketing conversationnel dédié et persistance du profil.
-- [ ] Génération et validation du récapitulatif stratégique.
-- [ ] Gestion éditoriale anti-duplication.
-- [x] Création de campagnes planifiées et calendrier éditorial tenant.\n- [ ] Activation du scheduler de génération à minuit et reprise des tâches interrompues.
-- [ ] Connexions et publication multicanale dédiées.
-- [ ] Centre YouTube et analytics marketing consolidés.
+- [x] Page d'accueil Marketing Center et navigation tenant.
+- [x] Assistant marketing conversationnel dédié, avec historique persistant.
+- [x] Profil marketing tenant éditable.
+- [x] URL du site facultative, sans crawl ni audit automatique.
+- [x] Proposition stratégique structurée via le gateway IA.
+- [x] Modification des titres et mots-clés avant approbation.
+- [x] Approbation explicite avant création d'une campagne.
+- [x] Backlog éditorial et calendrier tenant.
+- [x] Déduplication exacte par empreinte normalisée titre + mot-clé.
+- [ ] Détection sémantique avancée des sujets similaires.
+- [ ] Scheduler Celery marketing dédié à minuit et reprise des tâches.
+- [ ] Génération automatique des articles dans Content Studio.
+- [ ] Orchestration multicanale WordPress, LinkedIn, Facebook, X et YouTube.
+- [ ] Analytics marketing consolidés.
 
 ## Suite technique
 
