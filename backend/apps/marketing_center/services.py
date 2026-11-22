@@ -249,6 +249,16 @@ def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
         if not title or not keyword:
             duplicates += 1
             continue
+        existing_content = fetch_one("""SELECT id FROM public.generated_contents
+            WHERE tenant_id=%s AND deleted_at IS NULL
+              AND lower(regexp_replace(trim(title),'[[:space:]]+',' ','g')) =
+                  lower(regexp_replace(trim(%s),'[[:space:]]+',' ','g'))
+              AND lower(regexp_replace(trim(coalesce(keyword,'')),'[[:space:]]+',' ','g')) =
+                  lower(regexp_replace(trim(%s),'[[:space:]]+',' ','g'))
+            LIMIT 1""", [tid, title, keyword])
+        if existing_content:
+            duplicates += 1
+            continue
         canonical = re.sub(r"\s+", " ", (title + "|" + keyword).casefold()).strip()
         digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         planned = start + timedelta(days=max(0, int(index * (weeks * 7) / max(count, 1))))
