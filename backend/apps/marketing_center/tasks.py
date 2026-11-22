@@ -26,6 +26,11 @@ def dispatch_due_items():
                                 updated_at=now()
                           WHERE status IN ('queued','generating') AND updated_at < now() - interval '30 minutes'
                             AND generation_attempts < 3 RETURNING id""")
+            fetch_one("""UPDATE public.tenant_marketing_editorial_items
+                            SET status='failed',generation_error='Generation retry limit reached after worker timeout',
+                                updated_at=now()
+                          WHERE status IN ('queued','generating') AND updated_at < now() - interval '30 minutes'
+                            AND generation_attempts >= 3 RETURNING id""")
             due = fetch_all_dict("""SELECT i.id,i.tenant_id
                 FROM public.tenant_marketing_editorial_items i
                 JOIN public.tenant_marketing_campaigns c
