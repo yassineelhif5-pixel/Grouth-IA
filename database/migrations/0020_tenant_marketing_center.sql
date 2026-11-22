@@ -82,11 +82,7 @@ CREATE TABLE IF NOT EXISTS public.tenant_marketing_strategies (
   CONSTRAINT tenant_marketing_strategies_tenant_id_id_key UNIQUE (tenant_id,id)
 );
 
-DO $$ BEGIN
-  ALTER TABLE public.tenant_marketing_conversations
-    ADD CONSTRAINT tenant_marketing_conversations_user_tenant_fk
-    FOREIGN KEY (tenant_id,user_id) REFERENCES public.tenant_members(tenant_id,user_id) ON DELETE CASCADE;
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+-- Membership is verified by the authenticated tenant request context; user_id references auth.users.
 DO $$ BEGIN
   ALTER TABLE public.tenant_marketing_messages
     ADD CONSTRAINT tenant_marketing_messages_conversation_fk
