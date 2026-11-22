@@ -25,9 +25,9 @@ const areas: MarketingArea[] = [
   {
     title: "Assistant & stratégie IA",
     description: "Préparer votre stratégie marketing à partir de vos échanges avec l'assistant et définir vos priorités éditoriales.",
-    path: "/thor",
+    path: "/marketing/assistant",
     icon: IconSparkles,
-    status: "Assistant existant",
+    status: "Assistant dédié",
   },
   {
     title: "SEO & mots-clés",
