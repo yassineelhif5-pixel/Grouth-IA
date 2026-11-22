@@ -1,6 +1,7 @@
 import { Alert, Badge, Button, Card, Group, Loader, Paper, Select, Stack, Table, Text, Title } from "@mantine/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "@/services/api";
 import { useTenant } from "@/hooks/useMe";
 
@@ -128,7 +129,7 @@ export function MarketingCalendarPage() {
                       <Table.Td>{article.primary_keyword}</Table.Td>
                       <Table.Td><Badge variant="light" color={article.status === "draft" ? "teal" : article.status === "failed" ? "red" : "gray"}>{article.status}</Badge></Table.Td>
                       <Table.Td>
-                        {article.content_id ? <Text size="xs">Brouillon créé · {article.content_id.slice(0, 8)}</Text> : article.generation_error ? <Text size="xs" c="red">{article.generation_error}</Text> : <Text size="xs" c="dimmed">{article.generation_attempts ?? 0}/3 tentatives</Text>}
+                        {article.content_id ? <Text component={Link} to="/content" size="xs">Ouvrir le brouillon dans Content Studio · {article.content_id.slice(0, 8)}</Text> : article.generation_error ? <Text size="xs" c="red">{article.generation_error}</Text> : <Text size="xs" c="dimmed">{article.generation_attempts ?? 0}/3 tentatives</Text>}
                         {article.published_url && <Text component="a" href={article.published_url} target="_blank" size="xs">Voir la publication</Text>}
                       </Table.Td>
                     </Table.Tr>
