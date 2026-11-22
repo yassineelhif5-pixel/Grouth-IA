@@ -179,3 +179,75 @@ def approve_strategy(strategy_id: str) -> dict:
     fetch_one("""UPDATE public.tenant_marketing_strategies SET status='approved',approved_by=%s,approved_at=now(),updated_by=%s
                   WHERE id=%s AND tenant_id=%s RETURNING id""", [uid, uid, strategy_id, tid])
     return {"id": strategy_id, "status": "approved", "approved_at": fetch_one("SELECT approved_at FROM public.tenant_marketing_strategies WHERE id=%s", [strategy_id])[0]}
+
+
+def list_campaigns() -> list[dict]:
+    return fetch_all_dict("""SELECT c.id,c.strategy_id,c.name,c.status,c.timezone,c.generation_time,c.publish_requires_approval,
+                                    c.starts_on,c.ends_on,c.created_at,
+                                    (SELECT count(*) FROM public.tenant_marketing_editorial_items i
+                                      WHERE i.tenant_id=c.tenant_id AND i.campaign_id=c.id AND i.deleted_at IS NULL) AS article_count
+                               FROM public.tenant_marketing_campaigns c
+                              WHERE c.tenant_id=%s AND c.deleted_at IS NULL ORDER BY c.created_at DESC LIMIT 50""", [_tid()])
+
+
+def create_campaign(strategy_id: str, starts_on: str | None = None) -> dict:
+    import hashlib
+    import re
+    from datetime import date, timedelta
+    from zoneinfo import ZoneInfo
+
+    tid, uid = _tid(), get_context().user_id
+    row = fetch_one("""SELECT title,strategy,status FROM public.tenant_marketing_strategies
+                        WHERE id=%s AND tenant_id=%s AND deleted_at IS NULL""", [strategy_id, tid])
+    if not row:
+        raise BusinessError("Stratégie introuvable.", "not_found", status_code=404)
+    if row[2] != "approved":
+        raise BusinessError("La stratégie doit être approuvée avant de créer un calendrier.", "approval_required", status_code=409)
+    strategy = row[1] if isinstance(row[1], dict) else json.loads(row[1] or "{}")
+    articles = strategy.get("articles") or []
+    if not articles:
+        raise BusinessError("La stratégie ne contient aucun article.", "invalid")
+    profile = get_profile()
+    zone = profile.get("timezone") or "Europe/Paris"
+    try:
+        start = date.fromisoformat(starts_on) if starts_on else date.today()
+        ZoneInfo(zone)
+    except (ValueError, KeyError):
+        raise BusinessError("Date de début ou fuseau horaire invalide.", "invalid")
+    duration = strategy.get("campaign_duration_weeks")
+    try:
+        weeks = max(1, min(52, int(duration or 8)))
+    except (TypeError, ValueError):
+        weeks = 8
+    name = str(strategy.get("title") or row[0] or "Campagne marketing")[:240]
+    campaign_id = fetch_one("""INSERT INTO public.tenant_marketing_campaigns
+                                (tenant_id,strategy_id,name,status,timezone,generation_time,publish_requires_approval,starts_on,ends_on,created_by,updated_by)
+                                VALUES (%s,%s,%s,'planned',%s,'00:00',true,%s,%s,%s,%s) RETURNING id""",
+                            [tid, strategy_id, name, zone, start, start + timedelta(weeks=weeks), uid, uid])[0]
+    inserted, duplicates = 0, 0
+    count = len(articles)
+    for index, article in enumerate(articles):
+        title = str(article.get("title") or "").strip()
+        keyword = str(article.get("primary_keyword") or "").strip()
+        if not title or not keyword:
+            duplicates += 1
+            continue
+        canonical = re.sub(r"\\s+", " ", (title + "|" + keyword).casefold()).strip()
+        digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        planned = start + timedelta(days=max(0, int(index * (weeks * 7) / max(count, 1))))
+        result = fetch_one("""INSERT INTO public.tenant_marketing_editorial_items
+                               (tenant_id,campaign_id,title,angle,primary_keyword,secondary_keywords,search_intent,faq,dedupe_hash,status,planned_for,created_by,updated_by)
+                               VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s,%s::jsonb,%s,'planned',%s,%s,%s)
+                               ON CONFLICT (tenant_id,dedupe_hash) WHERE deleted_at IS NULL DO NOTHING RETURNING id""",
+                           [tid, campaign_id, title, article.get("angle"), keyword,
+                            json.dumps(article.get("secondary_keywords") or [], ensure_ascii=False),
+                            article.get("search_intent"), json.dumps(article.get("faq") or [], ensure_ascii=False),
+                            digest, planned, uid, uid])
+        if result:
+            inserted += 1
+        else:
+            duplicates += 1
+    return {"id": str(campaign_id), "name": name, "status": "planned", "timezone": zone,
+            "generation_time": "00:00", "publish_requires_approval": True,
+            "articles_created": inserted, "duplicates_skipped": duplicates,
+            "note": "Calendrier préparé. Aucune génération automatique ni publication n'est activée à ce stade."}
