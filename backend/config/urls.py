@@ -30,6 +30,7 @@ api_v1 = [
     path("", include("apps.visibility.urls")),
     path("", include("apps.intelligence.urls")),
     path("", include("apps.thor.urls")),
+    path("", include("apps.marketing_center.urls")),
     path("health/", include("apps.core.urls_health")),
     path("internal/cron/tick", CronTickView.as_view()),  # periodic tasks without Celery Beat (serverless)
     path("schema", SpectacularAPIView.as_view(), name="schema"),
