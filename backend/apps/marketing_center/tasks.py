@@ -5,6 +5,7 @@ import logging
 
 from django.db import transaction
 
+from apps.core.context import get_context
 from apps.core.db import fetch_all_dict, fetch_one
 from apps.observability.tasks_base import TracedTask, run_in_platform_scope, run_in_tenant_scope
 from config.celery import app
@@ -58,7 +59,7 @@ def generate_editorial_item(item_id: str):
     claimed = fetch_one("""UPDATE public.tenant_marketing_editorial_items
                               SET status='generating',updated_at=now()
                             WHERE id=%s AND tenant_id=%s AND status='queued' AND deleted_at IS NULL
-                            RETURNING id""", [item_id, __import__("apps.core.context", fromlist=["get_context"]).get_context().tenant_id])
+                            RETURNING id""", [item_id, get_context().tenant_id])
     if not claimed:
         return {"item_id": item_id, "status": "skipped", "reason": "not_queued_or_already_claimed"}
     try:
