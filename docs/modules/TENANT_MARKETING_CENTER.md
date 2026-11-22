@@ -39,7 +39,7 @@ Accès : protégé par l'authentification, le contexte tenant et la permission `
 - [x] Scheduler Celery marketing vérifiant chaque minute les campagnes dues selon le fuseau horaire du tenant.
 - [x] Activation/désactivation explicite de la génération, avec sélection d'un projet Content Studio.
 - [x] Génération des articles dans Content Studio en brouillons uniquement.
-- [x] Reprise bornée des échecs et récupération des tâches bloquées.
+- [x] Reprise bornée des échecs (3 tentatives), récupération des tâches bloquées et remise à zéro du compteur lors d'une réactivation explicite.
 - [ ] Orchestration multicanale WordPress, LinkedIn, Facebook, X et YouTube.
 - [ ] Analytics marketing consolidés.
 
@@ -86,7 +86,7 @@ Migrations : `0020_tenant_marketing_center.sql`, `0021_tenant_marketing_campaign
 
 - Le scheduler crée uniquement des brouillons dans Content Studio ; la validation et la publication restent des actions distinctes.
 - Les statuts du calendrier reflètent le statut réel du contenu associé (draft, review, approved, published).
-- Les échecs de génération sont retentés jusqu'à trois tentatives, avec récupération des tâches bloquées.
+- Les échecs de génération sont retentés jusqu'à trois tentatives, avec récupération des tâches bloquées. Une mise en pause puis réactivation explicite réinitialise les échecs pour permettre une nouvelle série de tentatives.
 - La déduplication actuelle est exacte (empreinte normalisée titre + mot-clé), pas encore sémantique/embeddings.
 - Les connecteurs WordPress/LinkedIn/Facebook/X/YouTube ne sont pas encore orchestrés par cette nouvelle campagne.
 - La déduplication actuelle est exacte (empreinte normalisée titre + mot-clé), pas encore sémantique/embeddings.
