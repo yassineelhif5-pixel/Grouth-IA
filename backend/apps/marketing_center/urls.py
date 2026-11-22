@@ -1,8 +1,8 @@
 from django.urls import path
 
 from .views import (
-    MarketingChatView,
     MarketingCampaignsView,
+    MarketingChatView,
     MarketingConversationsView,
     MarketingProfileView,
     MarketingStrategiesView,
