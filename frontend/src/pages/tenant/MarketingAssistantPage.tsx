@@ -10,7 +10,6 @@ import {
   Stack,
   Text,
   Textarea,
-  TextInput,
   Title,
 } from "@mantine/core";
 import { IconCheck, IconMessageChatbot, IconSparkles } from "@tabler/icons-react";
